@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import type { ChecklistItem, LoginTab } from "@/types/login";
 import LogoLockup from "./LogoLockup";
@@ -18,11 +19,18 @@ const CHECKLIST: ChecklistItem[] = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<LoginTab>("signin");
 
+  const resetSuccessMessage =
+    searchParams.get("reset") === "success"
+      ? searchParams.get("message") ||
+        "Password reset successfully. Please sign in with your new password."
+      : null;
+
   const handleForgotPassword = () => {
-    // TODO: Wire Memberstack password reset flow
-    console.log("Forgot password clicked");
+    router.push("/forgot-password");
   };
 
   return (
@@ -74,7 +82,17 @@ export default function LoginPage() {
                   />
 
                   {activeTab === "signin" ? (
-                    <SignInForm onForgotPassword={handleForgotPassword} />
+                    <>
+                      {resetSuccessMessage ? (
+                        <p
+                          className="mb-3 rounded-[10px] border border-[#b9965b]/40 bg-[#b9965b]/15 px-3 py-2 text-sm text-[#f0e6d2]"
+                          role="status"
+                        >
+                          {resetSuccessMessage}
+                        </p>
+                      ) : null}
+                      <SignInForm onForgotPassword={handleForgotPassword} />
+                    </>
                   ) : (
                     <HowItWorksPanel />
                   )}

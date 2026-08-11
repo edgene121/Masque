@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Member } from "@memberstack/dom";
 import { dispatch, foundationCards, navSections } from "@/data/dashboard";
-import { fetchFeaturedEvent, fetchMemberStatus } from "@/lib/airtable";
-import { useMemberstackUser } from "@/lib/memberstack";
-import type { FeaturedEventData, MemberStatusData } from "@/types/dashboard";
+import { fetchFeaturedEvent } from "@/lib/airtable";
+import { getMemberstack } from "@/lib/memberstack";
+import {
+  getOnboardingStatus,
+  isProfileComplete,
+  mapMemberToHeaderUser,
+} from "@/lib/profile-memberstack";
+import type {
+  FeaturedEventData,
+  MemberstackUser,
+  MemberStatusData,
+} from "@/types/dashboard";
 import DashboardLayout from "./DashboardLayout";
 import MemberStatusCard from "./MemberStatusCard";
 import SectionHeading from "./SectionHeading";
@@ -13,26 +23,73 @@ import FeaturedDispatch from "./FeaturedDispatch";
 import FoundationCard from "./FoundationCard";
 import CommunityFooterCard from "./CommunityFooterCard";
 
+const COMPLETED_STATUS: MemberStatusData = {
+  variant: "active",
+  label: "Membership Active",
+  welcomeHeading: "Welcome to Masqué",
+  welcomeText:
+    "Welcome to the MASQUÉ Member Portal. This platform provides everything you need to manage your membership and stay connected with the community.",
+};
+
+const INCOMPLETE_STATUS: MemberStatusData = {
+  variant: "pending",
+  label: "Onboarding",
+  welcomeHeading: "Welcome to Masqué",
+  welcomeText: "",
+};
+
+const EMPTY_HEADER_USER: MemberstackUser = {
+  name: "",
+  initials: "",
+  email: "",
+};
+
 export default function DashboardPage() {
-  const user = useMemberstackUser();
-  const [memberStatus, setMemberStatus] = useState<MemberStatusData | null>(
-    null
-  );
+  const [member, setMember] = useState<Member | null>(null);
+  const [memberReady, setMemberReady] = useState(false);
+  const [headerUser, setHeaderUser] =
+    useState<MemberstackUser>(EMPTY_HEADER_USER);
   const [featuredEvent, setFeaturedEvent] = useState<FeaturedEventData | null>(
-    null
+    null,
   );
 
   useEffect(() => {
     let mounted = true;
 
     async function load() {
-      const [status, event] = await Promise.all([
-        fetchMemberStatus(),
-        fetchFeaturedEvent(),
-      ]);
-      if (!mounted) return;
-      setMemberStatus(status);
-      setFeaturedEvent(event);
+      try {
+        const memberstack = getMemberstack();
+        const [{ data: currentMember }, event] = await Promise.all([
+          memberstack.getCurrentMember(),
+          fetchFeaturedEvent(),
+        ]);
+
+        if (!mounted) return;
+
+        setMember(currentMember);
+        setHeaderUser(
+          currentMember
+            ? mapMemberToHeaderUser(currentMember)
+            : EMPTY_HEADER_USER,
+        );
+        setFeaturedEvent(event);
+
+        if (process.env.NODE_ENV === "development") {
+          const status = getOnboardingStatus(currentMember);
+          console.log("[Home] Onboarding Status:", status || "(empty)");
+          console.log(
+            "[Home] Profile complete:",
+            isProfileComplete(currentMember),
+          );
+        }
+      } catch (error) {
+        console.error("[Home] Failed to load member home state:", error);
+        if (!mounted) return;
+        setMember(null);
+        setHeaderUser(EMPTY_HEADER_USER);
+      } finally {
+        if (mounted) setMemberReady(true);
+      }
     }
 
     void load();
@@ -41,27 +98,44 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const profileComplete = isProfileComplete(member);
+
   return (
-    <DashboardLayout user={user} navSections={navSections}>
-      {memberStatus ? <MemberStatusCard status={memberStatus} /> : null}
-
-      {featuredEvent ? (
+    <DashboardLayout user={headerUser} navSections={navSections}>
+      {!memberReady ? (
+        <p className="dashboard-home-loading">Loading…</p>
+      ) : (
         <>
-          <SectionHeading variant="featured-event">Featured Event</SectionHeading>
-          <FeaturedEventCard event={featuredEvent} />
+          {profileComplete ? (
+            <MemberStatusCard status={COMPLETED_STATUS} />
+          ) : (
+            <MemberStatusCard
+              status={INCOMPLETE_STATUS}
+              showProfileCompletion
+            />
+          )}
+
+          {featuredEvent ? (
+            <>
+              <SectionHeading variant="featured-event">
+                Featured Event
+              </SectionHeading>
+              <FeaturedEventCard event={featuredEvent} />
+            </>
+          ) : null}
+
+          <FeaturedDispatch dispatch={dispatch} />
+
+          <SectionHeading>Community Foundation</SectionHeading>
+          <div className="foundation-grid">
+            {foundationCards.map((card) => (
+              <FoundationCard key={card.id} card={card} />
+            ))}
+          </div>
+
+          <CommunityFooterCard />
         </>
-      ) : null}
-
-      <FeaturedDispatch dispatch={dispatch} />
-
-      <SectionHeading>Community Foundation</SectionHeading>
-      <div className="foundation-grid">
-        {foundationCards.map((card) => (
-          <FoundationCard key={card.id} card={card} />
-        ))}
-      </div>
-
-      <CommunityFooterCard />
+      )}
     </DashboardLayout>
   );
 }

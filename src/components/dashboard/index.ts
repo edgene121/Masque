@@ -5,6 +5,7 @@ export { default as NavSection } from "./NavSection";
 export { default as NavItem } from "./NavItem";
 export { default as TopBar } from "./TopBar";
 export { default as MemberStatusCard } from "./MemberStatusCard";
+export { default as ProfileCompletionCard } from "./ProfileCompletionCard";
 export { default as FeaturedEventCard } from "./FeaturedEventCard";
 export { default as SectionHeading } from "./SectionHeading";
 export { default as FeaturedDispatch } from "./FeaturedDispatch";

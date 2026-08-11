@@ -99,6 +99,62 @@ export function mapMemberToHeaderUser(member: Member): MemberstackUser {
   };
 }
 
+/** Memberstack custom field key for UI label "Onboarding Status". */
+export const ONBOARDING_STATUS_FIELD_KEY = "onboarding-state";
+
+/** Memberstack custom field key for UI label "Agreement Signed". */
+export const AGREEMENT_SIGNED_FIELD_KEY = "agreement-signed";
+
+/** Value written after Step 3 acknowledgments are accepted. */
+export const AGREEMENT_SIGNED_COMPLETED_VALUE = "completed";
+
+/** Memberstack custom field key for UI label "gov.ID". */
+export const GOV_ID_FIELD_KEY = "gov-id";
+
+/** Memberstack custom field key for UI label "Compliance Status". */
+export const COMPLIANCE_STATUS_FIELD_KEY = "compliance-state";
+
+export function getGovIdUrl(member: Member | null | undefined): string {
+  if (!member) return "";
+  const customFields = (member.customFields ?? {}) as Record<string, unknown>;
+  return fieldValue(customFields, GOV_ID_FIELD_KEY).trim();
+}
+
+export function hasGovId(member: Member | null | undefined): boolean {
+  const value = getGovIdUrl(member);
+  return Boolean(value);
+}
+
+export function getAgreementSigned(
+  member: Member | null | undefined,
+): string {
+  if (!member) return "";
+  const customFields = (member.customFields ?? {}) as Record<string, unknown>;
+  return fieldValue(customFields, AGREEMENT_SIGNED_FIELD_KEY).trim();
+}
+
+/** True when Agreement Signed is the completed value from Step 3. */
+export function isAgreementSigned(member: Member | null | undefined): boolean {
+  return (
+    getAgreementSigned(member).toLowerCase() ===
+    AGREEMENT_SIGNED_COMPLETED_VALUE.toLowerCase()
+  );
+}
+
+/**
+ * Profile is complete only when Onboarding Status === "Submitted".
+ * Any other/missing value is treated as incomplete.
+ */
+export function getOnboardingStatus(member: Member | null | undefined): string {
+  if (!member) return "";
+  const customFields = (member.customFields ?? {}) as Record<string, unknown>;
+  return String(customFields[ONBOARDING_STATUS_FIELD_KEY] ?? "").trim();
+}
+
+export function isProfileComplete(member: Member | null | undefined): boolean {
+  return getOnboardingStatus(member).toLowerCase() === "submitted";
+}
+
 export function customFieldsForMasqueProfile(form: ProfileFormData) {
   return {
     "profile-name": form.profileName,
@@ -123,5 +179,25 @@ export function customFieldsForUploadedDetails(form: ProfileFormData) {
     "zip-code": form.zipCode,
     "instagram-link": form.instagram,
     gender: form.gender,
+  };
+}
+
+/**
+ * Step 1 of /complete-profile onboarding.
+ * Does NOT update onboarding-state or other system fields.
+ */
+export function customFieldsForOnboardingStep1(form: ProfileFormData) {
+  return {
+    "first-name": form.firstName.trim(),
+    "last-name": form.lastName.trim(),
+    address: form.address.trim(),
+    state: form.state.trim(),
+    "zip-code": form.zipCode.trim(),
+    "display-name": form.displayName.trim(),
+    "profile-name": form.profileName.trim(),
+    phone: form.phone.trim(),
+    birthdate: form.dateOfBirth.trim(),
+    gender: form.gender.trim(),
+    "instagram-link": form.instagram.trim(),
   };
 }
