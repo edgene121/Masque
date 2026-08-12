@@ -2,7 +2,8 @@ import "server-only";
 
 export function getAirtableConfig() {
   const accessToken = process.env.AIRTABLE_ACCESS_TOKEN?.trim();
-  const baseId = process.env.AIRTABLE_BASE_ID?.trim();
+  // Guard against accidental trailing punctuation in .env (e.g. "appXXX.").
+  const baseId = process.env.AIRTABLE_BASE_ID?.trim().replace(/\.+$/, "");
   const adminsTable = process.env.AIRTABLE_ADMINS_TABLE?.trim() || "Admins";
 
   if (!accessToken || !baseId) {

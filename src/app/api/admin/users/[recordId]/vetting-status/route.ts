@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
-  markApplicationPending,
-  VETTING_STATUS_PENDING,
+  ADMIN_REVIEW_STATUSES,
+  updateApplicationVettingStatus,
 } from "@/lib/admin/applications";
 import { getAdminSession } from "@/lib/admin/session";
 
@@ -37,12 +37,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       ? (body as { status: string }).status.trim()
       : "";
 
-  // Only the controlled transition target is accepted from the client.
-  if (status !== VETTING_STATUS_PENDING) {
+  const normalized = status.toLowerCase();
+  if (
+    !(ADMIN_REVIEW_STATUSES as readonly string[]).includes(normalized)
+  ) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 400 });
   }
 
-  const result = await markApplicationPending(recordId);
+  const result = await updateApplicationVettingStatus(recordId, status);
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error },
@@ -56,6 +58,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       id: result.record.id,
       name: result.record.name,
       email: result.record.email,
+      phone: result.record.phone,
       vettingStatus: result.record.vettingStatus,
       memberStatus: result.record.memberStatus,
       createdTime: result.record.createdTime,

@@ -27,7 +27,7 @@ export function areAllAcknowledgmentsChecked(
 }
 
 interface MemberAcknowledgmentProps {
-  /** True when Memberstack `gov-id` has a non-empty value (member already loaded). */
+  /** True when Airtable Applications "Government ID" attachment is present. */
   hasGovernmentId: boolean;
   acknowledgments: AcknowledgmentState;
   onToggle: (key: AcknowledgmentKey) => void;

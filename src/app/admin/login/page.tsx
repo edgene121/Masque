@@ -23,8 +23,8 @@ export default async function AdminLoginPage() {
         </div>
 
         <div className="admin-login-copy">
-          <h1>Welcome back</h1>
-          <p>Sign in to manage members and administrative operations.</p>
+          <h1>Welcome Back</h1>
+          <p>Sign In To Manage Members And Administrative Operations.</p>
         </div>
 
         <AdminLoginForm />

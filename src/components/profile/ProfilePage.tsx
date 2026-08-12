@@ -27,6 +27,7 @@ import type { MemberstackUser } from "@/types/dashboard";
 import type { ProfileFormData } from "@/types/profile";
 import ProfilePhotoPanel from "./ProfilePhotoPanel";
 import ProfileField from "./ProfileField";
+import ReferralDetailsSection from "./ReferralDetailsSection";
 
 type ProfileSection = "masque-profile" | "legal" | "uploaded-details";
 
@@ -38,6 +39,7 @@ const EMPTY_HEADER_USER: MemberstackUser = {
 
 export default function ProfilePage() {
   const [form, setForm] = useState<ProfileFormData>(emptyProfileForm);
+  const [referralCode, setReferralCode] = useState("");
   const [headerUser, setHeaderUser] =
     useState<MemberstackUser>(EMPTY_HEADER_USER);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,16 +63,40 @@ export default function ProfilePage() {
       if (!member) {
         setIsAuthenticated(false);
         setForm(emptyProfileForm);
+        setReferralCode("");
         setHeaderUser(EMPTY_HEADER_USER);
         return;
       }
 
       setIsAuthenticated(true);
-      setForm(mapMemberToProfileForm(member));
+      const mapped = mapMemberToProfileForm(member);
+      setForm(mapped);
       setHeaderUser(mapMemberToHeaderUser(member));
+
+      const email = mapped.email.trim();
+      if (email) {
+        try {
+          const response = await fetch(
+            `/api/portal/referral-code?email=${encodeURIComponent(email)}`,
+            { cache: "no-store" },
+          );
+          const data = (await response.json()) as {
+            referralCode?: string;
+            error?: string;
+          };
+          setReferralCode(
+            response.ok ? String(data.referralCode ?? "").trim() : "",
+          );
+        } catch {
+          setReferralCode("");
+        }
+      } else {
+        setReferralCode("");
+      }
     } catch (err) {
       setIsAuthenticated(false);
       setForm(emptyProfileForm);
+      setReferralCode("");
       setHeaderUser(EMPTY_HEADER_USER);
       setSectionError(
         formatErrorForUser(err) || "Unable to load your profile.",
@@ -351,6 +377,9 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
+
+          <SectionHeading>Referral Details</SectionHeading>
+          <ReferralDetailsSection referralCode={referralCode} />
 
           {sectionError ? (
             <p role="alert" className="profile-photo-panel__error">

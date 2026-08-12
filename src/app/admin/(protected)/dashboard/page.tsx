@@ -14,12 +14,12 @@ export default async function AdminDashboardPage() {
     <AdminShell
       admin={admin}
       title="Dashboard"
-      description="Overview of administrative operations."
+      description="Overview Of Administrative Operations."
     >
       <section className="admin-card">
         <h2 className="admin-card__heading">Welcome, {admin.name}</h2>
         <p className="admin-card__body">
-          Use the Users section to review member accounts. Additional admin
+          Use the Members section to review Member accounts. Additional Admin
           tools will appear here as the onboarding workflow is finalized.
         </p>
       </section>

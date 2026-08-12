@@ -78,7 +78,7 @@ export default function AdminLoginForm() {
             className="admin-password-toggle"
             disabled={isLoading}
             onClick={() => setShowPassword((prev) => !prev)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? "Hide Password" : "Show Password"}
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" />
@@ -96,7 +96,7 @@ export default function AdminLoginForm() {
       ) : null}
 
       <button type="submit" className="admin-signin-btn" disabled={isLoading}>
-        {isLoading ? "Signing in..." : "Sign In"}
+        {isLoading ? "Signing In…" : "Sign In"}
       </button>
     </form>
   );

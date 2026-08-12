@@ -8,6 +8,6 @@ export interface CompleteProfileWizardState {
   acknowledgments: AcknowledgmentState;
   /** True after Step 3 checkboxes accepted in this session (or loaded from Memberstack). */
   agreementsAccepted: boolean;
-  /** True when Memberstack gov-id has a non-empty value. */
+  /** True when Airtable Applications "Government ID" attachment is present. */
   hasGovernmentId: boolean;
 }

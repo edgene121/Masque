@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { AdminApplicationRow } from "@/types/admin-users";
+import { toTitleCaseLabel } from "@/lib/admin/format-label";
 
 interface AdminUsersTableProps {
   rows: AdminApplicationRow[];
@@ -11,7 +12,6 @@ interface AdminUsersTableProps {
 
 const PAGE_SIZE = 10;
 const ALL_VETTING = "";
-const ALL_MEMBER = "";
 const STATUS_APPLICATION_RECEIVED = "application received";
 
 const VETTING_OPTIONS = [
@@ -25,16 +25,15 @@ const VETTING_OPTIONS = [
   "Referral Concern",
 ] as const;
 
-const MEMBER_OPTIONS = [
-  "active member",
-  "inner circle",
-  "team",
-  "1 time guest",
-] as const;
-
 function displayOrDash(value: string): string {
   const trimmed = value.trim();
   return trimmed || "—";
+}
+
+function displayStatusLabel(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "—";
+  return toTitleCaseLabel(trimmed);
 }
 
 function vettingBadgeClass(status: string): string {
@@ -48,6 +47,8 @@ function vettingBadgeClass(status: string): string {
       return "is-approved";
     case "rejected":
       return "is-rejected";
+    case "banned":
+      return "is-banned";
     case "hold":
     case "duplicate submission":
     case "referral concern":
@@ -55,10 +56,6 @@ function vettingBadgeClass(status: string): string {
     default:
       return key ? "is-neutral" : "";
   }
-}
-
-function memberBadgeClass(status: string): string {
-  return status.trim() ? "is-member-subtle" : "";
 }
 
 function equalsIgnoreCase(a: string, b: string): boolean {
@@ -105,7 +102,6 @@ export default function AdminUsersTable({
   const [localRows, setLocalRows] = useState(rows);
   const [query, setQuery] = useState("");
   const [vettingFilter, setVettingFilter] = useState(ALL_VETTING);
-  const [memberFilter, setMemberFilter] = useState(ALL_MEMBER);
   const [page, setPage] = useState(1);
   const [pendingRecordId, setPendingRecordId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -126,12 +122,7 @@ export default function AdminUsersTable({
 
     return sortedRows.filter((row) => {
       if (q) {
-        const haystack = [
-          row.name,
-          row.email,
-          row.vettingStatus,
-          row.memberStatus,
-        ]
+        const haystack = [row.name, row.email, row.phone, row.vettingStatus]
           .join(" ")
           .toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -144,16 +135,9 @@ export default function AdminUsersTable({
         return false;
       }
 
-      if (
-        memberFilter &&
-        !equalsIgnoreCase(row.memberStatus, memberFilter)
-      ) {
-        return false;
-      }
-
       return true;
     });
-  }, [sortedRows, query, vettingFilter, memberFilter]);
+  }, [sortedRows, query, vettingFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -167,14 +151,11 @@ export default function AdminUsersTable({
   const pageRows = filtered.slice(pageStartIndex, pageEndIndex);
 
   const filtersActive =
-    query.trim().length > 0 ||
-    vettingFilter !== ALL_VETTING ||
-    memberFilter !== ALL_MEMBER;
+    query.trim().length > 0 || vettingFilter !== ALL_VETTING;
 
   const clearFilters = () => {
     setQuery("");
     setVettingFilter(ALL_VETTING);
-    setMemberFilter(ALL_MEMBER);
     setPage(1);
   };
 
@@ -188,15 +169,10 @@ export default function AdminUsersTable({
     setPage(1);
   };
 
-  const updateMember = (value: string) => {
-    setMemberFilter(value);
-    setPage(1);
-  };
-
   const emptyMessage =
     localRows.length === 0
-      ? "No users found."
-      : "No users match your current filters.";
+      ? "No Members found."
+      : "No Members match your current filters.";
 
   const pageItems = getPageItems(safePage, totalPages);
   const confirmRow = pendingRecordId
@@ -259,24 +235,7 @@ export default function AdminUsersTable({
               <option value={ALL_VETTING}>All Vetting Statuses</option>
               {VETTING_OPTIONS.map((option) => (
                 <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="admin-filter">
-            <span className="admin-sr-only">Member Status</span>
-            <select
-              className="admin-select"
-              value={memberFilter}
-              onChange={(e) => updateMember(e.target.value)}
-              aria-label="Member Status"
-            >
-              <option value={ALL_MEMBER}>All Member Statuses</option>
-              {MEMBER_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+                  {toTitleCaseLabel(option)}
                 </option>
               ))}
             </select>
@@ -286,18 +245,18 @@ export default function AdminUsersTable({
         <input
           type="search"
           className="admin-search"
-          placeholder="Search members…"
+          placeholder="Search Members"
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
-          aria-label="Search members"
+          aria-label="Search Members"
         />
       </div>
 
       {filtersActive ? (
         <div className="admin-filter-summary">
           <span>
-            Vetting: {vettingFilter || "All"} · Member:{" "}
-            {memberFilter || "All"}
+            Vetting:{" "}
+            {vettingFilter ? toTitleCaseLabel(vettingFilter) : "All"}
             {query.trim() ? ` · Search: “${query.trim()}”` : ""}
           </span>
           <button
@@ -305,7 +264,7 @@ export default function AdminUsersTable({
             className="admin-clear-filters"
             onClick={clearFilters}
           >
-            Clear filters
+            Clear Filters
           </button>
         </div>
       ) : null}
@@ -317,15 +276,15 @@ export default function AdminUsersTable({
       ) : null}
 
       <div className="admin-table-wrap">
-        <table className="admin-table">
+        <table className="admin-table admin-table--members">
           <thead>
             <tr>
-              <th>Member</th>
-              <th>Email</th>
-              <th>Vetting Status</th>
-              <th>Member Status</th>
-              <th>Joined</th>
-              <th>Actions</th>
+              <th className="admin-col-member">Member</th>
+              <th className="admin-col-email">Email</th>
+              <th className="admin-col-phone">Phone Number</th>
+              <th className="admin-col-vetting">Vetting Status</th>
+              <th className="admin-col-joined">Joined</th>
+              <th className="admin-col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -346,7 +305,7 @@ export default function AdminUsersTable({
                         className="admin-clear-filters"
                         onClick={clearFilters}
                       >
-                        Clear filters
+                        Clear Filters
                       </button>
                     ) : null}
                   </div>
@@ -354,9 +313,9 @@ export default function AdminUsersTable({
               </tr>
             ) : (
               pageRows.map((row) => {
-                const vetting = displayOrDash(row.vettingStatus);
-                const member = displayOrDash(row.memberStatus);
+                const vetting = displayStatusLabel(row.vettingStatus);
                 const email = displayOrDash(row.email);
+                const phone = displayOrDash(row.phone);
                 const name = displayOrDash(row.name);
                 const canMarkPending =
                   row.vettingStatus === STATUS_APPLICATION_RECEIVED;
@@ -364,11 +323,12 @@ export default function AdminUsersTable({
 
                 return (
                   <tr key={row.id}>
-                    <td>
+                    <td className="admin-col-member">
                       <span className="admin-member-name">{name}</span>
                     </td>
-                    <td>{email}</td>
-                    <td>
+                    <td className="admin-col-email">{email}</td>
+                    <td className="admin-col-phone">{phone}</td>
+                    <td className="admin-col-vetting">
                       {row.vettingStatus.trim() ? (
                         <span
                           className={`admin-status-badge ${vettingBadgeClass(row.vettingStatus)}`}
@@ -379,19 +339,8 @@ export default function AdminUsersTable({
                         "—"
                       )}
                     </td>
-                    <td>
-                      {row.memberStatus.trim() ? (
-                        <span
-                          className={`admin-status-badge ${memberBadgeClass(row.memberStatus)}`}
-                        >
-                          {member}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>{row.joinedDisplay}</td>
-                    <td>
+                    <td className="admin-col-joined">{row.joinedDisplay}</td>
+                    <td className="admin-col-actions">
                       <div className="admin-row-actions">
                         <Link
                           href={`/admin/users/${row.id}`}
@@ -409,7 +358,7 @@ export default function AdminUsersTable({
                               setPendingRecordId(row.id);
                             }}
                           >
-                            {isUpdating ? "Updating..." : "Mark Pending"}
+                            {isUpdating ? "Updating…" : "Set As Pending"}
                           </button>
                         ) : null}
                       </div>
@@ -426,7 +375,7 @@ export default function AdminUsersTable({
         <div className="admin-pagination">
           <p className="admin-pagination__summary">
             Showing {pageStartIndex + 1}–{pageEndIndex} of {filtered.length}{" "}
-            users
+            Members
           </p>
 
           <div className="admin-pagination__controls">
@@ -482,7 +431,7 @@ export default function AdminUsersTable({
             aria-modal="true"
             aria-labelledby="admin-confirm-title"
           >
-            <h2 id="admin-confirm-title">Move this application to Pending?</h2>
+            <h2 id="admin-confirm-title">Move This Application To Pending?</h2>
             <p>
               {displayOrDash(confirmRow.name)}
               {confirmRow.email.trim()
@@ -504,7 +453,7 @@ export default function AdminUsersTable({
                 disabled={Boolean(updatingId)}
                 onClick={() => void confirmMarkPending()}
               >
-                {updatingId === confirmRow.id ? "Updating..." : "Confirm"}
+                {updatingId === confirmRow.id ? "Updating…" : "Confirm"}
               </button>
             </div>
           </div>

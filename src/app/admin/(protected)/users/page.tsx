@@ -5,8 +5,8 @@ import { listApplications } from "@/lib/admin/applications";
 import { requireAdmin } from "@/lib/admin/auth";
 
 export const metadata: Metadata = {
-  title: "Users | Masqué Admin",
-  description: "Manage Masqué members and review account information.",
+  title: "Members | Masqué Admin",
+  description: "Manage Masqué Members and Review Account Information.",
 };
 
 export default async function AdminUsersPage() {
@@ -16,8 +16,8 @@ export default async function AdminUsersPage() {
   return (
     <AdminShell
       admin={admin}
-      title="Users"
-      description="Manage Masqué members and review account information."
+      title="Members"
+      description="Manage Masqué Members and Review Account Information."
     >
       <AdminUsersTable
         rows={result.ok ? result.records : []}

@@ -108,18 +108,43 @@ export const AGREEMENT_SIGNED_FIELD_KEY = "agreement-signed";
 /** Value written after Step 3 acknowledgments are accepted. */
 export const AGREEMENT_SIGNED_COMPLETED_VALUE = "completed";
 
-/** Memberstack custom field key for UI label "gov.ID". */
+/** Public apply URL base used to build the member referral link. */
+export const REFERRAL_APPLY_BASE_URL = "https://masque.co/apply";
+
+/**
+ * @deprecated Profile Referral Details now loads from Airtable People.
+ * Memberstack `referralcode` remains a protected system field and is not
+ * written from the Profile UI.
+ */
+export const REFERRAL_CODE_FIELD_KEY = "referralcode";
+
+/** @deprecated Prefer Airtable People "Referral Code" via /api/portal/referral-code. */
+export function getReferralCode(member: Member | null | undefined): string {
+  if (!member) return "";
+  const customFields = (member.customFields ?? {}) as Record<string, unknown>;
+  return fieldValue(customFields, REFERRAL_CODE_FIELD_KEY).trim();
+}
+
+export function buildReferralLink(referralCode: string): string {
+  const code = referralCode.trim();
+  if (!code) return "";
+  return `${REFERRAL_APPLY_BASE_URL}?ref=${encodeURIComponent(code)}`;
+}
+
+/** Memberstack custom field key for UI label "gov.ID" (legacy — no longer written). */
 export const GOV_ID_FIELD_KEY = "gov-id";
 
 /** Memberstack custom field key for UI label "Compliance Status". */
 export const COMPLIANCE_STATUS_FIELD_KEY = "compliance-state";
 
+/** @deprecated Government ID is stored in Airtable; do not use for onboarding gates. */
 export function getGovIdUrl(member: Member | null | undefined): string {
   if (!member) return "";
   const customFields = (member.customFields ?? {}) as Record<string, unknown>;
   return fieldValue(customFields, GOV_ID_FIELD_KEY).trim();
 }
 
+/** @deprecated Prefer Airtable "Government ID" attachment via /api/onboarding/gov-id-status. */
 export function hasGovId(member: Member | null | undefined): boolean {
   const value = getGovIdUrl(member);
   return Boolean(value);

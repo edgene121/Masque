@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import type { Member } from "@memberstack/dom";
 import { dispatch, foundationCards, navSections } from "@/data/dashboard";
-import { fetchFeaturedEvent } from "@/lib/airtable";
 import { getMemberstack } from "@/lib/memberstack";
 import {
   getOnboardingStatus,
@@ -59,12 +58,16 @@ export default function DashboardPage() {
     async function load() {
       try {
         const memberstack = getMemberstack();
-        const [{ data: currentMember }, event] = await Promise.all([
+        const [{ data: currentMember }, eventResponse] = await Promise.all([
           memberstack.getCurrentMember(),
-          fetchFeaturedEvent(),
+          fetch("/api/portal/events?scope=featured"),
         ]);
 
         if (!mounted) return;
+
+        const eventPayload = (await eventResponse.json().catch(() => null)) as {
+          event?: FeaturedEventData | null;
+        } | null;
 
         setMember(currentMember);
         setHeaderUser(
@@ -72,7 +75,7 @@ export default function DashboardPage() {
             ? mapMemberToHeaderUser(currentMember)
             : EMPTY_HEADER_USER,
         );
-        setFeaturedEvent(event);
+        setFeaturedEvent(eventPayload?.event ?? null);
 
         if (process.env.NODE_ENV === "development") {
           const status = getOnboardingStatus(currentMember);

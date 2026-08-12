@@ -8,8 +8,6 @@ import {
   AGREEMENT_SIGNED_FIELD_KEY,
   customFieldsForOnboardingStep1,
   emptyProfileForm,
-  GOV_ID_FIELD_KEY,
-  hasGovId,
   isAgreementSigned,
   mapMemberToHeaderUser,
   mapMemberToProfileForm,
@@ -75,13 +73,13 @@ function validateStep1(form: ProfileFormData): string | null {
 }
 
 function buildStep4Warnings(options: {
-  member: Member | null | undefined;
+  hasGovernmentId: boolean;
   allAgreementsAccepted: boolean;
 }): string[] {
-  const { member, allAgreementsAccepted } = options;
+  const { hasGovernmentId, allAgreementsAccepted } = options;
   const warnings: string[] = [];
 
-  if (!hasGovId(member)) {
+  if (!hasGovernmentId) {
     warnings.push(STEP4_GOV_ID_WARNING);
   }
 
@@ -92,22 +90,46 @@ function buildStep4Warnings(options: {
   return warnings;
 }
 
-async function uploadGovIdFile(file: File): Promise<string> {
+async function fetchGovernmentIdStatus(email: string): Promise<boolean> {
+  const trimmed = email.trim();
+  if (!trimmed) return false;
+
+  const response = await fetch(
+    `/api/onboarding/gov-id-status?email=${encodeURIComponent(trimmed)}`,
+  );
+  const payload = (await response.json()) as {
+    hasGovernmentId?: boolean;
+    error?: string;
+  };
+
+  if (!response.ok) {
+    return false;
+  }
+
+  return Boolean(payload.hasGovernmentId);
+}
+
+async function uploadGovIdFile(file: File, email: string): Promise<void> {
   const body = new FormData();
   body.append("file", file);
+  body.append("email", email.trim());
 
   const response = await fetch("/api/onboarding/gov-id-upload", {
     method: "POST",
     body,
   });
 
-  const payload = (await response.json()) as { url?: string; error?: string };
+  const payload = (await response.json()) as {
+    ok?: boolean;
+    uploaded?: boolean;
+    error?: string;
+  };
 
-  if (!response.ok || !payload.url) {
-    throw new Error(payload.error || "Unable to upload government ID.");
+  if (!response.ok || !payload.ok) {
+    throw new Error(
+      payload.error || "Unable to upload your ID document. Please try again.",
+    );
   }
-
-  return payload.url;
 }
 
 export default function CompleteProfilePage() {
@@ -119,6 +141,7 @@ export default function CompleteProfilePage() {
   const [acknowledgments, setAcknowledgments] = useState<AcknowledgmentState>(
     EMPTY_ACKNOWLEDGMENTS,
   );
+  /** From Airtable Applications "Government ID" attachment — not Memberstack. */
   const [hasExistingGovId, setHasExistingGovId] = useState(false);
   /** Session + Memberstack: once true, stays true for this wizard run. */
   const [agreementsAccepted, setAgreementsAccepted] = useState(false);
@@ -136,10 +159,20 @@ export default function CompleteProfilePage() {
   const applyMember = (member: Member) => {
     setForm(mapMemberToProfileForm(member));
     setHeaderUser(mapMemberToHeaderUser(member));
-    setHasExistingGovId(hasGovId(member));
     // Never clear a successful in-session acceptance if Memberstack lags.
     setAgreementsAccepted((prev) => prev || isAgreementSigned(member));
   };
+
+  const refreshGovernmentIdFromAirtable = useCallback(async (email: string) => {
+    try {
+      const hasId = await fetchGovernmentIdStatus(email);
+      setHasExistingGovId(hasId);
+      return hasId;
+    } catch {
+      setHasExistingGovId(false);
+      return false;
+    }
+  }, []);
 
   const loadMember = useCallback(async () => {
     setIsLoading(true);
@@ -160,6 +193,9 @@ export default function CompleteProfilePage() {
       }
 
       applyMember(member);
+      const mapped = mapMemberToProfileForm(member);
+      await refreshGovernmentIdFromAirtable(mapped.email);
+
       if (isAgreementSigned(member)) {
         setAcknowledgments((prev) =>
           areAllAcknowledgmentsChecked(prev)
@@ -181,7 +217,7 @@ export default function CompleteProfilePage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshGovernmentIdFromAirtable]);
 
   useEffect(() => {
     void loadMember();
@@ -192,33 +228,38 @@ export default function CompleteProfilePage() {
 
     void (async () => {
       const allChecked = areAllAcknowledgmentsChecked(acknowledgments);
+      const email = form.email.trim();
+      const hasId = email
+        ? await refreshGovernmentIdFromAirtable(email)
+        : false;
+
+      let agreementsOk = allChecked || agreementsAccepted;
       try {
         const { data: member } = await getMemberstack().getCurrentMember();
         if (member) {
-          setHasExistingGovId(hasGovId(member));
-          setAgreementsAccepted(
-            (prev) => prev || allChecked || isAgreementSigned(member),
-          );
+          agreementsOk = agreementsOk || isAgreementSigned(member);
+          setAgreementsAccepted((prev) => prev || agreementsOk);
         }
-        setStep4Warnings(
-          buildStep4Warnings({
-            member,
-            allAgreementsAccepted:
-              allChecked ||
-              agreementsAccepted ||
-              isAgreementSigned(member),
-          }),
-        );
       } catch {
-        setStep4Warnings(
-          buildStep4Warnings({
-            member: null,
-            allAgreementsAccepted: allChecked || agreementsAccepted,
-          }),
-        );
+        // Keep session agreement state.
       }
+
+      setStep4Warnings(
+        buildStep4Warnings({
+          hasGovernmentId: hasId,
+          allAgreementsAccepted: agreementsOk,
+        }),
+      );
     })();
-  }, [currentStep, isLoading, agreementsAccepted, acknowledgments]);
+    // Intentionally omit hasExistingGovId — refreshed inside this effect.
+  }, [
+    currentStep,
+    isLoading,
+    agreementsAccepted,
+    acknowledgments,
+    form.email,
+    refreshGovernmentIdFromAirtable,
+  ]);
 
   const handleFieldChange = (key: keyof ProfileFormData, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -255,6 +296,7 @@ export default function CompleteProfilePage() {
         if (member) applyMember(member);
       }
 
+      await refreshGovernmentIdFromAirtable(form.email);
       setStep2Error(null);
       setCurrentStep(2);
     } catch (err) {
@@ -274,24 +316,17 @@ export default function CompleteProfilePage() {
     setStep2Error(null);
 
     try {
-      const memberstack = getMemberstack();
-
       if (file) {
-        const hostedUrl = await uploadGovIdFile(file);
-
-        const { data: updated } = await memberstack.updateMember({
-          customFields: {
-            [GOV_ID_FIELD_KEY]: hostedUrl,
-          },
-        });
-
-        if (updated) {
-          applyMember(updated);
-        } else {
-          const { data: member } = await memberstack.getCurrentMember();
-          if (member) applyMember(member);
-          else setHasExistingGovId(true);
+        const email = form.email.trim();
+        if (!email) {
+          throw new Error(
+            "Email Address is required before uploading your government ID.",
+          );
         }
+
+        // Saves to Airtable only — does not write Memberstack gov-id.
+        await uploadGovIdFile(file, email);
+        setHasExistingGovId(true);
       }
 
       setStep3Error(null);
@@ -360,29 +395,29 @@ export default function CompleteProfilePage() {
     if (isSavingStep4) return;
 
     const allChecked = areAllAcknowledgmentsChecked(acknowledgments);
+    const email = form.email.trim();
+    const hasId = email
+      ? await refreshGovernmentIdFromAirtable(email)
+      : hasExistingGovId;
     const canSubmitNow =
-      hasExistingGovId && (allChecked || agreementsAccepted);
+      hasId && (allChecked || agreementsAccepted);
 
     if (!canSubmitNow) {
+      let agreementsOk = allChecked || agreementsAccepted;
       try {
         const { data: member } = await getMemberstack().getCurrentMember();
-        setStep4Warnings(
-          buildStep4Warnings({
-            member,
-            allAgreementsAccepted:
-              allChecked ||
-              agreementsAccepted ||
-              isAgreementSigned(member),
-          }),
-        );
+        agreementsOk =
+          agreementsOk || isAgreementSigned(member);
       } catch {
-        setStep4Warnings(
-          buildStep4Warnings({
-            member: null,
-            allAgreementsAccepted: allChecked || agreementsAccepted,
-          }),
-        );
+        // Keep session state.
       }
+
+      setStep4Warnings(
+        buildStep4Warnings({
+          hasGovernmentId: hasId,
+          allAgreementsAccepted: agreementsOk,
+        }),
+      );
       return;
     }
 
@@ -395,13 +430,18 @@ export default function CompleteProfilePage() {
       const allAgreementsAccepted =
         allChecked || agreementsAccepted || isAgreementSigned(member);
 
+      // Re-check Airtable Government ID (not Memberstack gov-id).
+      const confirmedHasId = email
+        ? await refreshGovernmentIdFromAirtable(email)
+        : hasId;
+
       const warnings = buildStep4Warnings({
-        member,
+        hasGovernmentId: confirmedHasId,
         allAgreementsAccepted,
       });
       setStep4Warnings(warnings);
 
-      if (warnings.length > 0 || !hasGovId(member)) {
+      if (warnings.length > 0 || !confirmedHasId) {
         return;
       }
 

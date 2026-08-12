@@ -1,69 +1,123 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import SectionHeading from "@/components/dashboard/SectionHeading";
-import FeaturedEventCard from "@/components/dashboard/FeaturedEventCard";
-import FoundationCard from "@/components/dashboard/FoundationCard";
-import CommunityFooterCard from "@/components/dashboard/CommunityFooterCard";
-import { foundationCards, navSections } from "@/data/dashboard";
-import { fetchFeaturedEvent } from "@/lib/airtable";
+import UpcomingEventFeature from "@/components/events/UpcomingEventFeature";
+import PastEventCard from "@/components/events/PastEventCard";
+import EventsFooter from "@/components/events/EventsFooter";
+import { navSections } from "@/data/dashboard";
+import {
+  formatGatheringTeaser,
+  type PortalEvent,
+} from "@/data/events";
 import { useMemberstackUser } from "@/lib/memberstack";
-import type { FeaturedEventData } from "@/types/dashboard";
-import heroBanner from "../../assets/featured-event.png";
 
-export default function EventsPage() {
+type EventsTab = "upcoming" | "past";
+
+interface EventsPageProps {
+  upcoming: PortalEvent[];
+  past: PortalEvent[];
+  loadError?: string | null;
+}
+
+export default function EventsPage({
+  upcoming,
+  past,
+  loadError = null,
+}: EventsPageProps) {
   const user = useMemberstackUser();
-  const [featuredEvent, setFeaturedEvent] = useState<FeaturedEventData | null>(
-    null
+  const [tab, setTab] = useState<EventsTab>("upcoming");
+
+  const featured = upcoming[0] ?? null;
+  const gatheringLine = useMemo(
+    () => (featured?.date ? formatGatheringTeaser(featured.date) : ""),
+    [featured],
   );
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function load() {
-      const event = await fetchFeaturedEvent();
-      if (!mounted || !event) return;
-      setFeaturedEvent({
-        ...event,
-        accessLabel: "MEMBERS ONLY",
-      });
-    }
-
-    void load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   return (
     <DashboardLayout user={user} navSections={navSections}>
-      <div className="events-main">
-        <section
-          className="events-hero"
-          style={{ backgroundImage: `url(${heroBanner.src})` }}
-        >
-          <div className="events-hero__overlay">
-            <h1 className="events-hero__title">Featured Events</h1>
-          </div>
-        </section>
+      <div className="events-page">
+        <header className="events-page__header">
+          <h1 className="events-page__title">Featured Events</h1>
+          {gatheringLine ? (
+            <p className="events-page__gathering">{gatheringLine}</p>
+          ) : null}
+        </header>
 
-        {featuredEvent ? (
-          <div className="events-featured">
-            <FeaturedEventCard event={featuredEvent} />
-          </div>
+        <div className="events-tabs" role="tablist" aria-label="Events">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "upcoming"}
+            className={`events-tabs__btn${tab === "upcoming" ? " is-active" : ""}`}
+            onClick={() => setTab("upcoming")}
+          >
+            Upcoming Events
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "past"}
+            className={`events-tabs__btn${tab === "past" ? " is-active" : ""}`}
+            onClick={() => setTab("past")}
+          >
+            Past Events
+          </button>
+        </div>
+
+        {loadError ? (
+          <p className="events-page__empty">{loadError}</p>
         ) : null}
 
-        <SectionHeading>Community Foundation</SectionHeading>
-        <div className="foundation-grid">
-          {foundationCards.map((card) => (
-            <FoundationCard key={card.id} card={card} />
-          ))}
-        </div>
+        {!loadError && tab === "upcoming" ? (
+          <section
+            className="events-upcoming"
+            role="tabpanel"
+            aria-label="Upcoming Events"
+          >
+            {featured ? (
+              <UpcomingEventFeature event={featured} />
+            ) : (
+              <p className="events-page__empty">No Upcoming Events</p>
+            )}
+          </section>
+        ) : null}
 
-        <div className="events-footer-wrap">
-          <CommunityFooterCard />
-        </div>
+        {!loadError && tab === "past" ? (
+          <section
+            className="events-past"
+            role="tabpanel"
+            aria-label="Past Events"
+          >
+            <h2 className="events-past__heading">Past Events</h2>
+
+            {past.length > 0 ? (
+              <div className="events-past__grid">
+                {past.map((event) => (
+                  <PastEventCard key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <p className="events-page__empty">No Past Events</p>
+            )}
+          </section>
+        ) : null}
+
+        {!loadError && tab === "upcoming" && past.length > 0 ? (
+          <section
+            className="events-past events-past--below"
+            aria-label="Past Events"
+          >
+            <h2 className="events-past__heading">Past Events</h2>
+            <div className="events-past__grid">
+              {past.map((event) => (
+                <PastEventCard key={`below-${event.id}`} event={event} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <EventsFooter />
       </div>
     </DashboardLayout>
   );

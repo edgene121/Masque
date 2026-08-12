@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
+import AdminUserDetail from "@/components/admin/AdminUserDetail";
 import { requireAdmin } from "@/lib/admin/auth";
+import { getApplicationDetailById } from "@/lib/admin/applications";
 
 export const metadata: Metadata = {
-  title: "User Detail | Masqué Admin",
-  description: "Application detail.",
+  title: "Member Detail | Masqué Admin",
+  description: "Member Application detail and Admin review.",
 };
 
 interface AdminUserDetailPageProps {
@@ -18,25 +20,57 @@ export default async function AdminUserDetailPage({
   const admin = await requireAdmin();
   const { id } = await params;
 
+  if (!id || !/^rec[a-zA-Z0-9]+$/.test(id)) {
+    return (
+      <AdminShell
+        admin={admin}
+        title="Member Detail"
+        description="Member Application record detail."
+      >
+        <section className="admin-card admin-detail-missing">
+          <p className="admin-card__body">Application Not Found</p>
+          <p style={{ marginTop: "20px" }}>
+            <Link href="/admin/users" className="admin-table-action">
+              Back to Members
+            </Link>
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
+
+  const result = await getApplicationDetailById(id);
+
+  if (!result.ok) {
+    return (
+      <AdminShell
+        admin={admin}
+        title="Member Detail"
+        description="Member Application record detail."
+      >
+        <section className="admin-card admin-detail-missing">
+          <p className="admin-card__body">
+            {result.status === 404
+              ? "Application Not Found"
+              : result.error}
+          </p>
+          <p style={{ marginTop: "20px" }}>
+            <Link href="/admin/users" className="admin-table-action">
+              Back to Members
+            </Link>
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
+
   return (
     <AdminShell
       admin={admin}
-      title="User Detail"
-      description="Application record detail."
+      title="Member Detail"
+      description="Review Member details, Government ID, and Vetting Status."
     >
-      <section className="admin-card" style={{ padding: "20px" }}>
-        <p className="admin-card__body">
-          Application ID: <strong>{id}</strong>
-        </p>
-        <p className="admin-card__body" style={{ marginTop: "12px" }}>
-          Full applicant detail will be connected in a later step.
-        </p>
-        <p style={{ marginTop: "20px" }}>
-          <Link href="/admin/users" className="admin-table-action">
-            Back to Users
-          </Link>
-        </p>
-      </section>
+      <AdminUserDetail detail={result.detail} />
     </AdminShell>
   );
 }

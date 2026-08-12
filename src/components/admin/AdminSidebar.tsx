@@ -18,7 +18,7 @@ interface AdminSidebarProps {
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/users", label: "Members", icon: Users },
 ] as const;
 
 export default function AdminSidebar({

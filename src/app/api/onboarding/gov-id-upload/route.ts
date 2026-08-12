@@ -1,26 +1,33 @@
 import { NextResponse } from "next/server";
 import {
-  isCloudinaryConfigured,
-  uploadGovIdToCloudinary,
+  uploadGovernmentIdFileByEmail,
   validateGovIdFile,
-} from "@/lib/cloudinary";
+} from "@/lib/admin/government-id";
 
 export const runtime = "nodejs";
 
+const GENERIC_UPLOAD_ERROR =
+  "Unable to upload your ID document. Please try again.";
+
+/**
+ * Upload government ID file bytes directly to Airtable
+ * Applications "Government ID" attachment field.
+ * Does NOT use Cloudinary or Memberstack for file storage.
+ */
 export async function POST(request: Request) {
   try {
-    if (!isCloudinaryConfigured()) {
-      return NextResponse.json(
-        {
-          error:
-            "Document upload is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET on the server.",
-        },
-        { status: 503 },
-      );
-    }
-
     const formData = await request.formData();
     const file = formData.get("file");
+    const emailRaw = formData.get("email");
+    const email =
+      typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";
+
+    if (!email) {
+      return NextResponse.json(
+        { error: "Email is required to save your government ID." },
+        { status: 400 },
+      );
+    }
 
     if (!(file instanceof File)) {
       return NextResponse.json(
@@ -34,15 +41,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const url = await uploadGovIdToCloudinary(file);
+    const result = await uploadGovernmentIdFileByEmail(email, file);
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status },
+      );
+    }
 
-    return NextResponse.json({ url });
+    return NextResponse.json({ ok: true, uploaded: true });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unable to upload government ID. Please try again.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[Gov ID Upload] unexpected error:", error);
+    return NextResponse.json({ error: GENERIC_UPLOAD_ERROR }, { status: 500 });
   }
 }
