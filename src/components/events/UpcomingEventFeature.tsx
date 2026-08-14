@@ -143,7 +143,13 @@ export default function UpcomingEventFeature({
 
         {metaParts.length > 0 ? (
           <p className="events-feature-card__meta-line">
-            {metaParts.join("   •   ")}
+            {location ? <span>{location}</span> : null}
+            {location && dateLabel ? (
+              <span className="events-feature-card__meta-dot" aria-hidden="true">
+                •
+              </span>
+            ) : null}
+            {dateLabel ? <span>{dateLabel}</span> : null}
           </p>
         ) : null}
 
