@@ -58,16 +58,44 @@ const LOCATION_FIELD_NAMES = [
 const DESCRIPTION_FIELD_NAMES = [
   "Description",
   "Event Description",
+  "Long Description",
+  "Short Description",
+  "Full Description",
   "About",
   "Details",
   "Event Details",
+  "Event Info",
+  "Info",
   "Summary",
+  "Event Summary",
   "Body",
   "Notes",
   "Copy",
   "Blurb",
   "Overview",
+  "Intro",
+  "Synopsis",
+  "Content",
+  "Event Content",
+  "Narrative",
+  "Writeup",
+  "Caption",
 ];
+
+const SERIES_FIELD_NAMES = [
+  "Eyebrow",
+  "Series Line",
+  "Event Series",
+  "Series",
+  "Category",
+  "Event Category",
+  "Collection",
+  "Theme",
+  "Season",
+  "Subtitle",
+];
+
+const BRAND_FIELD_NAMES = ["Brand", "Brand Name"];
 
 const IMAGE_FIELD_NAMES = [
   "Featured Image",
@@ -142,6 +170,7 @@ function asDisplayString(value: unknown): string {
       asTrimmedString(value.name) ||
       asTrimmedString(value.label) ||
       asTrimmedString(value.text) ||
+      asTrimmedString(value.value) ||
       ""
     );
   }
@@ -359,11 +388,55 @@ function resolveLocation(fields: AirtableEventFields): string {
 }
 
 function resolveDescription(fields: AirtableEventFields): string {
-  return resolveByNamesOrPattern(
+  const named = resolveByNamesOrPattern(
     fields,
     DESCRIPTION_FIELD_NAMES,
-    /description|about|details|summary|blurb|overview|copy/i,
+    /description|about|details|summary|blurb|overview|copy|info|intro|synopsis|narrative|writeup/i,
   );
+  if (named) return named;
+
+  let longest = "";
+  for (const [key, value] of Object.entries(fields)) {
+    if (
+      /email|url|link|id|status|date|image|photo|poster|flyer|attachment/i.test(
+        key,
+      )
+    ) {
+      continue;
+    }
+    if (looksLikeAttachmentValue(value)) continue;
+    const text = asDisplayString(value);
+    if (isHttpUrl(text)) continue;
+    if (text.length >= 80 && text.length > longest.length) {
+      longest = text;
+    }
+  }
+
+  return longest;
+}
+
+function resolveSeries(fields: AirtableEventFields, nameSplitBrand: string): string {
+  const dedicatedLine = asDisplayString(
+    getFieldByNames(fields, ["Eyebrow", "Series Line"]),
+  );
+  if (dedicatedLine) return dedicatedLine;
+
+  const brand =
+    asDisplayString(getFieldByNames(fields, BRAND_FIELD_NAMES)) ||
+    nameSplitBrand;
+  const series = resolveByNamesOrPattern(
+    fields,
+    SERIES_FIELD_NAMES,
+    /series|category|collection|theme|season|subtitle/i,
+  );
+
+  if (brand && series && brand.toLowerCase() !== series.toLowerCase()) {
+    if (series.includes("·") || series.includes("•")) return series;
+    if (brand.includes("·") || brand.includes("•")) return brand;
+    return `${brand} · ${series}`;
+  }
+
+  return series || brand || "";
 }
 
 function isProbablyImageUrl(url: string): boolean {
@@ -418,6 +491,7 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
   if (!fullName && !date) return null;
 
   const { brandTitle, name } = splitEventName(fullName);
+  const series = resolveSeries(fields, brandTitle);
   const slug = resolveSlug(fields, record.id, fullName);
   const today = todayIsoDate();
   const status = asDisplayString(getFieldByNames(fields, STATUS_FIELD_NAMES));
@@ -441,6 +515,7 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
   return {
     id: record.id,
     brandTitle,
+    series,
     name: name || fullName || "Event",
     location: resolveLocation(fields),
     date,

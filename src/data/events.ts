@@ -6,6 +6,11 @@ export interface PortalEvent {
   id: string;
   /** Optional eyebrow / series line from Airtable Name split */
   brandTitle: string;
+  /**
+   * Dedicated Airtable series/category/brand line for the featured eyebrow.
+   * Independent of Name-colon splitting so Past Event cards stay unchanged.
+   */
+  series: string;
   /** Primary event title */
   name: string;
   location: string;

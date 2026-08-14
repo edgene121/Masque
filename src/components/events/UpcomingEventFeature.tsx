@@ -78,8 +78,19 @@ function resolveFeaturedCopy(event: PortalEvent): {
   eyebrow: string;
   title: string;
 } {
+  const series = event.series.trim();
   const brand = splitTrailingDate(event.brandTitle).text;
   const name = splitTrailingDate(event.name).text;
+
+  if (series) {
+    const eyebrow =
+      series.includes("·") || series.includes("•") || !brand
+        ? series
+        : brand.toLowerCase() === series.toLowerCase()
+          ? series
+          : `${brand} · ${series}`;
+    return { eyebrow, title: name };
+  }
 
   if (brand && name) {
     const words = name.split(/\s+/).filter(Boolean);
