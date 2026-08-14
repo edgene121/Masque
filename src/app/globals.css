@@ -2309,7 +2309,8 @@ body {
   opacity: 0.85;
 }
 
-.events-feature-card__body {
+.events-feature-card__body,
+.featured-event-content {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2317,48 +2318,55 @@ body {
   align-self: stretch;
   gap: 0;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  min-width: 0;
   padding: 4px 8px 4px 2px;
   background: transparent;
-  min-width: 0;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .events-feature-card__brand {
   margin: 0 0 8px;
+  max-width: 100%;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.28em;
   line-height: 1.2;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
   color: rgba(245, 240, 232, 0.88);
 }
 
-.events-feature-card__name {
+.events-feature-card__name,
+.featured-event-title {
   margin: 0 0 10px;
+  max-width: 100%;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
   font-size: clamp(30px, 3.6vw, 40px);
   font-weight: 600;
-  line-height: 0.95;
+  line-height: 1.05;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
   color: #ff2d6a;
 }
 
 .events-feature-card__meta-line {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin: 0 0 12px;
+  max-width: 100%;
   font-family: var(--font-body), Inter, sans-serif;
   font-size: 13px;
   font-weight: 400;
   letter-spacing: 0.02em;
-  white-space: nowrap;
+  white-space: normal;
   color: rgba(245, 240, 232, 0.82);
 }
 
@@ -2370,7 +2378,7 @@ body {
 
 .events-feature-card__desc {
   margin: 0 0 14px;
-  max-width: 38ch;
+  max-width: 100%;
   font-size: 13px;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.78);
@@ -2382,8 +2390,7 @@ body {
   justify-content: center;
   align-self: flex-start;
   width: 250px;
-  min-width: 240px;
-  max-width: 260px;
+  max-width: 100%;
   height: 58px;
   min-height: 56px;
   margin: 0;

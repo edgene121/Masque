@@ -58,12 +58,28 @@ function resolveFeaturedImageSrc(event: PortalEvent): string {
 }
 
 /** Display-only split so eyebrow/title match the reference without altering Airtable fetch. */
+const TRAILING_DATE_PATTERN =
+  /\s*[-–—]\s*(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s*$/i;
+
+function splitTrailingDate(value: string): { text: string; dateText: string } {
+  const trimmed = value.trim();
+  const match = trimmed.match(TRAILING_DATE_PATTERN);
+  if (!match || match.index == null) {
+    return { text: trimmed, dateText: "" };
+  }
+
+  return {
+    text: trimmed.slice(0, match.index).trim(),
+    dateText: match[0].replace(/^\s*[-–—]\s*/, "").replace(/\s+/g, " ").trim(),
+  };
+}
+
 function resolveFeaturedCopy(event: PortalEvent): {
   eyebrow: string;
   title: string;
 } {
-  const brand = event.brandTitle.trim();
-  const name = event.name.trim();
+  const brand = splitTrailingDate(event.brandTitle).text;
+  const name = splitTrailingDate(event.name).text;
 
   if (brand && name) {
     const words = name.split(/\s+/).filter(Boolean);
@@ -101,8 +117,11 @@ export default function UpcomingEventFeature({
   const hasImage = Boolean(imageSrc);
   const { eyebrow, title } = resolveFeaturedCopy(event);
   const location = event.location.trim();
-  const dateLabel = event.date ? formatPortalEventDate(event.date) : "";
-  const metaParts = [location, dateLabel].filter(Boolean);
+  const dateFromName = splitTrailingDate(event.name).dateText;
+  const dateLabel = event.date
+    ? formatPortalEventDate(event.date)
+    : dateFromName;
+  const description = event.description.trim();
   const altText = [eyebrow, title].filter(Boolean).join(" ") || "Event";
 
   return (
@@ -134,14 +153,18 @@ export default function UpcomingEventFeature({
         ) : null}
       </div>
 
-      <div className="events-feature-card__body">
+      <div className="events-feature-card__body featured-event-content">
         {eyebrow ? (
           <p className="events-feature-card__brand">{eyebrow}</p>
         ) : null}
 
-        {title ? <h2 className="events-feature-card__name">{title}</h2> : null}
+        {title ? (
+          <h2 className="events-feature-card__name featured-event-title">
+            {title}
+          </h2>
+        ) : null}
 
-        {metaParts.length > 0 ? (
+        {location || dateLabel ? (
           <p className="events-feature-card__meta-line">
             {location ? <span>{location}</span> : null}
             {location && dateLabel ? (
@@ -153,8 +176,8 @@ export default function UpcomingEventFeature({
           </p>
         ) : null}
 
-        {event.description.trim() ? (
-          <p className="events-feature-card__desc">{event.description}</p>
+        {description ? (
+          <p className="events-feature-card__desc">{description}</p>
         ) : null}
 
         {/^https?:\/\//i.test(event.href) ? (
