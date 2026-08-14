@@ -2285,7 +2285,8 @@ body {
   box-sizing: border-box;
 }
 
-.events-feature-card__media img {
+.events-feature-card__media img,
+.events-feature-card__media .featured-event-poster {
   display: block;
   width: 100%;
   max-width: 280px;
@@ -2294,6 +2295,13 @@ body {
   object-fit: contain;
   object-position: center;
   border-radius: 8px;
+}
+
+.featured-event-poster {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .events-feature-card__media.is-fallback img {

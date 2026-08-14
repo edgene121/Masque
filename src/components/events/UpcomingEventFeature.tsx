@@ -1,11 +1,60 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { PortalEvent } from "@/data/events";
 import { formatPortalEventDate } from "@/data/events";
 
 interface UpcomingEventFeatureProps {
   event: PortalEvent;
+}
+
+/** Local posters in /public/events — keyed by slug, used before Airtable. */
+const localEventImages: Record<string, string> = {
+  "le-reve-noir": "/events/le-reve-noir.png",
+};
+
+function slugifyKey(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function eventImageKeys(event: PortalEvent): string[] {
+  const keys: string[] = [];
+  const push = (value: string) => {
+    const slug = slugifyKey(value);
+    if (slug) keys.push(slug);
+  };
+
+  push(event.name);
+  push(event.brandTitle);
+  push([event.brandTitle, event.name].filter(Boolean).join(" "));
+
+  try {
+    const path = /^https?:\/\//i.test(event.href)
+      ? new URL(event.href).pathname
+      : event.href;
+    const last = path.split("/").filter(Boolean).pop();
+    if (last) push(decodeURIComponent(last));
+  } catch {
+    // ignore malformed href
+  }
+
+  return keys;
+}
+
+function resolveFeaturedImageSrc(event: PortalEvent): string {
+  const keys = eventImageKeys(event);
+  for (const [id, src] of Object.entries(localEventImages)) {
+    if (keys.some((key) => key === id || key.includes(id))) {
+      return src;
+    }
+  }
+  return event.imageSrc?.trim() ?? "";
 }
 
 /** Display-only split so eyebrow/title match the reference without altering Airtable fetch. */
@@ -47,8 +96,9 @@ function resolveFeaturedCopy(event: PortalEvent): {
 export default function UpcomingEventFeature({
   event,
 }: UpcomingEventFeatureProps) {
-  const imageSrc = event.imageSrc?.trim() ?? "";
-  const hasAirtableImage = Boolean(imageSrc);
+  const imageSrc = resolveFeaturedImageSrc(event);
+  const isLocalImage = imageSrc.startsWith("/events/");
+  const hasImage = Boolean(imageSrc);
   const { eyebrow, title } = resolveFeaturedCopy(event);
   const location = event.location.trim();
   const dateLabel = event.date ? formatPortalEventDate(event.date) : "";
@@ -58,13 +108,27 @@ export default function UpcomingEventFeature({
   return (
     <article className="events-feature-card">
       <div
-        className={`events-feature-card__media${hasAirtableImage ? "" : " is-fallback"}`}
+        className={`events-feature-card__media${hasImage ? "" : " is-fallback"}`}
       >
-        {hasAirtableImage ? (
+        {isLocalImage ? (
+          <Image
+            src={imageSrc}
+            alt={
+              imageSrc.endsWith("le-reve-noir.png")
+                ? "Le Rêve Noir event poster"
+                : altText
+            }
+            width={600}
+            height={900}
+            className="featured-event-poster"
+            style={{ width: "100%", height: "auto" }}
+          />
+        ) : hasImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageSrc}
             alt={altText}
+            className="featured-event-poster"
             referrerPolicy="no-referrer"
           />
         ) : null}
