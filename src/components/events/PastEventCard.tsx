@@ -36,7 +36,11 @@ export default function PastEventCard({ event }: PastEventCardProps) {
       >
         {hasImage ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={event.imageSrc} alt={title} />
+          <img
+            src={event.imageSrc}
+            alt={title}
+            referrerPolicy="no-referrer"
+          />
         ) : null}
       </div>
 
@@ -59,9 +63,20 @@ export default function PastEventCard({ event }: PastEventCardProps) {
           ) : null}
         </div>
 
-        <Link href={event.href} className="events-past-card__cta">
-          View Event
-        </Link>
+        {/^https?:\/\//i.test(event.href) ? (
+          <a
+            href={event.href}
+            className="events-past-card__cta"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View Event
+          </a>
+        ) : (
+          <Link href={event.href} className="events-past-card__cta">
+            View Event
+          </Link>
+        )}
       </div>
     </article>
   );

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import type { PortalEvent } from "@/data/events";
 import { formatPortalEventDate } from "@/data/events";
-import featuredEventImage from "../../assets/featured-event.png";
 
 interface UpcomingEventFeatureProps {
   event: PortalEvent;
@@ -48,8 +47,8 @@ function resolveFeaturedCopy(event: PortalEvent): {
 export default function UpcomingEventFeature({
   event,
 }: UpcomingEventFeatureProps) {
-  const hasAirtableImage = Boolean(event.imageSrc?.trim());
-  const imageSrc = event.imageSrc?.trim() || featuredEventImage.src;
+  const imageSrc = event.imageSrc?.trim() ?? "";
+  const hasAirtableImage = Boolean(imageSrc);
   const { eyebrow, title } = resolveFeaturedCopy(event);
   const location = event.location.trim();
   const dateLabel = event.date ? formatPortalEventDate(event.date) : "";
@@ -61,8 +60,14 @@ export default function UpcomingEventFeature({
       <div
         className={`events-feature-card__media${hasAirtableImage ? "" : " is-fallback"}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageSrc} alt={altText} />
+        {hasAirtableImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageSrc}
+            alt={altText}
+            referrerPolicy="no-referrer"
+          />
+        ) : null}
       </div>
 
       <div className="events-feature-card__body">
@@ -82,9 +87,20 @@ export default function UpcomingEventFeature({
           <p className="events-feature-card__desc">{event.description}</p>
         ) : null}
 
-        <Link href={event.href} className="events-feature-card__cta">
-          View Event
-        </Link>
+        {/^https?:\/\//i.test(event.href) ? (
+          <a
+            href={event.href}
+            className="events-feature-card__cta"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View Event
+          </a>
+        ) : (
+          <Link href={event.href} className="events-feature-card__cta">
+            View Event
+          </Link>
+        )}
       </div>
     </article>
   );

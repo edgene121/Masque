@@ -8,28 +8,7 @@ import type { FeaturedEventData } from "@/types/dashboard";
 const EVENTS_TABLE =
   process.env.AIRTABLE_EVENTS_TABLE?.trim() || "Events";
 
-interface AirtableAttachment {
-  url?: string;
-  filename?: string;
-  type?: string;
-}
-
 interface AirtableEventFields {
-  Name?: unknown;
-  Date?: unknown;
-  DateFormatted?: unknown;
-  Status?: unknown;
-  Location?: unknown;
-  Venue?: unknown;
-  Description?: unknown;
-  "Event ID"?: unknown;
-  "Event URL"?: unknown;
-  "Event Link"?: unknown;
-  "General Link"?: unknown;
-  "Featured Image"?: unknown;
-  Poster?: unknown;
-  Image?: unknown;
-  Photos?: unknown;
   [key: string]: unknown;
 }
 
@@ -49,6 +28,93 @@ export type PortalEventsResult =
   | { ok: true; upcoming: PortalEvent[]; past: PortalEvent[] }
   | { ok: false; error: string };
 
+const TITLE_FIELD_NAMES = [
+  "Name",
+  "Title",
+  "Event Name",
+  "Event Title",
+  "Event",
+];
+
+const DATE_FIELD_NAMES = [
+  "Date",
+  "Event Date",
+  "Start Date",
+  "Starts",
+  "When",
+];
+
+const LOCATION_FIELD_NAMES = [
+  "Location",
+  "Venue",
+  "Venue Name",
+  "Event Location",
+  "City",
+  "Address",
+  "Place",
+  "Where",
+];
+
+const DESCRIPTION_FIELD_NAMES = [
+  "Description",
+  "Event Description",
+  "About",
+  "Details",
+  "Event Details",
+  "Summary",
+  "Body",
+  "Notes",
+  "Copy",
+  "Blurb",
+  "Overview",
+];
+
+const IMAGE_FIELD_NAMES = [
+  "Featured Image",
+  "Poster",
+  "Flyer",
+  "Event Flyer",
+  "Event Poster",
+  "Event Image",
+  "Cover Image",
+  "Cover",
+  "Image",
+  "Photo",
+  "Photos",
+  "Artwork",
+  "Thumbnail",
+  "Hero",
+  "Banner",
+  "Graphic",
+  "Attachments",
+  "Attachment",
+  "Media",
+  "Visual",
+];
+
+const URL_FIELD_NAMES = [
+  "Event URL",
+  "Event Link",
+  "General Link",
+  "URL",
+  "Link",
+  "Website",
+  "RSVP",
+  "RSVP Link",
+  "Ticket URL",
+  "Tickets",
+];
+
+const STATUS_FIELD_NAMES = ["Status", "Event Status", "State"];
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isRecordId(value: string): boolean {
+  return /^rec[a-zA-Z0-9]{10,}$/.test(value);
+}
+
 function asTrimmedString(value: unknown): string {
   if (value == null) return "";
   if (typeof value === "string") return value.trim();
@@ -58,11 +124,139 @@ function asTrimmedString(value: unknown): string {
   return "";
 }
 
-function firstAttachmentUrl(value: unknown): string {
-  if (!Array.isArray(value) || value.length === 0) return "";
-  const first = value[0] as AirtableAttachment;
-  if (!first || typeof first !== "object") return "";
-  return asTrimmedString(first.url);
+/** Display text from strings, selects, lookups, and linked-record name arrays. */
+function asDisplayString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value).trim();
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => asDisplayString(item))
+      .filter((part) => part && !isRecordId(part))
+      .join(", ");
+  }
+  if (isPlainObject(value)) {
+    return (
+      asTrimmedString(value.name) ||
+      asTrimmedString(value.label) ||
+      asTrimmedString(value.text) ||
+      ""
+    );
+  }
+  return "";
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function thumbnailUrl(value: unknown): string {
+  if (!isPlainObject(value)) return "";
+  for (const size of ["full", "large", "small"] as const) {
+    const thumb = value[size];
+    if (isPlainObject(thumb)) {
+      const url = asTrimmedString(thumb.url);
+      if (isHttpUrl(url)) return url;
+    }
+  }
+  return "";
+}
+
+/**
+ * Pull the first usable HTTP URL from an attachment array, nested lookup,
+ * button field, or plain URL string.
+ */
+function extractHttpUrl(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return isHttpUrl(trimmed) ? trimmed : "";
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = extractHttpUrl(item);
+      if (found) return found;
+    }
+    return "";
+  }
+  if (isPlainObject(value)) {
+    const direct = asTrimmedString(value.url);
+    if (isHttpUrl(direct)) return direct;
+    const fromThumbs = thumbnailUrl(value.thumbnails);
+    if (fromThumbs) return fromThumbs;
+  }
+  return "";
+}
+
+function looksLikeAttachmentValue(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return false;
+    return value.some((item) => looksLikeAttachmentValue(item));
+  }
+  if (!isPlainObject(value)) return false;
+  if (typeof value.url === "string" && isHttpUrl(value.url)) return true;
+  if (typeof value.filename === "string" && value.filename.trim()) return true;
+  return Boolean(thumbnailUrl(value.thumbnails));
+}
+
+function getFieldByNames(
+  fields: AirtableEventFields,
+  names: string[],
+): unknown {
+  for (const name of names) {
+    if (!Object.prototype.hasOwnProperty.call(fields, name)) continue;
+    const value = fields[name];
+    if (value != null && value !== "") return value;
+  }
+
+  const lowerToKey = new Map(
+    Object.keys(fields).map((key) => [key.toLowerCase(), key]),
+  );
+  for (const name of names) {
+    const key = lowerToKey.get(name.toLowerCase());
+    if (!key) continue;
+    const value = fields[key];
+    if (value != null && value !== "") return value;
+  }
+
+  return undefined;
+}
+
+function describeFieldKind(value: unknown): string {
+  if (value == null) return "empty";
+  if (typeof value === "string") return "string";
+  if (typeof value === "number" || typeof value === "boolean") {
+    return typeof value;
+  }
+  if (Array.isArray(value)) {
+    if (looksLikeAttachmentValue(value)) return "attachment[]";
+    if (value.length === 0) return "array(empty)";
+    if (typeof value[0] === "string") return "string[]";
+    if (Array.isArray(value[0])) return "nested-array";
+    if (isPlainObject(value[0])) return "object[]";
+    return "array";
+  }
+  if (isPlainObject(value)) {
+    if (looksLikeAttachmentValue(value)) return "attachment";
+    return "object";
+  }
+  return typeof value;
+}
+
+function logEventFieldInventory(records: AirtableEventRecord[]): void {
+  if (process.env.NODE_ENV !== "development" || records.length === 0) return;
+
+  const kinds: Record<string, string> = {};
+  for (const record of records) {
+    for (const [key, value] of Object.entries(record.fields ?? {})) {
+      if (!kinds[key]) kinds[key] = describeFieldKind(value);
+    }
+  }
+
+  console.info("[Events Airtable] field names:", Object.keys(kinds));
+  console.info("[Events Airtable] field kinds:", kinds);
 }
 
 function todayIsoDate(): string {
@@ -111,11 +305,15 @@ function splitEventName(fullName: string): { brandTitle: string; name: string } 
   return { brandTitle: "", name: trimmed };
 }
 
-function resolveSlug(fields: AirtableEventFields, recordId: string): string {
-  const eventId = asTrimmedString(fields["Event ID"]);
-  if (eventId) return eventId;
+function resolveSlug(
+  fields: AirtableEventFields,
+  recordId: string,
+  fullName: string,
+): string {
+  const eventId = asDisplayString(getFieldByNames(fields, ["Event ID", "Slug"]));
+  if (eventId && !isHttpUrl(eventId)) return eventId;
 
-  const eventUrl = asTrimmedString(fields["Event URL"]);
+  const eventUrl = extractHttpUrl(getFieldByNames(fields, URL_FIELD_NAMES));
   if (eventUrl) {
     try {
       const url = new URL(eventUrl);
@@ -129,58 +327,115 @@ function resolveSlug(fields: AirtableEventFields, recordId: string): string {
     }
   }
 
-  const fromName = slugify(asTrimmedString(fields.Name));
+  const fromName = slugify(fullName);
   if (fromName) return fromName;
 
   return recordId;
 }
 
+function resolveByNamesOrPattern(
+  fields: AirtableEventFields,
+  names: string[],
+  pattern: RegExp,
+): string {
+  const fromNames = asDisplayString(getFieldByNames(fields, names));
+  if (fromNames) return fromNames;
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (!pattern.test(key)) continue;
+    const text = asDisplayString(value);
+    if (text) return text;
+  }
+
+  return "";
+}
+
 function resolveLocation(fields: AirtableEventFields): string {
-  return (
-    asTrimmedString(fields.Location) ||
-    asTrimmedString(fields.Venue) ||
-    asTrimmedString(fields["Venue Name"]) ||
-    ""
+  return resolveByNamesOrPattern(
+    fields,
+    LOCATION_FIELD_NAMES,
+    /location|venue|city|address|place/i,
   );
 }
 
 function resolveDescription(fields: AirtableEventFields): string {
-  return (
-    asTrimmedString(fields.Description) ||
-    asTrimmedString(fields["Event Description"]) ||
-    asTrimmedString(fields.About) ||
-    ""
+  return resolveByNamesOrPattern(
+    fields,
+    DESCRIPTION_FIELD_NAMES,
+    /description|about|details|summary|blurb|overview|copy/i,
   );
 }
 
+function isProbablyImageUrl(url: string): boolean {
+  if (!isHttpUrl(url)) return false;
+  if (/\.(avif|gif|jpe?g|png|svg|webp)(\?|$)/i.test(url)) return true;
+  return /airtableusercontent\.com|dl\.airtable\.com/i.test(url);
+}
+
 function resolveImage(fields: AirtableEventFields): string {
-  return (
-    firstAttachmentUrl(fields["Featured Image"]) ||
-    firstAttachmentUrl(fields.Poster) ||
-    firstAttachmentUrl(fields.Image) ||
-    firstAttachmentUrl(fields.Photos) ||
-    ""
-  );
+  for (const name of IMAGE_FIELD_NAMES) {
+    const value = getFieldByNames(fields, [name]);
+    if (value == null) continue;
+    const url = extractHttpUrl(value);
+    if (url && (looksLikeAttachmentValue(value) || isProbablyImageUrl(url))) {
+      return url;
+    }
+  }
+
+  for (const value of Object.values(fields)) {
+    if (!looksLikeAttachmentValue(value)) continue;
+    const url = extractHttpUrl(value);
+    if (url) return url;
+  }
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (!/image|photo|poster|flyer|cover|art|thumb|media|graphic|banner|hero/i.test(key)) {
+      continue;
+    }
+    const url = extractHttpUrl(value);
+    if (url && isProbablyImageUrl(url)) return url;
+  }
+
+  return "";
+}
+
+function resolveHref(
+  fields: AirtableEventFields,
+  slug: string,
+): string {
+  const external = extractHttpUrl(getFieldByNames(fields, URL_FIELD_NAMES));
+  if (external) return external;
+  return `/events/${encodeURIComponent(slug)}`;
 }
 
 function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
   if (!record?.id) return null;
   const fields = record.fields ?? {};
-  const fullName = asTrimmedString(fields.Name);
-  const date = normalizeEventDate(asTrimmedString(fields.Date));
+  const fullName = asDisplayString(getFieldByNames(fields, TITLE_FIELD_NAMES));
+  const date = normalizeEventDate(
+    asDisplayString(getFieldByNames(fields, DATE_FIELD_NAMES)),
+  );
   if (!fullName && !date) return null;
 
   const { brandTitle, name } = splitEventName(fullName);
-  const slug = resolveSlug(fields, record.id);
+  const slug = resolveSlug(fields, record.id, fullName);
   const today = todayIsoDate();
+  const status = asDisplayString(getFieldByNames(fields, STATUS_FIELD_NAMES));
+  const statusLower = status.toLowerCase();
   const kind: "upcoming" | "past" =
     date && date < today ? "past" : "upcoming";
 
   // Events without a usable date are treated as upcoming only if Status is Open;
   // otherwise skip undated closed rows from featured/past grids.
   if (!date) {
-    const status = asTrimmedString(fields.Status).toLowerCase();
-    if (status === "closed") return null;
+    if (
+      statusLower === "closed" ||
+      statusLower === "past" ||
+      statusLower === "completed" ||
+      statusLower === "ended"
+    ) {
+      return null;
+    }
   }
 
   return {
@@ -190,9 +445,9 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
     location: resolveLocation(fields),
     date,
     description: resolveDescription(fields),
-    href: `/events/${encodeURIComponent(slug)}`,
+    href: resolveHref(fields, slug),
     imageSrc: resolveImage(fields) || undefined,
-    status: asTrimmedString(fields.Status),
+    status,
     kind: date ? kind : "upcoming",
   };
 }
@@ -329,9 +584,20 @@ export async function listPortalEvents(): Promise<PortalEventsResult> {
   const fetched = await fetchAllEventRecords();
   if (!fetched.ok) return fetched;
 
+  logEventFieldInventory(fetched.records);
+
   const mapped = fetched.records
     .map(mapEventRecord)
     .filter((event): event is PortalEvent => Boolean(event));
+
+  if (process.env.NODE_ENV === "development") {
+    console.info("[Events Airtable] mapped coverage", {
+      total: mapped.length,
+      withImage: mapped.filter((event) => Boolean(event.imageSrc)).length,
+      withLocation: mapped.filter((event) => Boolean(event.location)).length,
+      withDescription: mapped.filter((event) => Boolean(event.description)).length,
+    });
+  }
 
   const upcoming = mapped
     .filter((event) => event.kind === "upcoming")
