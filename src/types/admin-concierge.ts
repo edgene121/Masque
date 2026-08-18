@@ -1,6 +1,10 @@
 export type ConciergeAttendance = "Never Attended" | "Attended";
 export type ConciergeBertha = "Purchased" | "No Ticket";
 export type ConciergeOnboarding = "Completed" | "Incomplete";
+export type PeopleOnboardingState =
+  | "Completed"
+  | "In Progress"
+  | "Not Started";
 
 export type ConciergeStatus =
   | "Not Contacted"
@@ -89,5 +93,7 @@ export interface ConciergeMember {
   concierge: ConciergeWorkflow;
   outstandingItems: ConciergeOutstandingItem[];
   dataQualityIssues: ConciergeDataQualityIssue[];
+  /** Exact People "Onboarding State" value. Blank/missing is omitted or "". */
+  onboardingState?: string;
   fieldAvailability?: ConciergeFieldAvailability;
 }

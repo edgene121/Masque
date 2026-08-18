@@ -7,14 +7,13 @@ import type {
   ConciergeAttendance,
   ConciergeBertha,
   ConciergeMember,
-  ConciergeOnboarding,
   ConciergeOutstandingItem,
   ConciergeStatus,
+  PeopleOnboardingState,
 } from "@/types/admin-concierge";
 import {
   conciergeAttendanceLabel,
   conciergeBerthaLabel,
-  conciergeOnboardingLabel,
   getConciergePriority,
   isConciergeFieldResolved,
 } from "@/lib/admin/mock-concierge-members";
@@ -31,7 +30,11 @@ const CONCIERGE_STATUS_OPTIONS: ConciergeStatus[] = [
   "Do Not Contact",
 ];
 
-const ONBOARDING_OPTIONS: ConciergeOnboarding[] = ["Completed", "Incomplete"];
+const ONBOARDING_OPTIONS: PeopleOnboardingState[] = [
+  "Completed",
+  "In Progress",
+  "Not Started",
+];
 const ATTENDANCE_OPTIONS: ConciergeAttendance[] = [
   "Never Attended",
   "Attended",
@@ -69,8 +72,17 @@ function berthaBadgeClass(value: ConciergeBertha): string {
   return value === "Purchased" ? "is-approved" : "is-neutral";
 }
 
-function onboardingBadgeClass(value: ConciergeOnboarding): string {
-  return value === "Completed" ? "is-approved" : "is-vetting-amber";
+function onboardingBadgeClass(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "completed") return "is-approved";
+  if (normalized === "in progress") return "is-vetting-amber";
+  if (normalized === "not started") return "is-neutral";
+  return "is-member-subtle";
+}
+
+function peopleOnboardingState(member: ConciergeMember): string | null {
+  const value = member.onboardingState?.trim() ?? "";
+  return value || null;
 }
 
 function conciergeStatusBadgeClass(value: ConciergeStatus): string {
@@ -121,8 +133,7 @@ export default function ConciergeRecentlyApprovedList({
       }
       if (
         onboarding !== ALL_FILTER &&
-        (!isConciergeFieldResolved(row, "onboarding") ||
-          conciergeOnboardingLabel(row) !== onboarding)
+        peopleOnboardingState(row) !== onboarding
       ) {
         return false;
       }
@@ -358,7 +369,6 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const priority = getConciergePriority(row);
   const attendanceResolved = isConciergeFieldResolved(row, "attendance");
   const berthaResolved = isConciergeFieldResolved(row, "bertha");
-  const onboardingResolved = isConciergeFieldResolved(row, "onboarding");
   const conciergeStatusResolved = isConciergeFieldResolved(
     row,
     "conciergeStatus",
@@ -366,7 +376,7 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const outstandingResolved = isConciergeFieldResolved(row, "outstandingItems");
   const attendance = attendanceResolved ? conciergeAttendanceLabel(row) : null;
   const bertha = berthaResolved ? conciergeBerthaLabel(row) : null;
-  const onboarding = onboardingResolved ? conciergeOnboardingLabel(row) : null;
+  const onboarding = peopleOnboardingState(row);
 
   return (
     <tr>

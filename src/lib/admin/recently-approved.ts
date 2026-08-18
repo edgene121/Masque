@@ -135,18 +135,41 @@ function todayUtcMs(now = new Date()): number {
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 }
 
+const ONBOARDING_STATE_FIELD = "Onboarding State";
+
 function peopleContactFromFields(fields: Record<string, unknown> | undefined): {
   email: string;
   phone: string;
+  onboardingState: string;
 } {
-  if (!fields) return { email: "", phone: "" };
+  if (!fields) return { email: "", phone: "", onboardingState: "" };
   const email = asTrimmedString(fields.Email);
   const keys = Object.keys(fields);
   const phoneKey =
     keys.find((key) => key === "Phone") ||
     keys.find((key) => key.toLowerCase() === "phone");
   const phone = phoneKey ? asTrimmedString(fields[phoneKey]) : "";
-  return { email, phone };
+  const onboardingKey =
+    keys.find((key) => key === ONBOARDING_STATE_FIELD) ||
+    keys.find((key) => key.toLowerCase() === ONBOARDING_STATE_FIELD.toLowerCase());
+  const onboardingState = onboardingKey
+    ? asOnboardingStateValue(fields[onboardingKey])
+    : "";
+  return { email, phone, onboardingState };
+}
+
+function asOnboardingStateValue(value: unknown): string {
+  if (value == null || value === "") return "";
+  if (Array.isArray(value) && value.length === 1) {
+    return asOnboardingStateValue(value[0]);
+  }
+  if (typeof value === "object") {
+    const record = value as { name?: unknown; label?: unknown };
+    return (
+      asTrimmedString(record.name) || asTrimmedString(record.label)
+    );
+  }
+  return asTrimmedString(value);
 }
 
 function logAirtableError(
@@ -271,11 +294,17 @@ function escapeAirtableFormulaString(value: string): string {
 async function fetchPeopleContactsByIds(
   ids: string[],
 ): Promise<{
-  contacts: Map<string, { email: string; phone: string }>;
+  contacts: Map<
+    string,
+    { email: string; phone: string; onboardingState: string }
+  >;
   failed: boolean;
 }> {
   const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
-  const contacts = new Map<string, { email: string; phone: string }>();
+  const contacts = new Map<
+    string,
+    { email: string; phone: string; onboardingState: string }
+  >();
   if (unique.length === 0) return { contacts, failed: false };
 
   const peopleTable = getPeopleTableName();
@@ -510,6 +539,7 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
             email: displayOrDash(contact?.email ?? ""),
             approvalDate: formatApprovalDate(row.lastModifiedRaw),
             ...unresolvedConciergeFields(),
+            onboardingState: contact?.onboardingState ?? "",
           },
           personId,
           attendanceResult,
@@ -725,6 +755,7 @@ export async function getConciergeMemberByApplicationId(
           asTrimmedString(fields[LAST_MODIFIED_FIELD]),
         ),
         ...unresolvedConciergeFields(),
+        onboardingState: contact?.onboardingState ?? "",
       },
       personId,
       attendanceResult,
