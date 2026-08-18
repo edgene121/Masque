@@ -5147,6 +5147,64 @@ a.contact-info-card__detail:hover {
   }
 }
 
+/* ===== Admin Concierge Welcome ===== */
+.admin-table--concierge {
+  min-width: 1280px;
+}
+
+.admin-table--concierge .admin-col-outstanding {
+  white-space: normal;
+  min-width: 180px;
+}
+
+.admin-table--concierge .admin-table-action:hover {
+  border-color: #334155;
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.admin-concierge-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-concierge-priority {
+  padding: 2px 8px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-concierge-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-concierge-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid #1f2937;
+  background-color: #1e293b;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-concierge-tag--none {
+  background-color: transparent;
+  color: #64748b;
+}
+
+.admin-dash-section-header .admin-btn {
+  gap: 4px;
+}
+
 /* ===== Complete Profile / Onboarding ===== */
 .complete-profile-page {
   min-height: 100vh;

@@ -99,7 +99,11 @@ export default function AdminDashboard() {
           {METRICS.map((metric) => (
             <DashboardMetricCard
               key={metric.segmentId}
-              href={DASHBOARD_SEGMENT_CONFIG[metric.segmentId].href}
+              href={
+                metric.segmentId === "approvedLast60Days"
+                  ? "/admin/concierge/recently-approved"
+                  : DASHBOARD_SEGMENT_CONFIG[metric.segmentId].href
+              }
               icon={metric.icon}
               label={metric.label}
               value={data[metric.valueKey]}
