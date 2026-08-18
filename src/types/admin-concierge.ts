@@ -48,6 +48,8 @@ export type ConciergeDataQualityIssue =
 export interface ConciergeAttendanceDetail {
   hasEverAttended: boolean;
   lastEventAttended: string;
+  lastEventName?: string;
+  lastEventDate?: string;
 }
 
 export interface ConciergeOnboardingDetail {

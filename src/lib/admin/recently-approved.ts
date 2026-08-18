@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  fetchAttendanceByPersonIds,
+  type AttendanceByPersonResult,
+} from "@/lib/admin/airtable-attendance";
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
@@ -346,6 +350,27 @@ function unresolvedConciergeFields(): Pick<
   };
 }
 
+function applyAttendance(
+  member: ConciergeMember,
+  personId: string | undefined,
+  attendanceResult: AttendanceByPersonResult,
+): ConciergeMember {
+  if (!attendanceResult.ok || !personId) return member;
+  const attendance = attendanceResult.byPerson.get(personId);
+  if (!attendance) return member;
+  return {
+    ...member,
+    attendance,
+    fieldAvailability: {
+      attendance: true,
+      bertha: member.fieldAvailability?.bertha ?? false,
+      onboarding: member.fieldAvailability?.onboarding ?? false,
+      conciergeStatus: member.fieldAvailability?.conciergeStatus ?? false,
+      outstandingItems: member.fieldAvailability?.outstandingItems ?? false,
+    },
+  };
+}
+
 /**
  * Applications with Vetting Status = approved whose Last Modified
  * (Vetting Status last-modified time) falls within the last 60 days.
@@ -427,26 +452,34 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         recent.flatMap((row) => recordIds(row.fields[LINKED_PERSON_FIELD])),
       ),
     ];
-    const enrichment = await fetchPeopleContactsByIds(peopleIds);
+    const [enrichment, attendanceResult] = await Promise.all([
+      fetchPeopleContactsByIds(peopleIds),
+      fetchAttendanceByPersonIds(peopleIds),
+    ]);
 
     console.error("[Recently Approved]", {
       approvedApplicationsRetrieved: approvedCount,
       cutoffDate: utcDateLabel(cutoffMs),
       remainingAfter60DayFilter: recent.length,
       peopleEnrichmentFailed: enrichment.failed,
+      attendanceLookupFailed: !attendanceResult.ok,
     });
 
     const members = recent.map((row) => {
       const personId = recordIds(row.fields[LINKED_PERSON_FIELD])[0];
       const contact = personId ? enrichment.contacts.get(personId) : undefined;
-      return {
-        id: row.record.id,
-        name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
-        phone: displayOrDash(contact?.phone ?? ""),
-        email: displayOrDash(contact?.email ?? ""),
-        approvalDate: formatApprovalDate(row.lastModifiedRaw),
-        ...unresolvedConciergeFields(),
-      };
+      return applyAttendance(
+        {
+          id: row.record.id,
+          name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
+          phone: displayOrDash(contact?.phone ?? ""),
+          email: displayOrDash(contact?.email ?? ""),
+          approvalDate: formatApprovalDate(row.lastModifiedRaw),
+          ...unresolvedConciergeFields(),
+        },
+        personId,
+        attendanceResult,
+      );
     });
 
     return { ok: true, members };
@@ -465,4 +498,129 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
       status: 503,
     };
   }
+}
+
+async function fetchApplicationById(
+  recordId: string,
+): Promise<AirtableQueryResult> {
+  if (!isRecordId(recordId)) {
+    return {
+      ok: false,
+      status: 404,
+      type: "NOT_FOUND",
+      message: "Invalid application record ID",
+    };
+  }
+
+  let accessToken: string;
+  let baseId: string;
+  try {
+    ({ accessToken, baseId } = getAirtableConfig());
+  } catch {
+    return {
+      ok: false,
+      status: 503,
+      type: "CONFIG",
+      message: "Missing Airtable configuration",
+    };
+  }
+
+  const params = new URLSearchParams();
+  for (const field of APPLICATION_FIELDS) {
+    params.append("fields[]", field);
+  }
+
+  const encodedTable = encodeURIComponent(APPLICATIONS_TABLE);
+  const encodedId = encodeURIComponent(recordId);
+  const requestUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}/${encodedId}?${params.toString()}`;
+
+  try {
+    const response = await fetch(requestUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      let type: string | null = null;
+      let message = "";
+      try {
+        const raw = await response.text();
+        try {
+          const payload = JSON.parse(raw) as AirtableListResponse;
+          type = payload.error?.type ?? null;
+          message = payload.error?.message ?? raw.slice(0, 300);
+        } catch {
+          message = raw.slice(0, 300);
+        }
+      } catch {
+        message = "[unreadable]";
+      }
+      return { ok: false, status: response.status, type, message };
+    }
+
+    const record = (await response.json()) as AirtableRecord;
+    if (!record?.id) {
+      return {
+        ok: false,
+        status: 404,
+        type: "NOT_FOUND",
+        message: "Application record missing",
+      };
+    }
+    return { ok: true, records: [record] };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
+      type: "NETWORK",
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+export async function getConciergeMemberByApplicationId(
+  recordId: string,
+): Promise<ConciergeMember | null> {
+  const result = await fetchApplicationById(recordId);
+  if (!result.ok) {
+    logAirtableError("getConciergeMemberByApplicationId", {
+      status: result.status,
+      type: result.type,
+      message: result.message,
+      table: APPLICATIONS_TABLE,
+      fields: [...APPLICATION_FIELDS],
+      filterByFormula: null,
+    });
+    return null;
+  }
+
+  const record = result.records[0];
+  if (!record?.id) return null;
+  const fields = record.fields ?? {};
+  const personId = recordIds(fields[LINKED_PERSON_FIELD])[0];
+  const peopleIds = personId ? [personId] : [];
+
+  const [enrichment, attendanceResult] = await Promise.all([
+    fetchPeopleContactsByIds(peopleIds),
+    fetchAttendanceByPersonIds(peopleIds),
+  ]);
+
+  const contact = personId ? enrichment.contacts.get(personId) : undefined;
+  return applyAttendance(
+    {
+      id: record.id,
+      name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
+      phone: displayOrDash(contact?.phone ?? ""),
+      email: displayOrDash(contact?.email ?? ""),
+      approvalDate: formatApprovalDate(
+        asTrimmedString(fields[LAST_MODIFIED_FIELD]),
+      ),
+      ...unresolvedConciergeFields(),
+    },
+    personId,
+    attendanceResult,
+  );
 }

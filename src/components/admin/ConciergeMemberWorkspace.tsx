@@ -18,6 +18,7 @@ import {
   conciergeAttendanceLabel,
   conciergeBerthaLabel,
   conciergeOnboardingLabel,
+  isConciergeFieldResolved,
 } from "@/lib/admin/mock-concierge-members";
 
 const CONCIERGE_STATUS_OPTIONS: ConciergeStatus[] = [
@@ -105,7 +106,10 @@ export default function ConciergeMemberWorkspace({
     setSaved(false);
   }, [member]);
 
-  const attendance = conciergeAttendanceLabel(member);
+  const attendanceResolved = isConciergeFieldResolved(member, "attendance");
+  const attendance = attendanceResolved
+    ? conciergeAttendanceLabel(member)
+    : null;
   const bertha = conciergeBerthaLabel(member);
   const onboarding = conciergeOnboardingLabel(member);
 
@@ -153,9 +157,15 @@ export default function ConciergeMemberWorkspace({
         <SummaryCard
           label="Attendance"
           value={
-            <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
-              {attendance}
-            </span>
+            attendance ? (
+              <span
+                className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}
+              >
+                {attendance}
+              </span>
+            ) : (
+              "—"
+            )
           }
         />
         <SummaryCard
@@ -206,16 +216,28 @@ export default function ConciergeMemberWorkspace({
               <div>
                 <dt className="admin-detail-label">Has Ever Attended</dt>
                 <dd>
-                  <span
-                    className={`admin-status-badge ${yesNoBadgeClass(member.attendance.hasEverAttended)}`}
-                  >
-                    {member.attendance.hasEverAttended ? "Yes" : "No"}
-                  </span>
+                  {attendanceResolved ? (
+                    <span
+                      className={`admin-status-badge ${yesNoBadgeClass(member.attendance.hasEverAttended)}`}
+                    >
+                      {member.attendance.hasEverAttended ? "Yes" : "No"}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
                 </dd>
               </div>
               <div>
                 <dt className="admin-detail-label">Last Event Attended</dt>
-                <dd>{member.attendance.lastEventAttended}</dd>
+                <dd>
+                  <LastEventAttended
+                    resolved={attendanceResolved}
+                    hasEverAttended={member.attendance.hasEverAttended}
+                    name={member.attendance.lastEventName}
+                    date={member.attendance.lastEventDate}
+                    fallback={member.attendance.lastEventAttended}
+                  />
+                </dd>
               </div>
               <div>
                 <dt className="admin-detail-label">Bertha Ticket Purchased</dt>
@@ -465,5 +487,37 @@ function SummaryCard({
       <div className="admin-concierge-summary-card__value">{value}</div>
       {hint ? <p className="admin-concierge-summary-card__hint">{hint}</p> : null}
     </div>
+  );
+}
+
+function LastEventAttended({
+  resolved,
+  hasEverAttended,
+  name,
+  date,
+  fallback,
+}: {
+  resolved: boolean;
+  hasEverAttended: boolean;
+  name?: string;
+  date?: string;
+  fallback: string;
+}) {
+  if (!resolved || !hasEverAttended) return "—";
+  if (name || date) {
+    return (
+      <>
+        {name ? <div>{name}</div> : null}
+        {date ? <div>{date}</div> : null}
+      </>
+    );
+  }
+  if (!fallback || fallback === "—") return "—";
+  return (
+    <>
+      {fallback.split("\n").map((line) => (
+        <div key={line}>{line}</div>
+      ))}
+    </>
   );
 }

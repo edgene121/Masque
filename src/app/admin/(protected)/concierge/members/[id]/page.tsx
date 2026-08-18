@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
 import ConciergeMemberWorkspace from "@/components/admin/ConciergeMemberWorkspace";
-import { getConciergeMemberById } from "@/lib/admin/mock-concierge-members";
+import { getConciergeMemberByApplicationId } from "@/lib/admin/recently-approved";
 import { requireAdmin } from "@/lib/admin/auth";
 
 interface ConciergeMemberDetailPageProps {
@@ -13,7 +13,7 @@ export async function generateMetadata({
   params,
 }: ConciergeMemberDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const member = getConciergeMemberById(id);
+  const member = await getConciergeMemberByApplicationId(id);
 
   return {
     title: member
@@ -30,7 +30,7 @@ export default async function ConciergeMemberDetailPage({
 }: ConciergeMemberDetailPageProps) {
   const admin = await requireAdmin();
   const { id } = await params;
-  const member = getConciergeMemberById(id);
+  const member = await getConciergeMemberByApplicationId(id);
 
   if (!member) {
     return (
