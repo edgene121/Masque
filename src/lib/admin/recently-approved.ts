@@ -304,7 +304,8 @@ async function fetchPeopleContactsByIds(
   return { contacts, failed };
 }
 
-function emptyConciergeDefaults(): Pick<
+/** Shape placeholders only. Do not display these as business statuses. */
+function unresolvedConciergeFields(): Pick<
   ConciergeMember,
   | "attendance"
   | "berthaTicketPurchased"
@@ -312,11 +313,12 @@ function emptyConciergeDefaults(): Pick<
   | "concierge"
   | "outstandingItems"
   | "dataQualityIssues"
+  | "fieldAvailability"
 > {
   return {
     attendance: {
       hasEverAttended: false,
-      lastEventAttended: "—",
+      lastEventAttended: "",
     },
     berthaTicketPurchased: false,
     onboarding: {
@@ -334,6 +336,13 @@ function emptyConciergeDefaults(): Pick<
     },
     outstandingItems: [],
     dataQualityIssues: [],
+    fieldAvailability: {
+      attendance: false,
+      bertha: false,
+      onboarding: false,
+      conciergeStatus: false,
+      outstandingItems: false,
+    },
   };
 }
 
@@ -436,7 +445,7 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         phone: displayOrDash(contact?.phone ?? ""),
         email: displayOrDash(contact?.email ?? ""),
         approvalDate: formatApprovalDate(row.lastModifiedRaw),
-        ...emptyConciergeDefaults(),
+        ...unresolvedConciergeFields(),
       };
     });
 

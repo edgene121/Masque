@@ -7,6 +7,7 @@ import type {
   ConciergeAttendance,
   ConciergeBertha,
   ConciergeDataQualityIssue,
+  ConciergeListField,
   ConciergeMember,
   ConciergeOnboarding,
   ConciergeOnboardingDetail,
@@ -99,6 +100,13 @@ function formatLongDate(year: number, monthIndex: number, day: number): string {
   });
 }
 
+export function isConciergeFieldResolved(
+  member: ConciergeMember,
+  field: ConciergeListField,
+): boolean {
+  return member.fieldAvailability?.[field] !== false;
+}
+
 export function conciergeAttendanceLabel(
   member: ConciergeMember,
 ): ConciergeAttendance {
@@ -132,6 +140,13 @@ export function conciergeOnboardingLabel(
 }
 
 export function getConciergePriority(member: ConciergeMember): ConciergePriority {
+  if (
+    !isConciergeFieldResolved(member, "conciergeStatus") ||
+    !isConciergeFieldResolved(member, "onboarding")
+  ) {
+    return "Normal";
+  }
+
   return member.concierge.status === "Not Contacted" &&
     conciergeOnboardingLabel(member) === "Incomplete"
     ? "High"

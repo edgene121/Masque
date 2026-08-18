@@ -65,6 +65,16 @@ export interface ConciergeWorkflow {
   escalation: ConciergeEscalation;
 }
 
+export type ConciergeListField =
+  | "attendance"
+  | "bertha"
+  | "onboarding"
+  | "conciergeStatus"
+  | "outstandingItems";
+
+/** When omitted, every list field is treated as a confirmed value (mock/detail). */
+export type ConciergeFieldAvailability = Record<ConciergeListField, boolean>;
+
 export interface ConciergeMember {
   id: string;
   name: string;
@@ -77,4 +87,5 @@ export interface ConciergeMember {
   concierge: ConciergeWorkflow;
   outstandingItems: ConciergeOutstandingItem[];
   dataQualityIssues: ConciergeDataQualityIssue[];
+  fieldAvailability?: ConciergeFieldAvailability;
 }

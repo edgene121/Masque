@@ -16,6 +16,7 @@ import {
   conciergeBerthaLabel,
   conciergeOnboardingLabel,
   getConciergePriority,
+  isConciergeFieldResolved,
 } from "@/lib/admin/mock-concierge-members";
 
 const PAGE_SIZE = 10;
@@ -111,22 +112,32 @@ export default function ConciergeRecentlyApprovedList({
         const haystack = `${row.name} ${row.phone} ${row.email}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
-      if (conciergeStatus !== ALL_FILTER && row.concierge.status !== conciergeStatus) {
+      if (
+        conciergeStatus !== ALL_FILTER &&
+        (!isConciergeFieldResolved(row, "conciergeStatus") ||
+          row.concierge.status !== conciergeStatus)
+      ) {
         return false;
       }
       if (
         onboarding !== ALL_FILTER &&
-        conciergeOnboardingLabel(row) !== onboarding
+        (!isConciergeFieldResolved(row, "onboarding") ||
+          conciergeOnboardingLabel(row) !== onboarding)
       ) {
         return false;
       }
       if (
         attendance !== ALL_FILTER &&
-        conciergeAttendanceLabel(row) !== attendance
+        (!isConciergeFieldResolved(row, "attendance") ||
+          conciergeAttendanceLabel(row) !== attendance)
       ) {
         return false;
       }
-      if (bertha !== ALL_FILTER && conciergeBerthaLabel(row) !== bertha) {
+      if (
+        bertha !== ALL_FILTER &&
+        (!isConciergeFieldResolved(row, "bertha") ||
+          conciergeBerthaLabel(row) !== bertha)
+      ) {
         return false;
       }
       return true;
@@ -345,9 +356,17 @@ export default function ConciergeRecentlyApprovedList({
 
 function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const priority = getConciergePriority(row);
-  const attendance = conciergeAttendanceLabel(row);
-  const bertha = conciergeBerthaLabel(row);
-  const onboarding = conciergeOnboardingLabel(row);
+  const attendanceResolved = isConciergeFieldResolved(row, "attendance");
+  const berthaResolved = isConciergeFieldResolved(row, "bertha");
+  const onboardingResolved = isConciergeFieldResolved(row, "onboarding");
+  const conciergeStatusResolved = isConciergeFieldResolved(
+    row,
+    "conciergeStatus",
+  );
+  const outstandingResolved = isConciergeFieldResolved(row, "outstandingItems");
+  const attendance = attendanceResolved ? conciergeAttendanceLabel(row) : null;
+  const bertha = berthaResolved ? conciergeBerthaLabel(row) : null;
+  const onboarding = onboardingResolved ? conciergeOnboardingLabel(row) : null;
 
   return (
     <tr>
@@ -373,29 +392,49 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
       </td>
       <td className="admin-col-approval">{row.approvalDate}</td>
       <td className="admin-col-attendance">
-        <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
-          {attendance}
-        </span>
+        {attendance ? (
+          <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
+            {attendance}
+          </span>
+        ) : (
+          <UnresolvedValue />
+        )}
       </td>
       <td className="admin-col-bertha">
-        <span className={`admin-status-badge ${berthaBadgeClass(bertha)}`}>
-          {bertha}
-        </span>
+        {bertha ? (
+          <span className={`admin-status-badge ${berthaBadgeClass(bertha)}`}>
+            {bertha}
+          </span>
+        ) : (
+          <UnresolvedValue />
+        )}
       </td>
       <td className="admin-col-onboarding">
-        <span className={`admin-status-badge ${onboardingBadgeClass(onboarding)}`}>
-          {onboarding}
-        </span>
+        {onboarding ? (
+          <span className={`admin-status-badge ${onboardingBadgeClass(onboarding)}`}>
+            {onboarding}
+          </span>
+        ) : (
+          <UnresolvedValue />
+        )}
       </td>
       <td className="admin-col-concierge-status">
-        <span
-          className={`admin-status-badge ${conciergeStatusBadgeClass(row.concierge.status)}`}
-        >
-          {row.concierge.status}
-        </span>
+        {conciergeStatusResolved ? (
+          <span
+            className={`admin-status-badge ${conciergeStatusBadgeClass(row.concierge.status)}`}
+          >
+            {row.concierge.status}
+          </span>
+        ) : (
+          <UnresolvedValue />
+        )}
       </td>
       <td className="admin-col-outstanding">
-        <OutstandingItems items={row.outstandingItems} />
+        {outstandingResolved ? (
+          <OutstandingItems items={row.outstandingItems} />
+        ) : (
+          <UnresolvedValue />
+        )}
       </td>
       <td className="admin-col-action">
         <Link
@@ -407,6 +446,10 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
       </td>
     </tr>
   );
+}
+
+function UnresolvedValue() {
+  return <span>—</span>;
 }
 
 function OutstandingItems({ items }: { items: ConciergeOutstandingItem[] }) {
