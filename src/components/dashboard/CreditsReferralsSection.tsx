@@ -8,11 +8,11 @@ import type { PortalCreditsData } from "@/types/credits";
 
 interface CreditsReferralsSectionProps {
   data: PortalCreditsData;
-  loading?: boolean;
+  statsLoading?: boolean;
 }
 
-function formatStat(value: number | null): string {
-  if (value == null) return "—";
+function formatSummaryStat(value: number | null): string {
+  if (value == null) return "0";
   return String(value);
 }
 
@@ -42,7 +42,7 @@ function historyActivityLabel(row: {
 
 export default function CreditsReferralsSection({
   data,
-  loading = false,
+  statsLoading = false,
 }: CreditsReferralsSectionProps) {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const invitedCount = data.invitedFriends.length;
@@ -60,14 +60,16 @@ export default function CreditsReferralsSection({
     <div className="credits-referrals">
       <SectionHeading>Credits & Referrals</SectionHeading>
 
-      {loading ? (
+      {statsLoading ? (
         <p className="credits-referrals__empty">Loading credits…</p>
       ) : (
         <div className="credits-referrals__stats">
           {stats.map((stat) => (
             <article key={stat.id} className="credits-stat-card">
               <p className="credits-stat-card__label">{stat.label}</p>
-              <p className="credits-stat-card__value">{formatStat(stat.value)}</p>
+              <p className="credits-stat-card__value">
+                {formatSummaryStat(stat.value)}
+              </p>
               <p className="credits-stat-card__caption">{stat.label}</p>
             </article>
           ))}
@@ -93,7 +95,7 @@ export default function CreditsReferralsSection({
         >
           <span className="credits-friends__toggle-copy">
             <span className="credits-friends__title">Invited Friends</span>
-            {!loading && invitedCount > 0 ? (
+            {!statsLoading && invitedCount > 0 ? (
               <span className="credits-friends__summary">
                 {invitedCount}{" "}
                 {invitedCount === 1 ? "Invited Friend" : "Invited Friends"}
@@ -112,9 +114,7 @@ export default function CreditsReferralsSection({
           className={`credits-friends__panel${friendsOpen ? " is-open" : ""}`}
         >
           <div className="credits-friends__panel-inner">
-            {loading ? (
-              <p className="credits-referrals__empty">Loading…</p>
-            ) : data.invitedFriends.length === 0 ? (
+            {data.invitedFriends.length === 0 ? (
               <p className="credits-referrals__empty">
                 You haven&apos;t invited anyone yet.
               </p>
@@ -184,9 +184,7 @@ export default function CreditsReferralsSection({
 
       <SectionHeading>Invited By</SectionHeading>
       <section className="profile-section profile-section--card credits-invited-by">
-        {loading ? (
-          <p className="credits-invited-by__name">Loading…</p>
-        ) : data.invitedBy.trim() ? (
+        {data.invitedBy.trim() ? (
           <>
             <p className="credits-invited-by__name">{data.invitedBy.trim()}</p>
             {data.invitedByReferralCode?.trim() ? (
@@ -202,9 +200,7 @@ export default function CreditsReferralsSection({
 
       <SectionHeading>Credit History</SectionHeading>
       <section className="profile-section profile-section--card credits-table-card">
-        {loading ? (
-          <p className="credits-referrals__empty">Loading…</p>
-        ) : data.creditHistory.length === 0 ? (
+        {data.creditHistory.length === 0 ? (
           <p className="credits-referrals__empty">No credit activity yet.</p>
         ) : (
           <div className="credits-table-wrap">

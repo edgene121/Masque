@@ -45,6 +45,12 @@ const EMPTY_HEADER_USER: MemberstackUser = {
   email: "",
 };
 
+const ZERO_CREDIT_SUMMARY = {
+  creditsAvailable: 0,
+  qualifiedReferrals: 0,
+  creditsRedeemed: 0,
+};
+
 export default function DashboardPage() {
   const [member, setMember] = useState<Member | null>(null);
   const [memberReady, setMemberReady] = useState(false);
@@ -53,6 +59,8 @@ export default function DashboardPage() {
   const [featuredEvent, setFeaturedEvent] = useState<FeaturedEventData | null>(
     null,
   );
+  const [creditSummary, setCreditSummary] = useState(ZERO_CREDIT_SUMMARY);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -105,6 +113,62 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!memberReady) return;
+
+    const email = member?.auth?.email?.trim().toLowerCase() ?? "";
+    if (!email) {
+      setCreditSummary(ZERO_CREDIT_SUMMARY);
+      setStatsLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    setStatsLoading(true);
+
+    async function loadCreditSummary() {
+      try {
+        const response = await fetch(
+          `/api/portal/credits?email=${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json().catch(() => null)) as {
+          creditsAvailable?: number;
+          qualifiedReferrals?: number;
+          creditsRedeemed?: number;
+        } | null;
+
+        if (!mounted) return;
+
+        setCreditSummary({
+          creditsAvailable:
+            typeof payload?.creditsAvailable === "number"
+              ? payload.creditsAvailable
+              : 0,
+          qualifiedReferrals:
+            typeof payload?.qualifiedReferrals === "number"
+              ? payload.qualifiedReferrals
+              : 0,
+          creditsRedeemed:
+            typeof payload?.creditsRedeemed === "number"
+              ? payload.creditsRedeemed
+              : 0,
+        });
+      } catch (error) {
+        console.error("[Home] Failed to load credit summary:", error);
+        if (!mounted) return;
+        setCreditSummary(ZERO_CREDIT_SUMMARY);
+      } finally {
+        if (mounted) setStatsLoading(false);
+      }
+    }
+
+    void loadCreditSummary();
+    return () => {
+      mounted = false;
+    };
+  }, [memberReady, member]);
+
   const profileComplete = isProfileComplete(member);
 
   return (
@@ -140,8 +204,15 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* MOCK UI: swap MOCK_CREDITS_DATA for /api/portal/credits later. */}
-          <CreditsReferralsSection data={MOCK_CREDITS_DATA} />
+          <CreditsReferralsSection
+            data={{
+              ...MOCK_CREDITS_DATA,
+              creditsAvailable: creditSummary.creditsAvailable,
+              qualifiedReferrals: creditSummary.qualifiedReferrals,
+              creditsRedeemed: creditSummary.creditsRedeemed,
+            }}
+            statsLoading={statsLoading}
+          />
 
           <CommunityFooterCard />
         </>

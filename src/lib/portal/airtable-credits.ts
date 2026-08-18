@@ -409,6 +409,79 @@ function mapRewardRow(record: AirtableRecord): {
   };
 }
 
+function asCreditCount(value: unknown): number {
+  return asNumber(value) ?? 0;
+}
+
+/**
+ * Load the three People credit summary fields for a member email.
+ * Read-only. Blank/null Airtable values become 0.
+ */
+export async function getPeopleCreditSummaryByEmail(
+  email: string,
+): Promise<
+  | {
+      ok: true;
+      creditsAvailable: number;
+      qualifiedReferrals: number;
+      creditsRedeemed: number;
+    }
+  | { ok: false; error: string; status: number }
+> {
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed) {
+    return { ok: false, error: "Email is required.", status: 400 };
+  }
+
+  const peopleTable = getPeopleTableName();
+  const params = new URLSearchParams({
+    filterByFormula: `LOWER({Email})='${escapeAirtableFormulaString(trimmed)}'`,
+    maxRecords: "1",
+  });
+  params.append("fields[]", "Email");
+  params.append("fields[]", "Credits Available");
+  params.append("fields[]", "Qualified Referrals");
+  params.append("fields[]", "Credits Redeemed");
+
+  const personResult = await airtableList({
+    table: peopleTable,
+    params,
+    context: "People credit summary by email",
+  });
+
+  if (!personResult.ok) {
+    console.error("[Credits] Unable to load People credit summary", {
+      status: personResult.status,
+      errorType: personResult.errorType,
+      message: personResult.message,
+      table: peopleTable,
+    });
+    return {
+      ok: false,
+      error: "Unable to load credits right now.",
+      status: personResult.status === 429 ? 429 : 503,
+    };
+  }
+
+  const person = personResult.records[0];
+  if (!person?.id) {
+    return {
+      ok: true,
+      creditsAvailable: 0,
+      qualifiedReferrals: 0,
+      creditsRedeemed: 0,
+    };
+  }
+
+  const fields = person.fields ?? {};
+  return {
+    ok: true,
+    creditsAvailable: asCreditCount(getField(fields, ["Credits Available"])),
+    qualifiedReferrals: asCreditCount(getField(fields, ["Qualified Referrals"])),
+    creditsRedeemed: asCreditCount(getField(fields, ["Credits Redeemed"])),
+  };
+}
+
 /**
  * Load Credits & Referrals for a member email from People, Applications, Rewards.
  * Read-only — does not award credits or write records.
