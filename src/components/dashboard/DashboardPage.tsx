@@ -131,7 +131,11 @@ export default function DashboardPage() {
     async function loadCreditSummary() {
       try {
         const response = await fetch(
-          `/api/portal/credits?email=${encodeURIComponent(email)}`,
+          `/api/portal/credits?email=${encodeURIComponent(email)}${
+            member?.id
+              ? `&memberstackId=${encodeURIComponent(member.id)}`
+              : ""
+          }`,
           { cache: "no-store" },
         );
         const payload = (await response.json().catch(() => null)) as {

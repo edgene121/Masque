@@ -25,7 +25,9 @@ export async function GET(request: Request) {
     });
   }
 
-  const result = await getPeopleCreditSummaryByEmail(email);
+  const result = await getPeopleCreditSummaryByEmail(email, {
+    memberstackId: (searchParams.get("memberstackId") ?? "").trim() || undefined,
+  });
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error, ...ZERO_SUMMARY },

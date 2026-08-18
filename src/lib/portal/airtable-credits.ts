@@ -84,6 +84,7 @@ function asNumber(value: unknown): number | null {
 }
 
 function recordIds(value: unknown): string[] {
+  if (value == null || value === "") return [];
   if (!Array.isArray(value)) {
     const single = asTrimmedString(value);
     return isRecordId(single) ? [single] : [];
@@ -91,10 +92,26 @@ function recordIds(value: unknown): string[] {
   return value
     .map((item) => {
       if (typeof item === "string") return item.trim();
-      if (isPlainObject(item)) return asTrimmedString(item.id);
+      if (isPlainObject(item)) {
+        return asTrimmedString(item.id) || asTrimmedString(item.recordId);
+      }
       return "";
     })
     .filter((id) => isRecordId(id));
+}
+
+function linkedFieldDebug(value: unknown): {
+  jsType: string;
+  isArray: boolean;
+  recordIds: string[];
+  sample: unknown;
+} {
+  return {
+    jsType: value == null ? String(value) : Array.isArray(value) ? "array" : typeof value,
+    isArray: Array.isArray(value),
+    recordIds: recordIds(value),
+    sample: Array.isArray(value) ? value.slice(0, 3) : value,
+  };
 }
 
 function getField(
@@ -358,23 +375,34 @@ function mapInvitedFriend(record: AirtableRecord): {
 
 async function fetchInvitedFriendsByReferrerApplications(
   applicationIds: string[],
+  debug: {
+    memberstackId?: string;
+    peopleRecordId: string;
+    peopleFullName: string;
+    peopleApplicationsRaw: unknown;
+  },
 ): Promise<{ ok: true; friends: CreditsInvitedFriend[] } | { ok: false }> {
   const unique = [...new Set(applicationIds.filter((id) => isRecordId(id)))];
   if (unique.length === 0) {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Invited Friends debug]", {
+        memberstackId: debug.memberstackId || "(not provided)",
+        peopleRecordId: debug.peopleRecordId,
+        peopleFullName: debug.peopleFullName,
+        peopleApplications: linkedFieldDebug(debug.peopleApplicationsRaw),
+        currentApplicationIds: unique,
+        applicationsChecked: 0,
+        matchingApplicationIds: [],
+        matchingNames: [],
+        matchingReferredBy: [],
+        note: "No Application record IDs on the current People record.",
+      });
+    }
     return { ok: true, friends: [] };
   }
 
-  const formula =
-    unique.length === 1
-      ? `FIND('${escapeAirtableFormulaString(unique[0])}', ARRAYJOIN({Referred By}))`
-      : `OR(${unique
-          .map(
-            (id) =>
-              `FIND('${escapeAirtableFormulaString(id)}', ARRAYJOIN({Referred By}))`,
-          )
-          .join(",")})`;
-
-  const params = new URLSearchParams({ filterByFormula: formula });
+  const ownIds = new Set(unique);
+  const params = new URLSearchParams();
   params.append("fields[]", "Name");
   params.append("fields[]", "Vetting Status");
   params.append("fields[]", "Referred By");
@@ -382,7 +410,7 @@ async function fetchInvitedFriendsByReferrerApplications(
   const result = await airtableList({
     table: APPLICATIONS_TABLE,
     params,
-    context: "Applications referred by member application",
+    context: "Applications reverse Referred By lookup",
   });
 
   if (!result.ok) {
@@ -395,12 +423,82 @@ async function fetchInvitedFriendsByReferrerApplications(
     return { ok: false };
   }
 
-  const ownIds = new Set(unique);
-  const friends = result.records
-    .filter((record) => record.id && !ownIds.has(record.id))
-    .map(mapInvitedFriend);
+  const referredBySamples: Array<{
+    name: string;
+    referredBy: ReturnType<typeof linkedFieldDebug>;
+  }> = [];
+  const matches: AirtableRecord[] = [];
+
+  for (const record of result.records) {
+    if (!record.id || ownIds.has(record.id)) continue;
+    const referredByRaw = getField(record.fields, ["Referred By"]);
+    const referredByIds = recordIds(referredByRaw);
+    if (referredBySamples.length < 8) {
+      referredBySamples.push({
+        name: personNameFromFields(record.fields) || record.id,
+        referredBy: linkedFieldDebug(referredByRaw),
+      });
+    }
+    if (referredByIds.some((id) => ownIds.has(id))) {
+      matches.push(record);
+    }
+  }
+
+  const friends = matches.map(mapInvitedFriend);
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Invited Friends debug]", {
+      memberstackId: debug.memberstackId || "(not provided)",
+      peopleRecordId: debug.peopleRecordId,
+      peopleFullName: debug.peopleFullName,
+      peopleApplications: linkedFieldDebug(debug.peopleApplicationsRaw),
+      currentApplicationIds: unique,
+      applicationsChecked: result.records.length,
+      matchingApplicationIds: matches.map((record) => record.id),
+      matchingNames: friends.map((friend) => friend.name),
+      matchingReferredBy: matches.map((record) =>
+        linkedFieldDebug(getField(record.fields, ["Referred By"])),
+      ),
+      referredByFieldSample: referredBySamples,
+    });
+  }
 
   return { ok: true, friends };
+}
+
+async function resolveOwnApplicationIds(
+  personFields: Record<string, unknown>,
+  email: string,
+): Promise<{ ids: string[]; source: "people.applications" | "applications.email" | "none" }> {
+  const fromPeople = recordIds(
+    getField(personFields, ["Applications", "Application"]),
+  );
+  if (fromPeople.length > 0) {
+    return { ids: fromPeople, source: "people.applications" };
+  }
+
+  const params = new URLSearchParams({
+    filterByFormula: `LOWER({Email})='${escapeAirtableFormulaString(email)}'`,
+    maxRecords: "5",
+  });
+  params.append("fields[]", "Name");
+  params.append("fields[]", "Email");
+
+  const ownApps = await airtableList({
+    table: APPLICATIONS_TABLE,
+    params,
+    context: "Current member Applications by email fallback",
+  });
+
+  if (!ownApps.ok) {
+    return { ids: [], source: "none" };
+  }
+
+  const ids = ownApps.records.map((record) => record.id).filter(isRecordId);
+  return {
+    ids,
+    source: ids.length > 0 ? "applications.email" : "none",
+  };
 }
 
 function mapRewardRow(record: AirtableRecord): {
@@ -463,6 +561,7 @@ function asCreditCount(value: unknown): number {
  */
 export async function getPeopleCreditSummaryByEmail(
   email: string,
+  options?: { memberstackId?: string },
 ): Promise<
   | {
       ok: true;
@@ -524,9 +623,27 @@ export async function getPeopleCreditSummaryByEmail(
   }
 
   const fields = person.fields ?? {};
-  const ownApplicationIds = recordIds(getField(fields, ["Applications"]));
-  const invitedResult =
-    await fetchInvitedFriendsByReferrerApplications(ownApplicationIds);
+  const peopleApplicationsRaw = getField(fields, ["Applications", "Application"]);
+  const ownApps = await resolveOwnApplicationIds(fields, trimmed);
+  const invitedResult = await fetchInvitedFriendsByReferrerApplications(
+    ownApps.ids,
+    {
+      memberstackId: options?.memberstackId,
+      peopleRecordId: person.id,
+      peopleFullName: personNameFromFields(fields),
+      peopleApplicationsRaw,
+    },
+  );
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Invited Friends debug] application resolution", {
+      memberstackId: options?.memberstackId || "(not provided)",
+      peopleRecordId: person.id,
+      peopleFullName: personNameFromFields(fields),
+      applicationIdSource: ownApps.source,
+      currentApplicationIds: ownApps.ids,
+    });
+  }
 
   return {
     ok: true,
