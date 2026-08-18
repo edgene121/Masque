@@ -5200,12 +5200,67 @@ a.contact-info-card__detail:hover {
 
 /* ===== Admin Concierge Welcome ===== */
 .admin-table--concierge {
-  min-width: 1280px;
+  table-layout: fixed;
+  width: max-content;
+  min-width: 1480px;
+}
+
+.admin-table--concierge th,
+.admin-table--concierge td {
+  overflow: hidden;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.admin-table--concierge .admin-col-member {
+  width: 240px;
+  min-width: 220px;
+}
+
+.admin-table--concierge .admin-col-phone {
+  width: 160px;
+  min-width: 150px;
+}
+
+.admin-table--concierge .admin-col-email {
+  width: 240px;
+  min-width: 200px;
+}
+
+.admin-table--concierge .admin-col-approval {
+  width: 150px;
+  min-width: 140px;
+}
+
+.admin-table--concierge .admin-col-attendance {
+  width: 140px;
+  min-width: 130px;
+}
+
+.admin-table--concierge .admin-col-bertha {
+  width: 120px;
+  min-width: 110px;
+}
+
+.admin-table--concierge .admin-col-onboarding {
+  width: 130px;
+  min-width: 120px;
+}
+
+.admin-table--concierge .admin-col-concierge-status {
+  width: 170px;
+  min-width: 160px;
 }
 
 .admin-table--concierge .admin-col-outstanding {
+  width: 180px;
+  min-width: 160px;
   white-space: normal;
-  min-width: 180px;
+}
+
+.admin-table--concierge .admin-col-action {
+  width: 90px;
+  min-width: 80px;
 }
 
 .admin-table--concierge .admin-table-action:hover {
@@ -5215,17 +5270,34 @@ a.contact-info-card__detail:hover {
 }
 
 .admin-concierge-member {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  max-width: 100%;
+}
+
+.admin-table--concierge .admin-member-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-concierge-priority {
+  flex-shrink: 0;
   padding: 2px 8px;
   font-size: 10px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.admin-concierge-email {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-concierge-tags {

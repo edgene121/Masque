@@ -258,16 +258,16 @@ export default function ConciergeRecentlyApprovedList({
         <table className="admin-table admin-table--concierge">
           <thead>
             <tr>
-              <th>Member</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Approval Date</th>
-              <th>Attendance</th>
-              <th>Bertha</th>
-              <th>Onboarding</th>
-              <th>Concierge Status</th>
-              <th>Outstanding Items</th>
-              <th>Action</th>
+              <th className="admin-col-member">Member</th>
+              <th className="admin-col-phone">Phone</th>
+              <th className="admin-col-email">Email</th>
+              <th className="admin-col-approval">Approval Date</th>
+              <th className="admin-col-attendance">Attendance</th>
+              <th className="admin-col-bertha">Bertha</th>
+              <th className="admin-col-onboarding">Onboarding</th>
+              <th className="admin-col-concierge-status">Concierge Status</th>
+              <th className="admin-col-outstanding">Outstanding Items</th>
+              <th className="admin-col-action">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -351,9 +351,11 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
 
   return (
     <tr>
-      <td>
+      <td className="admin-col-member">
         <div className="admin-concierge-member">
-          <span className="admin-member-name">{row.name}</span>
+          <span className="admin-member-name" title={row.name}>
+            {row.name}
+          </span>
           <span
             className={`admin-status-badge admin-concierge-priority ${
               priority === "High" ? "is-vetting-amber" : "is-member-subtle"
@@ -363,25 +365,29 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
           </span>
         </div>
       </td>
-      <td>{row.phone}</td>
-      <td>{row.email}</td>
-      <td>{row.approvalDate}</td>
-      <td>
+      <td className="admin-col-phone">{row.phone}</td>
+      <td className="admin-col-email">
+        <span className="admin-concierge-email" title={row.email}>
+          {row.email}
+        </span>
+      </td>
+      <td className="admin-col-approval">{row.approvalDate}</td>
+      <td className="admin-col-attendance">
         <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
           {attendance}
         </span>
       </td>
-      <td>
+      <td className="admin-col-bertha">
         <span className={`admin-status-badge ${berthaBadgeClass(bertha)}`}>
           {bertha}
         </span>
       </td>
-      <td>
+      <td className="admin-col-onboarding">
         <span className={`admin-status-badge ${onboardingBadgeClass(onboarding)}`}>
           {onboarding}
         </span>
       </td>
-      <td>
+      <td className="admin-col-concierge-status">
         <span
           className={`admin-status-badge ${conciergeStatusBadgeClass(row.concierge.status)}`}
         >
@@ -391,7 +397,7 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
       <td className="admin-col-outstanding">
         <OutstandingItems items={row.outstandingItems} />
       </td>
-      <td>
+      <td className="admin-col-action">
         <Link
           href={`/admin/concierge/members/${encodeURIComponent(row.id)}`}
           className="admin-table-action"
