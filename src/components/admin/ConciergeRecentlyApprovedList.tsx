@@ -147,7 +147,9 @@ export default function ConciergeRecentlyApprovedList({
           Back to Dashboard
         </Link>
         <span className="admin-dash-result-count">
-          {filtered.length.toLocaleString("en-US")} Members
+          {loadError
+            ? "—"
+            : `${filtered.length.toLocaleString("en-US")} Members`}
         </span>
       </div>
 
@@ -270,7 +272,9 @@ export default function ConciergeRecentlyApprovedList({
             ) : pageRows.length === 0 ? (
               <tr>
                 <td colSpan={10} className="admin-table-empty">
-                  No Members match your current filters.
+                  {members.length === 0
+                    ? "No recently approved members found."
+                    : "No Members match your current filters."}
                 </td>
               </tr>
             ) : (
@@ -282,7 +286,7 @@ export default function ConciergeRecentlyApprovedList({
         </table>
       </div>
 
-      {filtered.length > 0 ? (
+      {!loadError && filtered.length > 0 ? (
         <div className="admin-pagination">
           <p className="admin-pagination__summary">
             Showing {pageStartIndex + 1}–{pageEndIndex} of {filtered.length}{" "}
