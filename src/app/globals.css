@@ -4784,11 +4784,16 @@ a.contact-info-card__detail:hover {
   min-width: 0;
   padding: 18px 18px 16px;
   text-align: left;
+  text-decoration: none;
   border-radius: 14px;
   border: 1px solid var(--admin-border);
   background-color: var(--admin-card);
   color: var(--admin-text);
   cursor: pointer;
+}
+
+.admin-dash-kpi:visited {
+  color: var(--admin-text);
 }
 
 .admin-dash-kpi:hover {
@@ -4903,6 +4908,32 @@ a.contact-info-card__detail:hover {
   font-weight: 600;
 }
 
+.admin-dash-result-count {
+  font-size: 13px;
+  font-weight: 650;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.admin-table--segment {
+  min-width: 860px;
+}
+
+.admin-table--segment-incomplete {
+  min-width: 1180px;
+}
+
+.admin-table--segment .admin-table-action:hover:not(:disabled) {
+  border-color: #334155;
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.admin-table--segment .admin-table-action:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .admin-dash-check {
   display: inline-flex;
   align-items: center;
@@ -4958,11 +4989,16 @@ a.contact-info-card__detail:hover {
   min-width: 0;
   padding: 18px 20px;
   text-align: left;
+  text-decoration: none;
   border-radius: 14px;
   border: 1px solid var(--admin-border);
   background-color: var(--admin-card);
   color: var(--admin-text);
   cursor: pointer;
+}
+
+.admin-dash-segment:visited {
+  color: var(--admin-text);
 }
 
 .admin-dash-segment:hover {

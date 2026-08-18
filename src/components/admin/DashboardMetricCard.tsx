@@ -2,16 +2,14 @@
 
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
-import type { DashboardSegmentId } from "@/types/admin-dashboard";
+import Link from "next/link";
 
 interface DashboardMetricCardProps {
-  segmentId: DashboardSegmentId;
+  href: string;
   icon: LucideIcon;
   label: string;
   value: number;
   supportingText: string;
-  selected: boolean;
-  onSelect: (segmentId: DashboardSegmentId) => void;
 }
 
 function formatMetric(value: number): string {
@@ -19,21 +17,14 @@ function formatMetric(value: number): string {
 }
 
 export default function DashboardMetricCard({
-  segmentId,
+  href,
   icon: Icon,
   label,
   value,
   supportingText,
-  selected,
-  onSelect,
 }: DashboardMetricCardProps) {
   return (
-    <button
-      type="button"
-      className={`admin-dash-kpi${selected ? " is-selected" : ""}`}
-      aria-pressed={selected}
-      onClick={() => onSelect(segmentId)}
-    >
+    <Link href={href} className="admin-dash-kpi">
       <div className="admin-dash-kpi__body">
         <span className="admin-dash-kpi__icon" aria-hidden="true">
           <Icon className="h-4 w-4" />
@@ -43,6 +34,6 @@ export default function DashboardMetricCard({
         <span className="admin-dash-kpi__hint">{supportingText}</span>
       </div>
       <ChevronRight className="admin-dash-kpi__chevron" aria-hidden="true" />
-    </button>
+    </Link>
   );
 }

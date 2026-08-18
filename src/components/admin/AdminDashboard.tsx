@@ -11,9 +11,9 @@ import {
 } from "lucide-react";
 import {
   MOCK_ADMIN_DASHBOARD_DATA,
-  type DashboardSegmentId,
   type RecentlyApprovedMember,
 } from "@/types/admin-dashboard";
+import { DASHBOARD_SEGMENT_CONFIG } from "@/lib/admin/dashboard-segments";
 import DashboardMetricCard from "./DashboardMetricCard";
 import IncompleteMembersTable from "./IncompleteMembersTable";
 import MemberDetailDrawer from "./MemberDetailDrawer";
@@ -88,8 +88,6 @@ const SEGMENTS = [
 
 export default function AdminDashboard() {
   const data = MOCK_ADMIN_DASHBOARD_DATA;
-  const [selectedDashboardSegment, setSelectedDashboardSegment] =
-    useState<DashboardSegmentId | null>(null);
   const [detailMember, setDetailMember] =
     useState<RecentlyApprovedMember | null>(null);
 
@@ -101,13 +99,11 @@ export default function AdminDashboard() {
           {METRICS.map((metric) => (
             <DashboardMetricCard
               key={metric.segmentId}
-              segmentId={metric.segmentId}
+              href={DASHBOARD_SEGMENT_CONFIG[metric.segmentId].href}
               icon={metric.icon}
               label={metric.label}
               value={data[metric.valueKey]}
               supportingText={metric.supportingText}
-              selected={selectedDashboardSegment === metric.segmentId}
-              onSelect={setSelectedDashboardSegment}
             />
           ))}
         </div>
@@ -122,12 +118,10 @@ export default function AdminDashboard() {
             {SEGMENTS.map((segment) => (
               <MemberSegmentCard
                 key={segment.segmentId}
-                segmentId={segment.segmentId}
+                href={DASHBOARD_SEGMENT_CONFIG[segment.segmentId].href}
                 title={segment.title}
                 count={data[segment.valueKey]}
                 description={segment.description}
-                selected={selectedDashboardSegment === segment.segmentId}
-                onSelect={setSelectedDashboardSegment}
               />
             ))}
           </div>

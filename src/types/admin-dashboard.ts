@@ -16,6 +16,24 @@ export type IncompleteOnboardingStatus =
   | "ID Required"
   | "Not Started";
 
+export type MembershipStatus = "Approved" | "Incomplete";
+
+export type OnboardingStatus = "Completed" | IncompleteOnboardingStatus;
+
+export interface MockDashboardMember {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  approvalDate: string;
+  membershipStatus: MembershipStatus;
+  onboardingStatus: OnboardingStatus;
+  missingStep: string;
+  eventsAttended: number;
+  lastEventAttended: string;
+  segments: DashboardSegmentId[];
+}
+
 export interface IncompleteMember {
   id: string;
   name: string;

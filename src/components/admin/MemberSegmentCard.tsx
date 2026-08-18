@@ -1,14 +1,12 @@
 "use client";
 
-import type { DashboardSegmentId } from "@/types/admin-dashboard";
+import Link from "next/link";
 
 interface MemberSegmentCardProps {
-  segmentId: DashboardSegmentId;
+  href: string;
   title: string;
   count: number;
   description: string;
-  selected: boolean;
-  onSelect: (segmentId: DashboardSegmentId) => void;
 }
 
 function formatCount(value: number): string {
@@ -16,25 +14,18 @@ function formatCount(value: number): string {
 }
 
 export default function MemberSegmentCard({
-  segmentId,
+  href,
   title,
   count,
   description,
-  selected,
-  onSelect,
 }: MemberSegmentCardProps) {
   return (
-    <button
-      type="button"
-      className={`admin-dash-segment${selected ? " is-selected" : ""}`}
-      aria-pressed={selected}
-      onClick={() => onSelect(segmentId)}
-    >
+    <Link href={href} className="admin-dash-segment">
       <span className="admin-dash-segment__title">{title}</span>
       <span className="admin-dash-segment__count">
         {formatCount(count)} Members
       </span>
       <span className="admin-dash-segment__hint">{description}</span>
-    </button>
+    </Link>
   );
 }
