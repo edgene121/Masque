@@ -5324,6 +5324,30 @@ a.contact-info-card__detail:hover {
   color: #64748b;
 }
 
+.admin-concierge-tag--warning {
+  border-color: #92400e;
+  background-color: #78350f;
+  color: #fde68a;
+}
+
+.admin-concierge-tag--amber {
+  border-color: #854d0e;
+  background-color: #713f12;
+  color: #fef3c7;
+}
+
+.admin-concierge-tag--info {
+  border-color: #1e3a8a;
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+}
+
+.admin-concierge-tag--danger {
+  border-color: #7f1d1d;
+  background-color: #7f1d1d;
+  color: #fecaca;
+}
+
 .admin-dash-section-header .admin-btn {
   gap: 4px;
 }

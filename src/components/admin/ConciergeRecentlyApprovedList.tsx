@@ -7,7 +7,6 @@ import type {
   ConciergeAttendance,
   ConciergeBertha,
   ConciergeMember,
-  ConciergeOutstandingItem,
   ConciergeStatus,
   PeopleOnboardingState,
 } from "@/types/admin-concierge";
@@ -373,7 +372,6 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const priority = getConciergePriority(row);
   const attendanceResolved = isConciergeFieldResolved(row, "attendance");
   const berthaResolved = isConciergeFieldResolved(row, "bertha");
-  const outstandingResolved = isConciergeFieldResolved(row, "outstandingItems");
   const attendance = attendanceResolved ? conciergeAttendanceLabel(row) : null;
   const bertha = berthaResolved ? conciergeBerthaLabel(row) : null;
   const onboarding = peopleOnboardingState(row);
@@ -441,11 +439,7 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
         )}
       </td>
       <td className="admin-col-outstanding">
-        {outstandingResolved ? (
-          <OutstandingItems items={row.outstandingItems} />
-        ) : (
-          <UnresolvedValue />
-        )}
+        <OutstandingItems items={row.outstandingItems} />
       </td>
       <td className="admin-col-action">
         <Link
@@ -463,18 +457,34 @@ function UnresolvedValue() {
   return <span>—</span>;
 }
 
-function OutstandingItems({ items }: { items: ConciergeOutstandingItem[] }) {
+function OutstandingItems({ items }: { items: string[] }) {
   if (items.length === 0) {
-    return <span className="admin-concierge-tag admin-concierge-tag--none">None</span>;
+    return <UnresolvedValue />;
   }
 
   return (
     <div className="admin-concierge-tags">
       {items.map((item) => (
-        <span key={item} className="admin-concierge-tag">
+        <span
+          key={item}
+          className={`admin-concierge-tag ${outstandingItemClass(item)}`}
+        >
           {item}
         </span>
       ))}
     </div>
   );
+}
+
+function outstandingItemClass(item: string): string {
+  const normalized = item.trim().toLowerCase();
+  if (normalized === "follow-up required") return "admin-concierge-tag--warning";
+  if (normalized === "id pending review" || normalized === "id review") {
+    return "admin-concierge-tag--info";
+  }
+  if (normalized === "agreement pending") return "admin-concierge-tag--amber";
+  if (normalized === "review required") return "admin-concierge-tag--warning";
+  if (normalized === "restriction hold") return "admin-concierge-tag--danger";
+  if (normalized.startsWith("onboarding")) return "admin-concierge-tag--info";
+  return "";
 }

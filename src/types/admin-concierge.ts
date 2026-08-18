@@ -91,7 +91,7 @@ export interface ConciergeMember {
   berthaTicketPurchased: boolean;
   onboarding: ConciergeOnboardingDetail;
   concierge: ConciergeWorkflow;
-  outstandingItems: ConciergeOutstandingItem[];
+  outstandingItems: string[];
   dataQualityIssues: ConciergeDataQualityIssue[];
   /** Exact People "Onboarding State" value. Blank/missing is omitted or "". */
   onboardingState?: string;

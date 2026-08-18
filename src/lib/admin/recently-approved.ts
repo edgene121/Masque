@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin/airtable-bertha";
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
+import { deriveOutstandingItems } from "@/lib/admin/outstanding-items";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
 import type { ConciergeMember } from "@/types/admin-concierge";
 
@@ -137,39 +138,112 @@ function todayUtcMs(now = new Date()): number {
 
 const ONBOARDING_STATE_FIELD = "Onboarding State";
 const CONCIERGE_STATUS_FIELD = "Concierge Status";
+const MEMBERSHIP_STATUS_FIELD = "Membership Status";
+const COMPLIANCE_STATE_FIELD = "Compliance State";
+const FOLLOW_UP_REQUIRED_FIELD = "Follow-Up Required";
+const GOV_ID_FIELD = "Gov ID";
 
-function peopleContactFromFields(fields: Record<string, unknown> | undefined): {
+function findFieldKey(
+  keys: string[],
+  fieldName: string,
+): string | undefined {
+  return (
+    keys.find((key) => key === fieldName) ||
+    keys.find((key) => key.toLowerCase() === fieldName.toLowerCase())
+  );
+}
+
+function isFollowUpRequiredCheckbox(value: unknown): boolean {
+  if (value === true) return true;
+  if (value === false || value == null || value === "") return false;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return (
+      normalized === "true" ||
+      normalized === "checked" ||
+      normalized === "yes" ||
+      normalized === "1"
+    );
+  }
+  return false;
+}
+
+function hasGovIdAttachment(value: unknown): boolean {
+  if (value == null || value === "") return false;
+  if (Array.isArray(value)) {
+    return value.some((item) => looksLikeAttachment(item));
+  }
+  return looksLikeAttachment(value);
+}
+
+function looksLikeAttachment(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { url?: unknown; filename?: unknown; id?: unknown };
+  return (
+    typeof record.url === "string" ||
+    typeof record.filename === "string" ||
+    typeof record.id === "string"
+  );
+}
+
+type PeopleContact = {
   email: string;
   phone: string;
   onboardingState: string;
   conciergeStatus: string;
-} {
+  membershipStatus: string;
+  complianceState: string;
+  followUpRequired: boolean;
+  hasGovId: boolean;
+};
+
+function peopleContactFromFields(
+  fields: Record<string, unknown> | undefined,
+): PeopleContact {
   if (!fields) {
-    return { email: "", phone: "", onboardingState: "", conciergeStatus: "" };
+    return {
+      email: "",
+      phone: "",
+      onboardingState: "",
+      conciergeStatus: "",
+      membershipStatus: "",
+      complianceState: "",
+      followUpRequired: false,
+      hasGovId: false,
+    };
   }
   const email = asTrimmedString(fields.Email);
   const keys = Object.keys(fields);
   const phoneKey =
-    keys.find((key) => key === "Phone") ||
+    findFieldKey(keys, "Phone") ||
     keys.find((key) => key.toLowerCase() === "phone");
-  const phone = phoneKey ? asTrimmedString(fields[phoneKey]) : "";
-  const onboardingKey =
-    keys.find((key) => key === ONBOARDING_STATE_FIELD) ||
-    keys.find((key) => key.toLowerCase() === ONBOARDING_STATE_FIELD.toLowerCase());
-  const conciergeKey =
-    keys.find((key) => key === CONCIERGE_STATUS_FIELD) ||
-    keys.find(
-      (key) => key.toLowerCase() === CONCIERGE_STATUS_FIELD.toLowerCase(),
-    );
+  const onboardingKey = findFieldKey(keys, ONBOARDING_STATE_FIELD);
+  const conciergeKey = findFieldKey(keys, CONCIERGE_STATUS_FIELD);
+  const membershipKey = findFieldKey(keys, MEMBERSHIP_STATUS_FIELD);
+  const complianceKey = findFieldKey(keys, COMPLIANCE_STATE_FIELD);
+  const followUpKey = findFieldKey(keys, FOLLOW_UP_REQUIRED_FIELD);
+  const govIdKey = findFieldKey(keys, GOV_ID_FIELD);
+
   return {
     email,
-    phone,
+    phone: phoneKey ? asTrimmedString(fields[phoneKey]) : "",
     onboardingState: onboardingKey
       ? asPeopleSelectValue(fields[onboardingKey])
       : "",
     conciergeStatus: conciergeKey
       ? asPeopleSelectValue(fields[conciergeKey])
       : "",
+    membershipStatus: membershipKey
+      ? asPeopleSelectValue(fields[membershipKey])
+      : "",
+    complianceState: complianceKey
+      ? asPeopleSelectValue(fields[complianceKey])
+      : "",
+    followUpRequired: followUpKey
+      ? isFollowUpRequiredCheckbox(fields[followUpKey])
+      : false,
+    hasGovId: govIdKey ? hasGovIdAttachment(fields[govIdKey]) : false,
   };
 }
 
@@ -307,27 +381,11 @@ function escapeAirtableFormulaString(value: string): string {
 async function fetchPeopleContactsByIds(
   ids: string[],
 ): Promise<{
-  contacts: Map<
-    string,
-    {
-      email: string;
-      phone: string;
-      onboardingState: string;
-      conciergeStatus: string;
-    }
-  >;
+  contacts: Map<string, PeopleContact>;
   failed: boolean;
 }> {
   const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
-  const contacts = new Map<
-    string,
-    {
-      email: string;
-      phone: string;
-      onboardingState: string;
-      conciergeStatus: string;
-    }
-  >();
+  const contacts = new Map<string, PeopleContact>();
   if (unique.length === 0) return { contacts, failed: false };
 
   const peopleTable = getPeopleTableName();
@@ -454,6 +512,30 @@ function applyBertha(
   };
 }
 
+function applyOutstanding(
+  member: ConciergeMember,
+  contact: PeopleContact | undefined,
+): ConciergeMember {
+  if (!contact) return member;
+  return {
+    ...member,
+    outstandingItems: deriveOutstandingItems({
+      membershipStatus: contact.membershipStatus,
+      onboardingState: contact.onboardingState,
+      complianceState: contact.complianceState,
+      followUpRequired: contact.followUpRequired,
+      hasGovId: contact.hasGovId,
+    }),
+    fieldAvailability: {
+      attendance: member.fieldAvailability?.attendance ?? false,
+      bertha: member.fieldAvailability?.bertha ?? false,
+      onboarding: member.fieldAvailability?.onboarding ?? false,
+      conciergeStatus: member.fieldAvailability?.conciergeStatus ?? false,
+      outstandingItems: true,
+    },
+  };
+}
+
 /**
  * Applications with Vetting Status = approved whose Last Modified
  * (Vetting Status last-modified time) falls within the last 60 days.
@@ -553,23 +635,26 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
     const members = recent.map((row) => {
       const personId = recordIds(row.fields[LINKED_PERSON_FIELD])[0];
       const contact = personId ? enrichment.contacts.get(personId) : undefined;
-      return applyBertha(
-        applyAttendance(
-          {
-            id: row.record.id,
-            name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
-            phone: displayOrDash(contact?.phone ?? ""),
-            email: displayOrDash(contact?.email ?? ""),
-            approvalDate: formatApprovalDate(row.lastModifiedRaw),
-            ...unresolvedConciergeFields(),
-            onboardingState: contact?.onboardingState ?? "",
-            peopleConciergeStatus: contact?.conciergeStatus ?? "",
-          },
+      return applyOutstanding(
+        applyBertha(
+          applyAttendance(
+            {
+              id: row.record.id,
+              name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
+              phone: displayOrDash(contact?.phone ?? ""),
+              email: displayOrDash(contact?.email ?? ""),
+              approvalDate: formatApprovalDate(row.lastModifiedRaw),
+              ...unresolvedConciergeFields(),
+              onboardingState: contact?.onboardingState ?? "",
+              peopleConciergeStatus: contact?.conciergeStatus ?? "",
+            },
+            personId,
+            attendanceResult,
+          ),
           personId,
-          attendanceResult,
+          berthaResult,
         ),
-        personId,
-        berthaResult,
+        contact,
       );
     });
 
@@ -768,24 +853,27 @@ export async function getConciergeMemberByApplicationId(
   ]);
 
   const contact = personId ? enrichment.contacts.get(personId) : undefined;
-  return applyBertha(
-    applyAttendance(
-      {
-        id: record.id,
-        name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
-        phone: displayOrDash(contact?.phone ?? ""),
-        email: displayOrDash(contact?.email ?? ""),
-        approvalDate: formatApprovalDate(
-          asTrimmedString(fields[LAST_MODIFIED_FIELD]),
-        ),
-        ...unresolvedConciergeFields(),
-        onboardingState: contact?.onboardingState ?? "",
-        peopleConciergeStatus: contact?.conciergeStatus ?? "",
-      },
+  return applyOutstanding(
+    applyBertha(
+      applyAttendance(
+        {
+          id: record.id,
+          name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
+          phone: displayOrDash(contact?.phone ?? ""),
+          email: displayOrDash(contact?.email ?? ""),
+          approvalDate: formatApprovalDate(
+            asTrimmedString(fields[LAST_MODIFIED_FIELD]),
+          ),
+          ...unresolvedConciergeFields(),
+          onboardingState: contact?.onboardingState ?? "",
+          peopleConciergeStatus: contact?.conciergeStatus ?? "",
+        },
+        personId,
+        attendanceResult,
+      ),
       personId,
-      attendanceResult,
+      berthaResult,
     ),
-    personId,
-    berthaResult,
+    contact,
   );
 }
