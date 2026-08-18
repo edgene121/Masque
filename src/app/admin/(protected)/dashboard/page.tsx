@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/auth";
 
@@ -16,13 +17,7 @@ export default async function AdminDashboardPage() {
       title="Dashboard"
       description="Overview Of Administrative Operations."
     >
-      <section className="admin-card">
-        <h2 className="admin-card__heading">Welcome, {admin.name}</h2>
-        <p className="admin-card__body">
-          Use the Members section to review Member accounts. Additional Admin
-          tools will appear here as the onboarding workflow is finalized.
-        </p>
-      </section>
+      <AdminDashboard />
     </AdminShell>
   );
 }
