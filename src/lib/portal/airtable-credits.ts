@@ -5,6 +5,7 @@ import { getEventsTableName } from "@/lib/portal/airtable-events";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
 import type {
   CreditsHistoryRow,
+  CreditsInvitedBy,
   CreditsInvitedFriend,
   PortalCreditsData,
 } from "@/types/credits";
@@ -265,70 +266,48 @@ async function airtableList(options: {
   }
 }
 
-async function fetchPeopleByIds(ids: string[]): Promise<Map<string, string>> {
-  const unique = [...new Set(ids.filter(Boolean))];
-  const names = new Map<string, string>();
-  if (unique.length === 0) return names;
-
-  const formula = `OR(${unique
-    .map((id) => `RECORD_ID()='${escapeAirtableFormulaString(id)}'`)
-    .join(",")})`;
-  const params = new URLSearchParams({ filterByFormula: formula });
-  const result = await airtableList({
-    table: getPeopleTableName(),
-    params,
-    context: "People by id",
-  });
-  if (!result.ok) return names;
-
-  for (const record of result.records) {
-    const name = personNameFromFields(record.fields);
-    if (name) names.set(record.id, name);
-  }
-  return names;
-}
-
-async function fetchApplicationNamesByIds(
-  ids: string[],
-): Promise<Map<string, string>> {
-  const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
-  const names = new Map<string, string>();
-  if (unique.length === 0) return names;
-
-  const formula =
-    unique.length === 1
-      ? `RECORD_ID()='${escapeAirtableFormulaString(unique[0])}'`
-      : `OR(${unique
-          .map((id) => `RECORD_ID()='${escapeAirtableFormulaString(id)}'`)
-          .join(",")})`;
-  const params = new URLSearchParams({ filterByFormula: formula });
-  params.append("fields[]", "Name");
-
-  const result = await airtableList({
-    table: APPLICATIONS_TABLE,
-    params,
-    context: "Application names for Referred By",
-  });
-  if (!result.ok) return names;
-
-  for (const record of result.records) {
-    const name = personNameFromFields(record.fields);
-    if (name) names.set(record.id, name);
-  }
-  return names;
-}
-
 function humanReadableReferredBy(value: unknown): string {
   const text = asDisplayString(value);
   if (!text || isRecordId(text)) return "";
   return text;
 }
 
-async function resolveInvitedByName(
-  ownApplicationIds: string[],
-): Promise<string> {
-  const unique = [...new Set(ownApplicationIds.filter((id) => isRecordId(id)))];
-  if (unique.length === 0) return "";
+function peoplePhoneFromFields(
+  fields: Record<string, unknown> | undefined,
+): string {
+  if (!fields) return "";
+  const keys = Object.keys(fields);
+  const preferred = ["Phone Number", "Phone"];
+  for (const name of preferred) {
+    if (!keys.includes(name)) continue;
+    const value = asDisplayString(fields[name]);
+    if (value) return value;
+  }
+  const matched = keys.find((key) => {
+    const lower = key.toLowerCase();
+    return lower === "phone number" || lower === "phone";
+  });
+  return matched ? asDisplayString(fields[matched]) : "";
+}
+
+function peopleSafeInviterFromFields(
+  fields: Record<string, unknown> | undefined,
+): CreditsInvitedBy {
+  return {
+    name: personNameFromFields(fields),
+    email: asDisplayString(getField(fields, ["Email"])),
+    phone: peoplePhoneFromFields(fields),
+    referralCode: asDisplayString(getField(fields, ["Referral Code"])),
+  };
+}
+
+async function fetchApplicationRecordsByIds(
+  ids: string[],
+  fieldNames: string[],
+  context: string,
+): Promise<AirtableRecord[]> {
+  const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
+  if (unique.length === 0) return [];
 
   const formula =
     unique.length === 1
@@ -337,37 +316,89 @@ async function resolveInvitedByName(
           .map((id) => `RECORD_ID()='${escapeAirtableFormulaString(id)}'`)
           .join(",")})`;
   const params = new URLSearchParams({ filterByFormula: formula });
-  params.append("fields[]", "Name");
-  params.append("fields[]", "Referred By");
+  for (const fieldName of fieldNames) {
+    params.append("fields[]", fieldName);
+  }
 
   const result = await airtableList({
     table: APPLICATIONS_TABLE,
     params,
-    context: "Current member Application Referred By",
+    context,
+  });
+  return result.ok ? result.records : [];
+}
+
+async function fetchInviterPeopleByIds(
+  ids: string[],
+): Promise<CreditsInvitedBy | null> {
+  const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
+  if (unique.length === 0) return null;
+
+  const formula =
+    unique.length === 1
+      ? `RECORD_ID()='${escapeAirtableFormulaString(unique[0])}'`
+      : `OR(${unique
+          .map((id) => `RECORD_ID()='${escapeAirtableFormulaString(id)}'`)
+          .join(",")})`;
+  const params = new URLSearchParams({ filterByFormula: formula });
+
+  const result = await airtableList({
+    table: getPeopleTableName(),
+    params,
+    context: "Inviter People by Linked Person",
   });
 
-  if (!result.ok) return "";
-
-  const ownIdSet = new Set(unique);
+  if (!result.ok) return null;
 
   for (const record of result.records) {
-    const referredByRaw = getField(record.fields, ["Referred By"]);
-    const direct = humanReadableReferredBy(referredByRaw);
-    if (direct) return direct;
-
-    const referrerIds = recordIds(referredByRaw).filter(
-      (id) => !ownIdSet.has(id),
-    );
-    if (referrerIds.length === 0) continue;
-
-    const names = await fetchApplicationNamesByIds(referrerIds);
-    const name = referrerIds
-      .map((id) => names.get(id) ?? "")
-      .find((part) => part.trim());
-    if (name) return name;
+    const inviter = peopleSafeInviterFromFields(record.fields);
+    if (inviter.name || inviter.email || inviter.phone || inviter.referralCode) {
+      return inviter;
+    }
   }
+  return null;
+}
 
-  return "";
+async function resolveInvitedByProfile(
+  ownApplicationIds: string[],
+): Promise<CreditsInvitedBy | null> {
+  const unique = [...new Set(ownApplicationIds.filter((id) => isRecordId(id)))];
+  if (unique.length === 0) return null;
+
+  const ownApps = await fetchApplicationRecordsByIds(
+    unique,
+    ["Referred By"],
+    "Current member Application Referred By",
+  );
+  if (ownApps.length === 0) return null;
+
+  const ownIdSet = new Set(unique);
+  const referrerAppIds = [
+    ...new Set(
+      ownApps.flatMap((record) =>
+        recordIds(getField(record.fields, ["Referred By"])).filter(
+          (id) => !ownIdSet.has(id),
+        ),
+      ),
+    ),
+  ];
+  if (referrerAppIds.length === 0) return null;
+
+  const referrerApps = await fetchApplicationRecordsByIds(
+    referrerAppIds,
+    ["Linked Person"],
+    "Referrer Application Linked Person",
+  );
+  const peopleIds = [
+    ...new Set(
+      referrerApps.flatMap((record) =>
+        recordIds(getField(record.fields, ["Linked Person"])),
+      ),
+    ),
+  ];
+  if (peopleIds.length === 0) return null;
+
+  return fetchInviterPeopleByIds(peopleIds);
 }
 
 function toPortalFriendStatus(raw: string): string {
@@ -812,7 +843,7 @@ export async function getPeopleCreditSummaryByEmail(
       creditsRedeemed: number;
       referralCode: string;
       invitedFriends: CreditsInvitedFriend[];
-      invitedBy: string;
+      invitedBy: CreditsInvitedBy | null;
       creditHistory: CreditsHistoryRow[];
     }
   | { ok: false; error: string; status: number }
@@ -863,7 +894,7 @@ export async function getPeopleCreditSummaryByEmail(
       creditsRedeemed: 0,
       referralCode: "",
       invitedFriends: [],
-      invitedBy: "",
+      invitedBy: null,
       creditHistory: [],
     };
   }
@@ -878,7 +909,7 @@ export async function getPeopleCreditSummaryByEmail(
       peopleFullName: personNameFromFields(fields),
       peopleApplicationsRaw,
     }),
-    resolveInvitedByName(ownApps.ids),
+    resolveInvitedByProfile(ownApps.ids),
     fetchCreditHistoryForPerson(person.id),
   ]);
 
@@ -984,29 +1015,11 @@ export async function getPortalCreditsByEmail(
         .map(mapInvitedFriend)
     : [];
 
-  let invitedBy = "";
-  if (ownAppResult.ok) {
-    const ownApp = ownAppResult.records[0];
-    const ownFields = ownApp?.fields ?? {};
-    invitedBy =
-      asDisplayString(
-        getField(ownFields, [
-          "Referrer Name",
-          "who invited",
-          "If someone referred you, who?",
-        ]),
-      ) || "";
-
-    if (!invitedBy) {
-      const referrerIds = recordIds(
-        getField(ownFields, ["Referred By"]),
-      ).filter((id) => id !== person.id);
-      if (referrerIds.length > 0) {
-        const names = await fetchPeopleByIds(referrerIds);
-        invitedBy = referrerIds.map((id) => names.get(id) ?? "").find(Boolean) ?? "";
-      }
-    }
-  }
+  const invitedBy = ownAppResult.ok
+    ? await resolveInvitedByProfile(
+        ownAppResult.records.map((record) => record.id).filter(isRecordId),
+      )
+    : null;
 
   return {
     ok: true,

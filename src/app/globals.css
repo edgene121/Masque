@@ -1561,6 +1561,25 @@ body {
   padding: 18px 20px;
 }
 
+.credits-invited-by__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.credits-invited-by__field {
+  min-width: 0;
+}
+
+.credits-invited-by__label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #777777;
+}
+
 .credits-invited-by__name {
   margin: 0;
   font-family: var(--font-display), Georgia, serif;
@@ -1569,10 +1588,42 @@ body {
   color: #1a1a1a;
 }
 
-.credits-invited-by__code {
-  margin: 6px 0 0;
+.credits-invited-by__value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.credits-invited-by__code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.credits-invited-by__code-row .credits-invited-by__value {
+  flex: 1;
+  min-width: 0;
+}
+
+.credits-invited-by__code-row .profile-referral__copy-btn {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
   font-size: 13px;
-  color: #777777;
+}
+
+@media (max-width: 767px) {
+  .credits-invited-by__grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .credits-invited-by__code-row {
+    flex-wrap: wrap;
+  }
 }
 
 .credits-status-badge {

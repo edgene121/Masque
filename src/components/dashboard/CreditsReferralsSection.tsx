@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, Copy } from "lucide-react";
 import ReferralDetailsSection from "@/components/profile/ReferralDetailsSection";
 import SectionHeading from "@/components/dashboard/SectionHeading";
-import type { PortalCreditsData } from "@/types/credits";
+import type { CreditsInvitedBy, PortalCreditsData } from "@/types/credits";
 
 interface CreditsReferralsSectionProps {
   data: PortalCreditsData;
@@ -38,6 +38,79 @@ function historyActivityLabel(row: {
   details: string;
 }): string {
   return [row.activity.trim(), row.details.trim()].filter(Boolean).join(" — ");
+}
+
+function displayInviterValue(value: string): string {
+  return value.trim() || "—";
+}
+
+async function copyText(value: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function InvitedByCard({ inviter }: { inviter: CreditsInvitedBy }) {
+  const code = inviter.referralCode.trim();
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const handleCopyCode = async () => {
+    if (!code) return;
+    const ok = await copyText(code);
+    if (ok) setCopied(true);
+  };
+
+  return (
+    <div className="credits-invited-by__grid">
+      <div className="credits-invited-by__field">
+        <p className="credits-invited-by__label">Name</p>
+        <p className="credits-invited-by__name">
+          {displayInviterValue(inviter.name)}
+        </p>
+      </div>
+      <div className="credits-invited-by__field">
+        <p className="credits-invited-by__label">Email Address</p>
+        <p className="credits-invited-by__value">
+          {displayInviterValue(inviter.email)}
+        </p>
+      </div>
+      <div className="credits-invited-by__field">
+        <p className="credits-invited-by__label">Phone Number</p>
+        <p className="credits-invited-by__value">
+          {displayInviterValue(inviter.phone)}
+        </p>
+      </div>
+      <div className="credits-invited-by__field">
+        <p className="credits-invited-by__label">Referral Code</p>
+        <div className="credits-invited-by__code-row">
+          <p className="credits-invited-by__value">{displayInviterValue(code)}</p>
+          {code ? (
+            <button
+              type="button"
+              className="profile-referral__copy-btn"
+              onClick={() => void handleCopyCode()}
+            >
+              <Copy
+                className="profile-referral__copy-icon"
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+              {copied ? "Copied!" : "Copy Code"}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CreditsReferralsSection({
@@ -188,8 +261,8 @@ export default function CreditsReferralsSection({
       <section className="profile-section profile-section--card credits-invited-by">
         {statsLoading ? (
           <p className="credits-referrals__empty">Loading…</p>
-        ) : data.invitedBy.trim() ? (
-          <p className="credits-invited-by__name">{data.invitedBy.trim()}</p>
+        ) : data.invitedBy ? (
+          <InvitedByCard inviter={data.invitedBy} />
         ) : (
           <p className="credits-invited-by__name">No Referrer</p>
         )}

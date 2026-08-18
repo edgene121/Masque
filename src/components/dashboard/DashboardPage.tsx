@@ -14,7 +14,7 @@ import type {
   MemberstackUser,
   MemberStatusData,
 } from "@/types/dashboard";
-import { MOCK_CREDITS_DATA, type CreditsHistoryRow, type CreditsInvitedFriend } from "@/types/credits";
+import { MOCK_CREDITS_DATA, type CreditsHistoryRow, type CreditsInvitedBy, type CreditsInvitedFriend } from "@/types/credits";
 import DashboardLayout from "./DashboardLayout";
 import MemberStatusCard from "./MemberStatusCard";
 import SectionHeading from "./SectionHeading";
@@ -51,7 +51,7 @@ const ZERO_CREDIT_SUMMARY = {
   creditsRedeemed: 0,
   referralCode: "",
   invitedFriends: [] as CreditsInvitedFriend[],
-  invitedBy: "",
+  invitedBy: null as CreditsInvitedBy | null,
   creditHistory: [] as CreditsHistoryRow[],
 };
 
@@ -146,7 +146,7 @@ export default function DashboardPage() {
           creditsRedeemed?: number;
           referralCode?: string;
           invitedFriends?: CreditsInvitedFriend[];
-          invitedBy?: string;
+          invitedBy?: CreditsInvitedBy | null;
           creditHistory?: Array<{
             date?: string;
             activity?: string;
@@ -188,10 +188,17 @@ export default function DashboardPage() {
               ? payload.referralCode.trim()
               : "",
           invitedFriends,
-          invitedBy:
-            typeof payload?.invitedBy === "string"
-              ? payload.invitedBy.trim()
-              : "",
+          invitedBy: (() => {
+            const raw = payload?.invitedBy;
+            if (!raw || typeof raw !== "object") return null;
+            const name = typeof raw.name === "string" ? raw.name.trim() : "";
+            const email = typeof raw.email === "string" ? raw.email.trim() : "";
+            const phone = typeof raw.phone === "string" ? raw.phone.trim() : "";
+            const referralCode =
+              typeof raw.referralCode === "string" ? raw.referralCode.trim() : "";
+            if (!name && !email && !phone && !referralCode) return null;
+            return { name, email, phone, referralCode };
+          })(),
           creditHistory: Array.isArray(payload?.creditHistory)
             ? payload.creditHistory
                 .filter(
@@ -271,7 +278,6 @@ export default function DashboardPage() {
               referralCode: creditSummary.referralCode,
               invitedFriends: creditSummary.invitedFriends,
               invitedBy: creditSummary.invitedBy,
-              invitedByReferralCode: undefined,
               creditHistory: creditSummary.creditHistory,
             }}
             statsLoading={statsLoading}

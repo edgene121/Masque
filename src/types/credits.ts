@@ -14,15 +14,20 @@ export interface CreditsHistoryRow {
   credits: number | null;
 }
 
+export interface CreditsInvitedBy {
+  name: string;
+  email: string;
+  phone: string;
+  referralCode: string;
+}
+
 export interface PortalCreditsData {
   referralCode: string;
   creditsAvailable: number | null;
   qualifiedReferrals: number | null;
   creditsRedeemed: number | null;
   invitedFriends: CreditsInvitedFriend[];
-  invitedBy: string;
-  /** Present when a referrer referral code is available. */
-  invitedByReferralCode?: string;
+  invitedBy: CreditsInvitedBy | null;
   creditHistory: CreditsHistoryRow[];
 }
 
@@ -32,7 +37,7 @@ export const EMPTY_PORTAL_CREDITS: PortalCreditsData = {
   qualifiedReferrals: null,
   creditsRedeemed: null,
   invitedFriends: [],
-  invitedBy: "",
+  invitedBy: null,
   creditHistory: [],
 };
 
@@ -46,7 +51,7 @@ export const MOCK_CREDITS_DATA: PortalCreditsData = {
   creditsAvailable: 250,
   qualifiedReferrals: 3,
   creditsRedeemed: 100,
-  invitedBy: "",
+  invitedBy: null,
   invitedFriends: [
     {
       id: "mock-friend-1",

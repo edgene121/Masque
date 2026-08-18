@@ -9,7 +9,7 @@ const ZERO_SUMMARY = {
   creditsRedeemed: 0,
   referralCode: "",
   invitedFriends: [],
-  invitedBy: "",
+  invitedBy: null,
   creditHistory: [],
 };
 
@@ -44,7 +44,14 @@ export async function GET(request: Request) {
     creditsRedeemed: result.creditsRedeemed,
     referralCode: result.referralCode,
     invitedFriends: result.invitedFriends,
-    invitedBy: result.invitedBy,
+    invitedBy: result.invitedBy
+      ? {
+          name: result.invitedBy.name,
+          email: result.invitedBy.email,
+          phone: result.invitedBy.phone,
+          referralCode: result.invitedBy.referralCode,
+        }
+      : null,
     creditHistory: result.creditHistory.map((row) => ({
       date: row.date,
       activity: row.activity,
