@@ -16,7 +16,6 @@ import {
   conciergeBerthaLabel,
   conciergeOnboardingLabel,
   getConciergePriority,
-  MOCK_CONCIERGE_MEMBERS,
 } from "@/lib/admin/mock-concierge-members";
 
 const PAGE_SIZE = 10;
@@ -90,7 +89,13 @@ function conciergeStatusBadgeClass(value: ConciergeStatus): string {
   }
 }
 
-export default function ConciergeRecentlyApprovedList() {
+export default function ConciergeRecentlyApprovedList({
+  members,
+  loadError = null,
+}: {
+  members: ConciergeMember[];
+  loadError?: string | null;
+}) {
   const [query, setQuery] = useState("");
   const [conciergeStatus, setConciergeStatus] = useState(ALL);
   const [onboarding, setOnboarding] = useState(ALL);
@@ -101,9 +106,9 @@ export default function ConciergeRecentlyApprovedList() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    return MOCK_CONCIERGE_MEMBERS.filter((row) => {
+    return members.filter((row) => {
       if (q) {
-        const haystack = `${row.name} ${row.phone}`.toLowerCase();
+        const haystack = `${row.name} ${row.phone} ${row.email}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       if (conciergeStatus && row.concierge.status !== conciergeStatus) {
@@ -118,7 +123,7 @@ export default function ConciergeRecentlyApprovedList() {
       if (bertha && conciergeBerthaLabel(row) !== bertha) return false;
       return true;
     });
-  }, [query, conciergeStatus, onboarding, attendance, bertha]);
+  }, [members, query, conciergeStatus, onboarding, attendance, bertha]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -245,6 +250,7 @@ export default function ConciergeRecentlyApprovedList() {
             <tr>
               <th>Member</th>
               <th>Phone</th>
+              <th>Email</th>
               <th>Approval Date</th>
               <th>Attendance</th>
               <th>Bertha</th>
@@ -255,9 +261,15 @@ export default function ConciergeRecentlyApprovedList() {
             </tr>
           </thead>
           <tbody>
-            {pageRows.length === 0 ? (
+            {loadError ? (
               <tr>
-                <td colSpan={9} className="admin-table-empty">
+                <td colSpan={10} className="admin-table-empty">
+                  {loadError}
+                </td>
+              </tr>
+            ) : pageRows.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="admin-table-empty">
                   No Members match your current filters.
                 </td>
               </tr>
@@ -340,6 +352,7 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
         </div>
       </td>
       <td>{row.phone}</td>
+      <td>{row.email}</td>
       <td>{row.approvalDate}</td>
       <td>
         <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
