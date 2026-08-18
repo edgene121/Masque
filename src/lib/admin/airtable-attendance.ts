@@ -36,8 +36,17 @@ type AirtableQueryResult =
       message: string;
     };
 
+export type PersonAttendanceDebug = {
+  matchingCount: number;
+  statuses: string[];
+};
+
 export type AttendanceByPersonResult =
-  | { ok: true; byPerson: Map<string, ConciergeAttendanceDetail> }
+  | {
+      ok: true;
+      byPerson: Map<string, ConciergeAttendanceDetail>;
+      debugByPerson: Map<string, PersonAttendanceDebug>;
+    }
   | { ok: false };
 
 interface EventInfo {
@@ -64,20 +73,26 @@ function isRecordId(value: string): boolean {
 
 function recordIds(value: unknown): string[] {
   if (value == null || value === "") return [];
-  if (!Array.isArray(value)) {
-    const single = asTrimmedString(value);
-    return isRecordId(single) ? [single] : [];
+  if (Array.isArray(value)) {
+    return [...new Set(value.flatMap((item) => recordIds(item)))];
   }
-  return value
-    .map((item) => {
-      if (typeof item === "string") return item.trim();
-      if (item && typeof item === "object") {
-        const record = item as { id?: unknown; recordId?: unknown };
-        return asTrimmedString(record.id) || asTrimmedString(record.recordId);
-      }
-      return "";
-    })
-    .filter((id) => isRecordId(id));
+  if (typeof value === "object") {
+    const record = value as { id?: unknown; recordId?: unknown };
+    return recordIds(record.id ?? record.recordId);
+  }
+  const single = asTrimmedString(value);
+  if (isRecordId(single)) return [single];
+  if (single.includes(",")) {
+    return [
+      ...new Set(
+        single
+          .split(",")
+          .flatMap((part) => recordIds(part.trim()))
+          .filter((id) => isRecordId(id)),
+      ),
+    ];
+  }
+  return [];
 }
 
 function escapeAirtableFormulaString(value: string): string {
@@ -235,16 +250,11 @@ async function queryTable(options: {
 }
 
 function personFilterFormula(personIds: string[]): string {
-  if (personIds.length === 1) {
-    const id = escapeAirtableFormulaString(personIds[0]);
-    return `FIND('${id}', ARRAYJOIN({${LINKED_PERSON_FIELD}}))`;
-  }
-  return `OR(${personIds
-    .map(
-      (id) =>
-        `FIND('${escapeAirtableFormulaString(id)}', ARRAYJOIN({${LINKED_PERSON_FIELD}}))`,
-    )
-    .join(",")})`;
+  const clauses = personIds.map((id) => {
+    const escaped = escapeAirtableFormulaString(id);
+    return `{${LINKED_PERSON_FIELD}}='${escaped}'`;
+  });
+  return clauses.length === 1 ? clauses[0] : `OR(${clauses.join(",")})`;
 }
 
 function recordIdFilterFormula(ids: string[]): string {
@@ -306,6 +316,8 @@ async function fetchEventsByIds(
 
 /**
  * Batch-load Attendance + Events for People record IDs.
+ * Application record IDs are never used here — only People IDs from
+ * Applications.Linked Person / Attendance.Linked Person.
  * Only Attendance Status = "Checked In" counts as attended.
  */
 export async function fetchAttendanceByPersonIds(
@@ -313,11 +325,13 @@ export async function fetchAttendanceByPersonIds(
 ): Promise<AttendanceByPersonResult> {
   const unique = [...new Set(personIds.filter((id) => isRecordId(id)))];
   const byPerson = new Map<string, ConciergeAttendanceDetail>();
+  const debugByPerson = new Map<string, PersonAttendanceDebug>();
   for (const id of unique) {
     byPerson.set(id, emptyAttendance());
+    debugByPerson.set(id, { matchingCount: 0, statuses: [] });
   }
 
-  if (unique.length === 0) return { ok: true, byPerson };
+  if (unique.length === 0) return { ok: true, byPerson, debugByPerson };
 
   const attendanceFields = [
     LINKED_PERSON_FIELD,
@@ -350,20 +364,54 @@ export async function fetchAttendanceByPersonIds(
     attendanceRecords.push(...result.records);
   }
 
+  if (attendanceRecords.length === 0) {
+    const checkedInFormula = `LOWER({${ATTENDANCE_STATUS_FIELD}})='${CHECKED_IN_STATUS}'`;
+    const fallback = await queryTable({
+      table: ATTENDANCE_TABLE,
+      fields: attendanceFields,
+      filterByFormula: checkedInFormula,
+    });
+    if (!fallback.ok) {
+      logAttendanceError("Attendance Checked In fallback", {
+        status: fallback.status,
+        type: fallback.type,
+        message: fallback.message,
+        table: ATTENDANCE_TABLE,
+        fields: attendanceFields,
+        filterByFormula: checkedInFormula,
+      });
+    } else {
+      attendanceRecords.push(...fallback.records);
+    }
+  }
+
   const checkedInEventIdsByPerson = new Map<string, Set<string>>();
   let checkedInCount = 0;
 
   for (const record of attendanceRecords) {
     const fields = record.fields ?? {};
-    if (!isCheckedInStatus(fields[ATTENDANCE_STATUS_FIELD])) continue;
-    checkedInCount += 1;
-
     const people = recordIds(fields[LINKED_PERSON_FIELD]).filter((id) =>
       byPerson.has(id),
     );
+    if (people.length === 0) continue;
+
+    const statusRaw = asTrimmedString(fields[ATTENDANCE_STATUS_FIELD]);
+    const checkedIn = isCheckedInStatus(statusRaw);
     const eventIds = recordIds(fields[LINKED_EVENT_FIELD]);
 
+    if (checkedIn) checkedInCount += 1;
+
     for (const personId of people) {
+      const debug = debugByPerson.get(personId) ?? {
+        matchingCount: 0,
+        statuses: [],
+      };
+      debug.matchingCount += 1;
+      debug.statuses.push(statusRaw || "(blank)");
+      debugByPerson.set(personId, debug);
+
+      if (!checkedIn) continue;
+
       const current = byPerson.get(personId) ?? emptyAttendance();
       current.hasEverAttended = true;
       byPerson.set(personId, current);
@@ -405,5 +453,5 @@ export async function fetchAttendanceByPersonIds(
     eventsLookupFailed: eventLookup.failed,
   });
 
-  return { ok: true, byPerson };
+  return { ok: true, byPerson, debugByPerson };
 }

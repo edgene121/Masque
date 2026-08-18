@@ -69,20 +69,26 @@ function isRecordId(value: string): boolean {
 
 function recordIds(value: unknown): string[] {
   if (value == null || value === "") return [];
-  if (!Array.isArray(value)) {
-    const single = asTrimmedString(value);
-    return isRecordId(single) ? [single] : [];
+  if (Array.isArray(value)) {
+    return [...new Set(value.flatMap((item) => recordIds(item)))];
   }
-  return value
-    .map((item) => {
-      if (typeof item === "string") return item.trim();
-      if (item && typeof item === "object") {
-        const record = item as { id?: unknown; recordId?: unknown };
-        return asTrimmedString(record.id) || asTrimmedString(record.recordId);
-      }
-      return "";
-    })
-    .filter((id) => isRecordId(id));
+  if (typeof value === "object") {
+    const record = value as { id?: unknown; recordId?: unknown };
+    return recordIds(record.id ?? record.recordId);
+  }
+  const single = asTrimmedString(value);
+  if (isRecordId(single)) return [single];
+  if (single.includes(",")) {
+    return [
+      ...new Set(
+        single
+          .split(",")
+          .flatMap((part) => recordIds(part.trim()))
+          .filter((id) => isRecordId(id)),
+      ),
+    ];
+  }
+  return [];
 }
 
 function parseDateOnlyMs(raw: string): number | null {
@@ -481,6 +487,36 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         attendanceResult,
       );
     });
+
+    for (const row of recent.slice(0, 2)) {
+      const linkedPersonValue = row.fields[LINKED_PERSON_FIELD];
+      const peopleRecordId = recordIds(linkedPersonValue)[0];
+      const debug =
+        attendanceResult.ok && peopleRecordId
+          ? attendanceResult.debugByPerson.get(peopleRecordId)
+          : undefined;
+      const attendance =
+        attendanceResult.ok && peopleRecordId
+          ? attendanceResult.byPerson.get(peopleRecordId)
+          : undefined;
+      const finalCalculatedAttendanceStatus = !attendanceResult.ok
+        ? "unresolved"
+        : !peopleRecordId
+          ? "unresolved"
+          : attendance?.hasEverAttended
+            ? "Attended"
+            : "Never Attended";
+
+      console.error("[Recently Approved Attendance Debug]", {
+        applicationName: asTrimmedString(row.fields[NAME_FIELD]),
+        applicationRecordId: row.record.id,
+        applicationLinkedPerson: linkedPersonValue ?? null,
+        peopleRecordIdUsedForMatching: peopleRecordId ?? null,
+        numberOfMatchingAttendanceRecords: debug?.matchingCount ?? 0,
+        attendanceStatusValuesFound: debug?.statuses ?? [],
+        finalCalculatedAttendanceStatus,
+      });
+    }
 
     return { ok: true, members };
   } catch (error) {
