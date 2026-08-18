@@ -1,8 +1,13 @@
 import "server-only";
 
 import { getAirtableConfig } from "@/lib/admin/config";
+import { getEventsTableName } from "@/lib/portal/airtable-events";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
-import type { CreditsInvitedFriend, PortalCreditsData } from "@/types/credits";
+import type {
+  CreditsHistoryRow,
+  CreditsInvitedFriend,
+  PortalCreditsData,
+} from "@/types/credits";
 import { EMPTY_PORTAL_CREDITS } from "@/types/credits";
 
 const APPLICATIONS_TABLE =
@@ -152,19 +157,6 @@ function formatDisplayDate(raw: string): string {
     day: "numeric",
     year: "numeric",
   }).format(date);
-}
-
-function formatStatusLabel(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  return trimmed
-    .split(/\s+/)
-    .map((word) => {
-      if (!word) return word;
-      if (/^\d+$/.test(word)) return word;
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(" ");
 }
 
 function personNameFromFields(
@@ -583,54 +575,222 @@ async function resolveOwnApplicationIds(
   };
 }
 
-function mapRewardRow(record: AirtableRecord): {
-  id: string;
-  date: string;
-  activity: string;
-  details: string;
-  credits: number | null;
-} {
-  const fields = record.fields ?? {};
-  const issued = asDisplayString(
-    getField(fields, ["Issued", "Date", "Created Time", "Redeemed Date"]),
+function isUsableDateValue(value: unknown): boolean {
+  if (value == null || value === "") return false;
+  if (typeof value === "boolean") return false;
+  if (typeof value === "number") return false;
+  if (Array.isArray(value)) return value.some((item) => isUsableDateValue(item));
+  if (isPlainObject(value)) {
+    return (
+      isUsableDateValue(value.iso) ||
+      isUsableDateValue(value.date) ||
+      isUsableDateValue(value.value)
+    );
+  }
+  const text = asTrimmedString(value);
+  if (!text || isRecordId(text)) return false;
+  if (/^(true|false|yes|no|checked|unchecked)$/i.test(text)) return false;
+  const iso = /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : text;
+  const date = new Date(
+    /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : text,
   );
-  const creditsUsed = asNumber(
-    getField(fields, ["Credits Used", "Credits", "Amount"]),
-  );
-  const status = asDisplayString(getField(fields, ["Status"]));
-  const ticketType = asDisplayString(
-    getField(fields, ["Ticket Type", "Reward", "Item"]),
-  );
-  const eventName = asDisplayString(
-    getField(fields, [
-      "Event Redeemed For",
-      "Event",
-      "Event Name",
-      "Redeemed For",
-    ]),
-  );
+  return !Number.isNaN(date.getTime());
+}
 
-  const statusLower = status.toLowerCase();
-  const isRedeemed =
-    statusLower.includes("redeem") ||
-    ((creditsUsed != null && creditsUsed !== 0) &&
-      Boolean(ticketType || eventName));
+function dateSortTime(value: unknown): number {
+  if (!isUsableDateValue(value)) return 0;
+  const text = asDisplayString(value);
+  const iso = /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : text;
+  const date = new Date(
+    /^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T12:00:00` : text,
+  );
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
 
-  const activity =
-    formatStatusLabel(status) || (isRedeemed ? "Redeemed" : "");
-
-  let credits = creditsUsed;
-  if (credits != null && isRedeemed && credits > 0) {
-    credits = -Math.abs(credits);
+function extractRewardDate(fields: Record<string, unknown>): string {
+  const issued = getField(fields, ["Issued"]);
+  if (isUsableDateValue(issued)) {
+    return formatDisplayDate(asDisplayString(issued));
   }
 
-  return {
-    id: record.id,
-    date: formatDisplayDate(issued || record.createdTime || ""),
-    activity,
-    details: eventName || ticketType,
-    credits,
-  };
+  const fallback = getField(fields, [
+    "Issued Date",
+    "Redeemed Date",
+    "Date Issued",
+    "Date",
+    "Created Time",
+    "Created",
+  ]);
+  if (isUsableDateValue(fallback)) {
+    return formatDisplayDate(asDisplayString(fallback));
+  }
+
+  return "";
+}
+
+function extractRewardDateRaw(fields: Record<string, unknown>): unknown {
+  const issued = getField(fields, ["Issued"]);
+  if (isUsableDateValue(issued)) return issued;
+  const fallback = getField(fields, [
+    "Issued Date",
+    "Redeemed Date",
+    "Date Issued",
+    "Date",
+    "Created Time",
+    "Created",
+  ]);
+  if (isUsableDateValue(fallback)) return fallback;
+  return undefined;
+}
+
+function isUnissuedCheckbox(value: unknown): boolean {
+  if (value === false) return true;
+  if (typeof value === "string") {
+    const key = value.trim().toLowerCase();
+    return key === "false" || key === "unchecked" || key === "no";
+  }
+  return false;
+}
+
+async function fetchEventNamesByIds(
+  ids: string[],
+): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
+  const names = new Map<string, string>();
+  if (unique.length === 0) return names;
+
+  const formula =
+    unique.length === 1
+      ? `RECORD_ID()='${escapeAirtableFormulaString(unique[0])}'`
+      : `OR(${unique
+          .map((id) => `RECORD_ID()='${escapeAirtableFormulaString(id)}'`)
+          .join(",")})`;
+  const params = new URLSearchParams({ filterByFormula: formula });
+  params.append("fields[]", "Name");
+
+  const result = await airtableList({
+    table: getEventsTableName(),
+    params,
+    context: "Event names for Rewards",
+  });
+  if (!result.ok) return names;
+
+  for (const record of result.records) {
+    const name =
+      asDisplayString(
+        getField(record.fields, [
+          "Name",
+          "Title",
+          "Event Name",
+          "Event Title",
+          "Event",
+        ]),
+      ) || personNameFromFields(record.fields);
+    if (name) names.set(record.id, name);
+  }
+  return names;
+}
+
+function rewardActivityDescription(
+  ticketType: string,
+  eventName: string,
+): string {
+  if (eventName) {
+    return ticketType ? `${ticketType} — ${eventName}` : eventName;
+  }
+  if (ticketType) return `${ticketType} Redemption`;
+  return "Credit Redemption";
+}
+
+async function fetchCreditHistoryForPerson(
+  peopleRecordId: string,
+): Promise<CreditsHistoryRow[]> {
+  if (!isRecordId(peopleRecordId)) return [];
+
+  const params = new URLSearchParams();
+  params.append("fields[]", "Person");
+  params.append("fields[]", "Event Redeemed For");
+  params.append("fields[]", "Ticket Type");
+  params.append("fields[]", "Credits Used");
+  params.append("fields[]", "Status");
+  params.append("fields[]", "Issued");
+
+  const result = await airtableList({
+    table: REWARDS_TABLE,
+    params,
+    context: "Rewards credit history by Person",
+  });
+
+  if (!result.ok) {
+    console.error("[Credits] Unable to load Rewards credit history", {
+      status: result.status,
+      errorType: result.errorType,
+      message: result.message,
+      table: REWARDS_TABLE,
+    });
+    return [];
+  }
+
+  const matches = result.records.filter((record) =>
+    recordIds(getField(record.fields, ["Person"])).includes(peopleRecordId),
+  );
+
+  const eventIds = new Set<string>();
+  for (const record of matches) {
+    const eventRaw = getField(record.fields, ["Event Redeemed For"]);
+    if (humanReadableReferredBy(eventRaw)) continue;
+    for (const id of recordIds(eventRaw)) eventIds.add(id);
+  }
+  const eventNames = await fetchEventNamesByIds([...eventIds]);
+
+  const rows = matches
+    .map((record) => {
+      const fields = record.fields ?? {};
+      const issuedRaw = getField(fields, ["Issued"]);
+      if (isUnissuedCheckbox(issuedRaw)) return null;
+
+      const status = asDisplayString(getField(fields, ["Status"])).toLowerCase();
+      if (
+        status.includes("cancel") ||
+        status.includes("void") ||
+        status.includes("refund")
+      ) {
+        return null;
+      }
+
+      const creditsUsed = asNumber(getField(fields, ["Credits Used"]));
+      if (creditsUsed == null || creditsUsed === 0) return null;
+
+      const ticketType = humanReadableReferredBy(
+        getField(fields, ["Ticket Type"]),
+      );
+      const eventRaw = getField(fields, ["Event Redeemed For"]);
+      const eventName =
+        humanReadableReferredBy(eventRaw) ||
+        recordIds(eventRaw)
+          .map((id) => eventNames.get(id) ?? "")
+          .find((part) => part.trim()) ||
+        "";
+
+      return {
+        id: `history-${record.createdTime ?? ""}-${creditsUsed}`,
+        date: extractRewardDate(fields),
+        activity: rewardActivityDescription(ticketType, eventName),
+        details: "",
+        credits: -Math.abs(creditsUsed),
+        sortTime: dateSortTime(extractRewardDateRaw(fields)),
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null)
+    .sort((a, b) => b.sortTime - a.sortTime);
+
+  return rows.map((row, index) => ({
+    id: `history-${index}`,
+    date: row.date,
+    activity: row.activity,
+    details: row.details,
+    credits: row.credits,
+  }));
 }
 
 function asCreditCount(value: unknown): number {
@@ -653,6 +813,7 @@ export async function getPeopleCreditSummaryByEmail(
       referralCode: string;
       invitedFriends: CreditsInvitedFriend[];
       invitedBy: string;
+      creditHistory: CreditsHistoryRow[];
     }
   | { ok: false; error: string; status: number }
 > {
@@ -703,13 +864,14 @@ export async function getPeopleCreditSummaryByEmail(
       referralCode: "",
       invitedFriends: [],
       invitedBy: "",
+      creditHistory: [],
     };
   }
 
   const fields = person.fields ?? {};
   const peopleApplicationsRaw = getField(fields, ["Applications", "Application"]);
   const ownApps = await resolveOwnApplicationIds(fields, trimmed);
-  const [invitedResult, invitedBy] = await Promise.all([
+  const [invitedResult, invitedBy, creditHistory] = await Promise.all([
     fetchInvitedFriendsByReferrerApplications(ownApps.ids, {
       memberstackId: options?.memberstackId,
       peopleRecordId: person.id,
@@ -717,6 +879,7 @@ export async function getPeopleCreditSummaryByEmail(
       peopleApplicationsRaw,
     }),
     resolveInvitedByName(ownApps.ids),
+    fetchCreditHistoryForPerson(person.id),
   ]);
 
   if (process.env.NODE_ENV === "development") {
@@ -737,6 +900,7 @@ export async function getPeopleCreditSummaryByEmail(
     referralCode: asDisplayString(getField(fields, ["Referral Code"])),
     invitedFriends: invitedResult.ok ? invitedResult.friends : [],
     invitedBy,
+    creditHistory,
   };
 }
 
@@ -796,9 +960,8 @@ export async function getPortalCreditsByEmail(
 
   const referredByFormula = `FIND('${escapeAirtableFormulaString(person.id)}', ARRAYJOIN({Referred By}))`;
   const ownAppFormula = `LOWER({Email})='${escapeAirtableFormulaString(trimmed)}'`;
-  const rewardsFormula = `FIND('${escapeAirtableFormulaString(person.id)}', ARRAYJOIN({Person}))`;
 
-  const [invitedResult, ownAppResult, rewardsResult] = await Promise.all([
+  const [invitedResult, ownAppResult, creditHistory] = await Promise.all([
     airtableList({
       table: APPLICATIONS_TABLE,
       params: new URLSearchParams({ filterByFormula: referredByFormula }),
@@ -812,11 +975,7 @@ export async function getPortalCreditsByEmail(
       }),
       context: "Member application",
     }),
-    airtableList({
-      table: REWARDS_TABLE,
-      params: new URLSearchParams({ filterByFormula: rewardsFormula }),
-      context: "Rewards for member",
-    }),
+    fetchCreditHistoryForPerson(person.id),
   ]);
 
   const invitedFriends = invitedResult.ok
@@ -848,10 +1007,6 @@ export async function getPortalCreditsByEmail(
       }
     }
   }
-
-  const creditHistory = rewardsResult.ok
-    ? rewardsResult.records.map(mapRewardRow)
-    : [];
 
   return {
     ok: true,

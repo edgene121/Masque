@@ -197,7 +197,9 @@ export default function CreditsReferralsSection({
 
       <SectionHeading>Credit History</SectionHeading>
       <section className="profile-section profile-section--card credits-table-card">
-        {data.creditHistory.length === 0 ? (
+        {statsLoading ? (
+          <p className="credits-referrals__empty">Loading…</p>
+        ) : data.creditHistory.length === 0 ? (
           <p className="credits-referrals__empty">No credit activity yet.</p>
         ) : (
           <div className="credits-table-wrap">

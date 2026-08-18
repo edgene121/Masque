@@ -37,9 +37,8 @@ export const EMPTY_PORTAL_CREDITS: PortalCreditsData = {
 };
 
 /**
- * UI-only mock for Credit History.
- * Home summary cards, Referral Code, Invited Friends, and Invited By are
- * loaded from People/Applications via /api/portal/credits.
+ * Remaining mock values are unused on Home; live Credits & Referrals data
+ * comes from People/Applications/Rewards via /api/portal/credits.
  * Do not write this data to Airtable.
  */
 export const MOCK_CREDITS_DATA: PortalCreditsData = {
@@ -71,34 +70,5 @@ export const MOCK_CREDITS_DATA: PortalCreditsData = {
       creditStatus: "Pending",
     },
   ],
-  creditHistory: [
-    {
-      id: "mock-history-1",
-      date: "August 10, 2026",
-      activity: "Referral Reward",
-      details: "Sophia Martinez",
-      credits: 100,
-    },
-    {
-      id: "mock-history-2",
-      date: "August 5, 2026",
-      activity: "Referral Reward",
-      details: "Daniel Carter",
-      credits: 100,
-    },
-    {
-      id: "mock-history-3",
-      date: "July 28, 2026",
-      activity: "Event Credit Redemption",
-      details: "",
-      credits: -100,
-    },
-    {
-      id: "mock-history-4",
-      date: "July 15, 2026",
-      activity: "Welcome Credit",
-      details: "",
-      credits: 50,
-    },
-  ],
+  creditHistory: [],
 };

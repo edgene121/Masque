@@ -14,7 +14,7 @@ import type {
   MemberstackUser,
   MemberStatusData,
 } from "@/types/dashboard";
-import { MOCK_CREDITS_DATA, type CreditsInvitedFriend } from "@/types/credits";
+import { MOCK_CREDITS_DATA, type CreditsHistoryRow, type CreditsInvitedFriend } from "@/types/credits";
 import DashboardLayout from "./DashboardLayout";
 import MemberStatusCard from "./MemberStatusCard";
 import SectionHeading from "./SectionHeading";
@@ -52,6 +52,7 @@ const ZERO_CREDIT_SUMMARY = {
   referralCode: "",
   invitedFriends: [] as CreditsInvitedFriend[],
   invitedBy: "",
+  creditHistory: [] as CreditsHistoryRow[],
 };
 
 export default function DashboardPage() {
@@ -146,6 +147,11 @@ export default function DashboardPage() {
           referralCode?: string;
           invitedFriends?: CreditsInvitedFriend[];
           invitedBy?: string;
+          creditHistory?: Array<{
+            date?: string;
+            activity?: string;
+            credits?: number | null;
+          }>;
         } | null;
 
         if (!mounted) return;
@@ -186,6 +192,25 @@ export default function DashboardPage() {
             typeof payload?.invitedBy === "string"
               ? payload.invitedBy.trim()
               : "",
+          creditHistory: Array.isArray(payload?.creditHistory)
+            ? payload.creditHistory
+                .filter(
+                  (row): row is { date: string; activity: string; credits: number } =>
+                    Boolean(
+                      row &&
+                        typeof row.date === "string" &&
+                        typeof row.activity === "string" &&
+                        typeof row.credits === "number",
+                    ),
+                )
+                .map((row, index) => ({
+                  id: `history-${index}`,
+                  date: row.date,
+                  activity: row.activity,
+                  details: "",
+                  credits: row.credits,
+                }))
+            : [],
         });
       } catch (error) {
         console.error("[Home] Failed to load credit summary:", error);
@@ -247,6 +272,7 @@ export default function DashboardPage() {
               invitedFriends: creditSummary.invitedFriends,
               invitedBy: creditSummary.invitedBy,
               invitedByReferralCode: undefined,
+              creditHistory: creditSummary.creditHistory,
             }}
             statsLoading={statsLoading}
           />
