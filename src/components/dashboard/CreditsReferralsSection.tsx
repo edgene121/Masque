@@ -114,7 +114,9 @@ export default function CreditsReferralsSection({
           className={`credits-friends__panel${friendsOpen ? " is-open" : ""}`}
         >
           <div className="credits-friends__panel-inner">
-            {data.invitedFriends.length === 0 ? (
+            {statsLoading ? (
+              <p className="credits-referrals__empty">Loading…</p>
+            ) : data.invitedFriends.length === 0 ? (
               <p className="credits-referrals__empty">
                 You haven&apos;t invited anyone yet.
               </p>

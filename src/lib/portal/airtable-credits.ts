@@ -2,7 +2,7 @@ import "server-only";
 
 import { getAirtableConfig } from "@/lib/admin/config";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
-import type { PortalCreditsData } from "@/types/credits";
+import type { CreditsInvitedFriend, PortalCreditsData } from "@/types/credits";
 import { EMPTY_PORTAL_CREDITS } from "@/types/credits";
 
 const APPLICATIONS_TABLE =
@@ -283,17 +283,21 @@ function toPortalFriendStatus(raw: string): string {
   const key = raw.trim().toLowerCase();
   if (!key) return "";
 
-  if (key === "approved") return "Approved";
+  if (key === "approved") return "Qualified";
+
   if (
     key === "pending" ||
     key === "under review" ||
     key === "application received" ||
-    key === "hold"
+    key === "hold" ||
+    key.includes("incomplete")
   ) {
     return "Pending";
   }
+
   if (
     key === "rejected" ||
+    key === "denied" ||
     key === "banned" ||
     key === "duplicate submission" ||
     key === "referral concern" ||
@@ -302,22 +306,19 @@ function toPortalFriendStatus(raw: string): string {
     return "Not Qualified";
   }
 
-  return formatStatusLabel(raw);
+  return "Pending";
 }
 
-function toPortalCreditStatus(raw: string): string {
-  const key = raw.trim().toLowerCase();
-  if (!key) return "";
-  if (key.includes("earn")) return "Credit Earned";
-  if (key.includes("pend")) return "Credit Pending";
-  if (
-    key.includes("not qualified") ||
-    key.includes("ineligib") ||
-    key.includes("reject")
-  ) {
-    return "Not Qualified";
+function toPortalFriendCreditColumn(
+  memberFacingStatus: string,
+  explicitCredits: number | null,
+): string {
+  if (explicitCredits != null) {
+    return explicitCredits > 0 ? `+${explicitCredits}` : String(explicitCredits);
   }
-  return formatStatusLabel(raw);
+  if (memberFacingStatus === "Qualified") return "Qualified";
+  if (memberFacingStatus === "Pending") return "Pending";
+  return "—";
 }
 
 function isEmailLike(value: string): boolean {
@@ -335,19 +336,15 @@ function mapInvitedFriend(record: AirtableRecord): {
   const rawName = personNameFromFields(fields);
   const name = rawName && !isEmailLike(rawName) ? rawName : "Member";
   const status = toPortalFriendStatus(
-    asDisplayString(
-      getField(fields, ["Vetting Status", "Member Status", "Status"]),
-    ),
+    asDisplayString(getField(fields, ["Vetting Status"])),
   );
   const applicationDate = formatDisplayDate(
-    asDisplayString(getField(fields, ["Created Time", "Application Date"])) ||
+    asDisplayString(getField(fields, ["Created Time"])) ||
       record.createdTime ||
       "",
   );
-  const creditStatus = toPortalCreditStatus(
-    asDisplayString(
-      getField(fields, ["Credit Status", "Credits Status", "Credit State"]),
-    ),
+  const explicitCredits = asNumber(
+    getField(fields, ["Referral Credits", "Credits Earned"]),
   );
 
   return {
@@ -355,8 +352,55 @@ function mapInvitedFriend(record: AirtableRecord): {
     name,
     status,
     applicationDate,
-    creditStatus,
+    creditStatus: toPortalFriendCreditColumn(status, explicitCredits),
   };
+}
+
+async function fetchInvitedFriendsByReferrerApplications(
+  applicationIds: string[],
+): Promise<{ ok: true; friends: CreditsInvitedFriend[] } | { ok: false }> {
+  const unique = [...new Set(applicationIds.filter((id) => isRecordId(id)))];
+  if (unique.length === 0) {
+    return { ok: true, friends: [] };
+  }
+
+  const formula =
+    unique.length === 1
+      ? `FIND('${escapeAirtableFormulaString(unique[0])}', ARRAYJOIN({Referred By}))`
+      : `OR(${unique
+          .map(
+            (id) =>
+              `FIND('${escapeAirtableFormulaString(id)}', ARRAYJOIN({Referred By}))`,
+          )
+          .join(",")})`;
+
+  const params = new URLSearchParams({ filterByFormula: formula });
+  params.append("fields[]", "Name");
+  params.append("fields[]", "Vetting Status");
+  params.append("fields[]", "Referred By");
+
+  const result = await airtableList({
+    table: APPLICATIONS_TABLE,
+    params,
+    context: "Applications referred by member application",
+  });
+
+  if (!result.ok) {
+    console.error("[Credits] Unable to load invited friends", {
+      status: result.status,
+      errorType: result.errorType,
+      message: result.message,
+      table: APPLICATIONS_TABLE,
+    });
+    return { ok: false };
+  }
+
+  const ownIds = new Set(unique);
+  const friends = result.records
+    .filter((record) => record.id && !ownIds.has(record.id))
+    .map(mapInvitedFriend);
+
+  return { ok: true, friends };
 }
 
 function mapRewardRow(record: AirtableRecord): {
@@ -414,7 +458,7 @@ function asCreditCount(value: unknown): number {
 }
 
 /**
- * Load People credit summary and Referral Code for a member email.
+ * Load People credit summary, Referral Code, and Invited Friends for a member email.
  * Read-only. Blank/null credit values become 0. Blank Referral Code stays empty.
  */
 export async function getPeopleCreditSummaryByEmail(
@@ -426,6 +470,7 @@ export async function getPeopleCreditSummaryByEmail(
       qualifiedReferrals: number;
       creditsRedeemed: number;
       referralCode: string;
+      invitedFriends: CreditsInvitedFriend[];
     }
   | { ok: false; error: string; status: number }
 > {
@@ -444,6 +489,7 @@ export async function getPeopleCreditSummaryByEmail(
   params.append("fields[]", "Qualified Referrals");
   params.append("fields[]", "Credits Redeemed");
   params.append("fields[]", "Referral Code");
+  params.append("fields[]", "Applications");
 
   const personResult = await airtableList({
     table: peopleTable,
@@ -473,16 +519,22 @@ export async function getPeopleCreditSummaryByEmail(
       qualifiedReferrals: 0,
       creditsRedeemed: 0,
       referralCode: "",
+      invitedFriends: [],
     };
   }
 
   const fields = person.fields ?? {};
+  const ownApplicationIds = recordIds(getField(fields, ["Applications"]));
+  const invitedResult =
+    await fetchInvitedFriendsByReferrerApplications(ownApplicationIds);
+
   return {
     ok: true,
     creditsAvailable: asCreditCount(getField(fields, ["Credits Available"])),
     qualifiedReferrals: asCreditCount(getField(fields, ["Qualified Referrals"])),
     creditsRedeemed: asCreditCount(getField(fields, ["Credits Redeemed"])),
     referralCode: asDisplayString(getField(fields, ["Referral Code"])),
+    invitedFriends: invitedResult.ok ? invitedResult.friends : [],
   };
 }
 

@@ -14,7 +14,7 @@ import type {
   MemberstackUser,
   MemberStatusData,
 } from "@/types/dashboard";
-import { MOCK_CREDITS_DATA } from "@/types/credits";
+import { MOCK_CREDITS_DATA, type CreditsInvitedFriend } from "@/types/credits";
 import DashboardLayout from "./DashboardLayout";
 import MemberStatusCard from "./MemberStatusCard";
 import SectionHeading from "./SectionHeading";
@@ -50,6 +50,7 @@ const ZERO_CREDIT_SUMMARY = {
   qualifiedReferrals: 0,
   creditsRedeemed: 0,
   referralCode: "",
+  invitedFriends: [] as CreditsInvitedFriend[],
 };
 
 export default function DashboardPage() {
@@ -138,9 +139,24 @@ export default function DashboardPage() {
           qualifiedReferrals?: number;
           creditsRedeemed?: number;
           referralCode?: string;
+          invitedFriends?: CreditsInvitedFriend[];
         } | null;
 
         if (!mounted) return;
+
+        const invitedFriends = Array.isArray(payload?.invitedFriends)
+          ? payload.invitedFriends.filter(
+              (friend): friend is CreditsInvitedFriend =>
+                Boolean(
+                  friend &&
+                    typeof friend.id === "string" &&
+                    typeof friend.name === "string" &&
+                    typeof friend.status === "string" &&
+                    typeof friend.applicationDate === "string" &&
+                    typeof friend.creditStatus === "string",
+                ),
+            )
+          : [];
 
         setCreditSummary({
           creditsAvailable:
@@ -159,6 +175,7 @@ export default function DashboardPage() {
             typeof payload?.referralCode === "string"
               ? payload.referralCode.trim()
               : "",
+          invitedFriends,
         });
       } catch (error) {
         console.error("[Home] Failed to load credit summary:", error);
@@ -217,6 +234,7 @@ export default function DashboardPage() {
               qualifiedReferrals: creditSummary.qualifiedReferrals,
               creditsRedeemed: creditSummary.creditsRedeemed,
               referralCode: creditSummary.referralCode,
+              invitedFriends: creditSummary.invitedFriends,
             }}
             statsLoading={statsLoading}
           />
