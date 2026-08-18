@@ -14,12 +14,15 @@ import type {
   MemberstackUser,
   MemberStatusData,
 } from "@/types/dashboard";
+import type { PortalCreditsData } from "@/types/credits";
+import { EMPTY_PORTAL_CREDITS } from "@/types/credits";
 import DashboardLayout from "./DashboardLayout";
 import MemberStatusCard from "./MemberStatusCard";
 import SectionHeading from "./SectionHeading";
 import FeaturedEventCard from "./FeaturedEventCard";
 import FeaturedDispatch from "./FeaturedDispatch";
 import FoundationCard from "./FoundationCard";
+import CreditsReferralsSection from "./CreditsReferralsSection";
 import CommunityFooterCard from "./CommunityFooterCard";
 
 const COMPLETED_STATUS: MemberStatusData = {
@@ -51,6 +54,8 @@ export default function DashboardPage() {
   const [featuredEvent, setFeaturedEvent] = useState<FeaturedEventData | null>(
     null,
   );
+  const [credits, setCredits] = useState<PortalCreditsData>(EMPTY_PORTAL_CREDITS);
+  const [creditsLoading, setCreditsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -58,10 +63,17 @@ export default function DashboardPage() {
     async function load() {
       try {
         const memberstack = getMemberstack();
-        const [{ data: currentMember }, eventResponse] = await Promise.all([
-          memberstack.getCurrentMember(),
-          fetch("/api/portal/events?scope=featured"),
-        ]);
+        const { data: currentMember } = await memberstack.getCurrentMember();
+        const email = currentMember?.auth?.email?.trim() ?? "";
+
+        const creditsPromise = email
+          ? fetch(
+              `/api/portal/credits?email=${encodeURIComponent(email)}`,
+              { cache: "no-store" },
+            )
+          : null;
+
+        const eventResponse = await fetch("/api/portal/events?scope=featured");
 
         if (!mounted) return;
 
@@ -76,6 +88,43 @@ export default function DashboardPage() {
             : EMPTY_HEADER_USER,
         );
         setFeaturedEvent(eventPayload?.event ?? null);
+        setMemberReady(true);
+
+        if (creditsPromise) {
+          const creditsResponse = await creditsPromise;
+          if (!mounted) return;
+          const creditsPayload = (await creditsResponse
+            .json()
+            .catch(() => null)) as (PortalCreditsData & { ok?: boolean }) | null;
+          if (creditsPayload?.ok) {
+            setCredits({
+              referralCode: String(creditsPayload.referralCode ?? "").trim(),
+              creditsAvailable:
+                typeof creditsPayload.creditsAvailable === "number"
+                  ? creditsPayload.creditsAvailable
+                  : null,
+              qualifiedReferrals:
+                typeof creditsPayload.qualifiedReferrals === "number"
+                  ? creditsPayload.qualifiedReferrals
+                  : null,
+              creditsRedeemed:
+                typeof creditsPayload.creditsRedeemed === "number"
+                  ? creditsPayload.creditsRedeemed
+                  : null,
+              invitedFriends: Array.isArray(creditsPayload.invitedFriends)
+                ? creditsPayload.invitedFriends
+                : [],
+              invitedBy: String(creditsPayload.invitedBy ?? "").trim(),
+              creditHistory: Array.isArray(creditsPayload.creditHistory)
+                ? creditsPayload.creditHistory
+                : [],
+            });
+          } else {
+            setCredits(EMPTY_PORTAL_CREDITS);
+          }
+        } else {
+          setCredits(EMPTY_PORTAL_CREDITS);
+        }
 
         if (process.env.NODE_ENV === "development") {
           const status = getOnboardingStatus(currentMember);
@@ -90,8 +139,12 @@ export default function DashboardPage() {
         if (!mounted) return;
         setMember(null);
         setHeaderUser(EMPTY_HEADER_USER);
+        setCredits(EMPTY_PORTAL_CREDITS);
       } finally {
-        if (mounted) setMemberReady(true);
+        if (mounted) {
+          setMemberReady(true);
+          setCreditsLoading(false);
+        }
       }
     }
 
@@ -135,6 +188,8 @@ export default function DashboardPage() {
               <FoundationCard key={card.id} card={card} />
             ))}
           </div>
+
+          <CreditsReferralsSection data={credits} loading={creditsLoading} />
 
           <CommunityFooterCard />
         </>

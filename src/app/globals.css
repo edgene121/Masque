@@ -1366,6 +1366,144 @@ body {
   text-decoration: underline;
 }
 
+.credits-referrals {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.credits-referrals__stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.credits-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.credits-stat-card__label {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+}
+
+.credits-stat-card__value {
+  margin: 10px 0 8px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1;
+  color: #1a1a1a;
+}
+
+.credits-stat-card__caption {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b79555;
+}
+
+.credits-invite-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.credits-invite-card__copy {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555555;
+}
+
+.credits-table-card,
+.credits-invited-by {
+  padding: 18px 20px;
+}
+
+.credits-invited-by__name {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.credits-referrals__empty {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #777777;
+}
+
+.credits-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.credits-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.credits-table th {
+  padding: 0 12px 12px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  color: #b79555;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.credits-table td {
+  padding: 12px 12px 12px 0;
+  color: #333333;
+  border-bottom: 1px solid #f3f3f3;
+  vertical-align: top;
+}
+
+.credits-table tbody tr:last-child td {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.credits-table__num {
+  text-align: right;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .credits-referrals__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .credits-stat-card {
+    min-height: 132px;
+  }
+}
+
 .community-footer-card {
   display: flex;
   align-items: center;

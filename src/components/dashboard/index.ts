@@ -10,4 +10,5 @@ export { default as FeaturedEventCard } from "./FeaturedEventCard";
 export { default as SectionHeading } from "./SectionHeading";
 export { default as FeaturedDispatch } from "./FeaturedDispatch";
 export { default as FoundationCard } from "./FoundationCard";
+export { default as CreditsReferralsSection } from "./CreditsReferralsSection";
 export { default as CommunityFooterCard } from "./CommunityFooterCard";
