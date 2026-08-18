@@ -20,14 +20,61 @@ export type ConciergeOutstandingItem =
 
 export type ConciergePriority = "High" | "Normal";
 
+export type ConciergeVerificationMethod =
+  | "Not Verified"
+  | "Verified Online"
+  | "Verified In Person (Pierce)"
+  | "Verified In Person (Door)";
+
+export type ConciergeMemberAgreement =
+  | "Signed in Portal"
+  | "Signed at Pierce (Legacy)"
+  | "Missing";
+
+export type ConciergeEscalation =
+  | "None"
+  | "Concierge Follow-up"
+  | "Operations Follow-up"
+  | "Founder Follow-up";
+
+export type ConciergeDataQualityIssue =
+  | "Duplicate Phone Number"
+  | "Duplicate Email Address"
+  | "Missing Phone Number"
+  | "Missing Email Address"
+  | "Missing Profile Information"
+  | "Incorrect Contact Information";
+
+export interface ConciergeAttendanceDetail {
+  hasEverAttended: boolean;
+  lastEventAttended: string;
+}
+
+export interface ConciergeOnboardingDetail {
+  verificationMethod: ConciergeVerificationMethod;
+  memberAgreement: ConciergeMemberAgreement;
+  portalAccountCreated: boolean;
+  portalLoginCompleted: boolean;
+}
+
+export interface ConciergeWorkflow {
+  status: ConciergeStatus;
+  welcomeDate: string;
+  lastContact: string;
+  notes: string;
+  escalation: ConciergeEscalation;
+}
+
 export interface ConciergeMember {
   id: string;
   name: string;
   phone: string;
+  email: string;
   approvalDate: string;
-  attendance: ConciergeAttendance;
-  bertha: ConciergeBertha;
-  onboarding: ConciergeOnboarding;
-  conciergeStatus: ConciergeStatus;
+  attendance: ConciergeAttendanceDetail;
+  berthaTicketPurchased: boolean;
+  onboarding: ConciergeOnboardingDetail;
+  concierge: ConciergeWorkflow;
   outstandingItems: ConciergeOutstandingItem[];
+  dataQualityIssues: ConciergeDataQualityIssue[];
 }

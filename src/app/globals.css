@@ -5205,6 +5205,265 @@ a.contact-info-card__detail:hover {
   gap: 4px;
 }
 
+.admin-status-badge.is-legacy {
+  background-color: #1e293b;
+  color: #fbbf24;
+  border: 1px solid #92400e;
+}
+
+.admin-concierge-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-concierge-workspace__header {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
+  background-color: var(--admin-card);
+}
+
+.admin-concierge-workspace__header .admin-btn {
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.admin-concierge-workspace__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-concierge-workspace__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  color: #f8fafc;
+}
+
+.admin-concierge-workspace__name {
+  margin: 8px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.admin-concierge-workspace__since {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.admin-concierge-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-concierge-summary-card {
+  min-width: 0;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--admin-border);
+  background-color: var(--admin-card);
+}
+
+.admin-concierge-summary-card__value {
+  margin-top: 10px;
+}
+
+.admin-concierge-summary-card__hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.admin-concierge-workspace__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-concierge-workspace__main,
+.admin-concierge-workspace__side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-concierge-workspace .admin-detail-card {
+  margin: 0;
+}
+
+.admin-concierge-workspace .admin-detail-summary {
+  margin: 16px 0 0;
+}
+
+.admin-concierge-workspace .admin-detail-summary dd {
+  margin: 6px 0 0;
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.admin-concierge-outstanding-card {
+  border-color: #1e3a8a;
+}
+
+.admin-concierge-tags--large {
+  gap: 8px;
+}
+
+.admin-concierge-tags--large .admin-concierge-tag {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.admin-concierge-tag--issue {
+  background-color: #1e293b;
+  color: #fcd34d;
+}
+
+.admin-concierge-empty {
+  margin: 0;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.admin-concierge-legacy-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #fbbf24;
+}
+
+.admin-concierge-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.admin-concierge-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-concierge-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-concierge-form__field span {
+  font-size: 12px;
+  font-weight: 650;
+  color: #94a3b8;
+}
+
+.admin-concierge-form__field .admin-select {
+  width: 100%;
+  max-width: none;
+}
+
+.admin-concierge-input,
+.admin-concierge-textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  background-color: #0f172a;
+  color: var(--admin-text);
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  color-scheme: dark;
+}
+
+.admin-concierge-input {
+  height: 40px;
+  padding: 0 12px;
+}
+
+.admin-concierge-textarea {
+  min-height: 140px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+  font-family: inherit;
+}
+
+.admin-concierge-input:focus,
+.admin-concierge-textarea:focus,
+.admin-concierge-form__field .admin-select:focus {
+  border-color: var(--admin-primary);
+  outline: 2px solid #1e3a8a;
+  outline-offset: 1px;
+}
+
+.admin-concierge-escalation {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  background-color: #0f172a;
+}
+
+.admin-concierge-escalation.is-assigned {
+  border-color: #1e3a8a;
+  background-color: #111c33;
+}
+
+.admin-concierge-escalation__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #93c5fd;
+}
+
+.admin-concierge-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-concierge-saved {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #86efac;
+}
+
+@media (max-width: 1100px) {
+  .admin-concierge-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-concierge-workspace__grid,
+  .admin-concierge-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .admin-concierge-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-concierge-workspace__title-row {
+    flex-direction: column;
+  }
+}
+
 /* ===== Complete Profile / Onboarding ===== */
 .complete-profile-page {
   min-height: 100vh;

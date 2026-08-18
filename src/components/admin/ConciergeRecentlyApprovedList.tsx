@@ -12,6 +12,9 @@ import type {
   ConciergeStatus,
 } from "@/types/admin-concierge";
 import {
+  conciergeAttendanceLabel,
+  conciergeBerthaLabel,
+  conciergeOnboardingLabel,
   getConciergePriority,
   MOCK_CONCIERGE_MEMBERS,
 } from "@/lib/admin/mock-concierge-members";
@@ -103,12 +106,16 @@ export default function ConciergeRecentlyApprovedList() {
         const haystack = `${row.name} ${row.phone}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
-      if (conciergeStatus && row.conciergeStatus !== conciergeStatus) {
+      if (conciergeStatus && row.concierge.status !== conciergeStatus) {
         return false;
       }
-      if (onboarding && row.onboarding !== onboarding) return false;
-      if (attendance && row.attendance !== attendance) return false;
-      if (bertha && row.bertha !== bertha) return false;
+      if (onboarding && conciergeOnboardingLabel(row) !== onboarding) {
+        return false;
+      }
+      if (attendance && conciergeAttendanceLabel(row) !== attendance) {
+        return false;
+      }
+      if (bertha && conciergeBerthaLabel(row) !== bertha) return false;
       return true;
     });
   }, [query, conciergeStatus, onboarding, attendance, bertha]);
@@ -314,6 +321,9 @@ export default function ConciergeRecentlyApprovedList() {
 
 function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const priority = getConciergePriority(row);
+  const attendance = conciergeAttendanceLabel(row);
+  const bertha = conciergeBerthaLabel(row);
+  const onboarding = conciergeOnboardingLabel(row);
 
   return (
     <tr>
@@ -332,25 +342,25 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
       <td>{row.phone}</td>
       <td>{row.approvalDate}</td>
       <td>
-        <span className={`admin-status-badge ${attendanceBadgeClass(row.attendance)}`}>
-          {row.attendance}
+        <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
+          {attendance}
         </span>
       </td>
       <td>
-        <span className={`admin-status-badge ${berthaBadgeClass(row.bertha)}`}>
-          {row.bertha}
+        <span className={`admin-status-badge ${berthaBadgeClass(bertha)}`}>
+          {bertha}
         </span>
       </td>
       <td>
-        <span className={`admin-status-badge ${onboardingBadgeClass(row.onboarding)}`}>
-          {row.onboarding}
+        <span className={`admin-status-badge ${onboardingBadgeClass(onboarding)}`}>
+          {onboarding}
         </span>
       </td>
       <td>
         <span
-          className={`admin-status-badge ${conciergeStatusBadgeClass(row.conciergeStatus)}`}
+          className={`admin-status-badge ${conciergeStatusBadgeClass(row.concierge.status)}`}
         >
-          {row.conciergeStatus}
+          {row.concierge.status}
         </span>
       </td>
       <td className="admin-col-outstanding">

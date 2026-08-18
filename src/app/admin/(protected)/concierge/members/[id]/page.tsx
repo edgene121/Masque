@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
+import ConciergeMemberWorkspace from "@/components/admin/ConciergeMemberWorkspace";
 import { getConciergeMemberById } from "@/lib/admin/mock-concierge-members";
 import { requireAdmin } from "@/lib/admin/auth";
 
-interface ConciergeMemberPlaceholderPageProps {
+interface ConciergeMemberDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({
   params,
-}: ConciergeMemberPlaceholderPageProps): Promise<Metadata> {
+}: ConciergeMemberDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   const member = getConciergeMemberById(id);
 
@@ -18,45 +19,48 @@ export async function generateMetadata({
     title: member
       ? `${member.name} | Concierge | Masqué Admin`
       : "Concierge Member Detail | Masqué Admin",
-    description: "Member detail workspace will be implemented next.",
+    description: member
+      ? `Concierge workspace for ${member.name}.`
+      : "Concierge member detail workspace.",
   };
 }
 
-export default async function ConciergeMemberPlaceholderPage({
+export default async function ConciergeMemberDetailPage({
   params,
-}: ConciergeMemberPlaceholderPageProps) {
+}: ConciergeMemberDetailPageProps) {
   const admin = await requireAdmin();
   const { id } = await params;
   const member = getConciergeMemberById(id);
+
+  if (!member) {
+    return (
+      <AdminShell
+        admin={admin}
+        title="Concierge Member Detail"
+        description="Member record not found."
+      >
+        <section className="admin-card admin-detail-missing">
+          <p className="admin-card__body">Member Not Found</p>
+          <p style={{ marginTop: "20px" }}>
+            <Link
+              href="/admin/concierge/recently-approved"
+              className="admin-table-action"
+            >
+              Back to Recently Approved
+            </Link>
+          </p>
+        </section>
+      </AdminShell>
+    );
+  }
 
   return (
     <AdminShell
       admin={admin}
       title="Concierge Member Detail"
-      description="Member detail workspace will be implemented next."
+      description={`${member.name} · Member since ${member.approvalDate}`}
     >
-      <section className="admin-card admin-detail-missing">
-        <p className="admin-card__body">
-          Member detail workspace will be implemented next.
-        </p>
-        {member ? (
-          <p className="admin-card__body" style={{ marginTop: "10px" }}>
-            {member.name}
-          </p>
-        ) : (
-          <p className="admin-card__body" style={{ marginTop: "10px" }}>
-            Member Not Found
-          </p>
-        )}
-        <p style={{ marginTop: "20px" }}>
-          <Link
-            href="/admin/concierge/recently-approved"
-            className="admin-table-action"
-          >
-            Back to Recently Approved
-          </Link>
-        </p>
-      </section>
+      <ConciergeMemberWorkspace member={member} />
     </AdminShell>
   );
 }
