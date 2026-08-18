@@ -49,6 +49,7 @@ const ZERO_CREDIT_SUMMARY = {
   creditsAvailable: 0,
   qualifiedReferrals: 0,
   creditsRedeemed: 0,
+  referralCode: "",
 };
 
 export default function DashboardPage() {
@@ -136,6 +137,7 @@ export default function DashboardPage() {
           creditsAvailable?: number;
           qualifiedReferrals?: number;
           creditsRedeemed?: number;
+          referralCode?: string;
         } | null;
 
         if (!mounted) return;
@@ -153,6 +155,10 @@ export default function DashboardPage() {
             typeof payload?.creditsRedeemed === "number"
               ? payload.creditsRedeemed
               : 0,
+          referralCode:
+            typeof payload?.referralCode === "string"
+              ? payload.referralCode.trim()
+              : "",
         });
       } catch (error) {
         console.error("[Home] Failed to load credit summary:", error);
@@ -210,6 +216,7 @@ export default function DashboardPage() {
               creditsAvailable: creditSummary.creditsAvailable,
               qualifiedReferrals: creditSummary.qualifiedReferrals,
               creditsRedeemed: creditSummary.creditsRedeemed,
+              referralCode: creditSummary.referralCode,
             }}
             statsLoading={statsLoading}
           />

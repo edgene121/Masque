@@ -414,8 +414,8 @@ function asCreditCount(value: unknown): number {
 }
 
 /**
- * Load the three People credit summary fields for a member email.
- * Read-only. Blank/null Airtable values become 0.
+ * Load People credit summary and Referral Code for a member email.
+ * Read-only. Blank/null credit values become 0. Blank Referral Code stays empty.
  */
 export async function getPeopleCreditSummaryByEmail(
   email: string,
@@ -425,6 +425,7 @@ export async function getPeopleCreditSummaryByEmail(
       creditsAvailable: number;
       qualifiedReferrals: number;
       creditsRedeemed: number;
+      referralCode: string;
     }
   | { ok: false; error: string; status: number }
 > {
@@ -442,6 +443,7 @@ export async function getPeopleCreditSummaryByEmail(
   params.append("fields[]", "Credits Available");
   params.append("fields[]", "Qualified Referrals");
   params.append("fields[]", "Credits Redeemed");
+  params.append("fields[]", "Referral Code");
 
   const personResult = await airtableList({
     table: peopleTable,
@@ -470,6 +472,7 @@ export async function getPeopleCreditSummaryByEmail(
       creditsAvailable: 0,
       qualifiedReferrals: 0,
       creditsRedeemed: 0,
+      referralCode: "",
     };
   }
 
@@ -479,6 +482,7 @@ export async function getPeopleCreditSummaryByEmail(
     creditsAvailable: asCreditCount(getField(fields, ["Credits Available"])),
     qualifiedReferrals: asCreditCount(getField(fields, ["Qualified Referrals"])),
     creditsRedeemed: asCreditCount(getField(fields, ["Credits Redeemed"])),
+    referralCode: asDisplayString(getField(fields, ["Referral Code"])),
   };
 }
 

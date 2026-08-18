@@ -7,6 +7,7 @@ const ZERO_SUMMARY = {
   creditsAvailable: 0,
   qualifiedReferrals: 0,
   creditsRedeemed: 0,
+  referralCode: "",
 };
 
 /**
@@ -36,5 +37,6 @@ export async function GET(request: Request) {
     creditsAvailable: result.creditsAvailable,
     qualifiedReferrals: result.qualifiedReferrals,
     creditsRedeemed: result.creditsRedeemed,
+    referralCode: result.referralCode,
   });
 }
