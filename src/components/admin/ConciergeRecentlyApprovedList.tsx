@@ -39,6 +39,18 @@ const ATTENDANCE_OPTIONS: ConciergeAttendance[] = [
   "Attended",
 ];
 const BERTHA_OPTIONS: ConciergeBertha[] = ["Purchased", "No Ticket"];
+const NONE_OUTSTANDING_FILTER = "__none__";
+const OUTSTANDING_ITEM_OPTIONS = [
+  "Follow-Up Required",
+  "ID Pending Review",
+  "ID Review",
+  "Agreement Pending",
+  "Review Required",
+  "Restriction Hold",
+  "Onboarding Not Started",
+  "Onboarding In Progress",
+  "Onboarding Submitted",
+] as const;
 
 function getPageItems(
   current: number,
@@ -118,6 +130,7 @@ export default function ConciergeRecentlyApprovedList({
   const [onboarding, setOnboarding] = useState(ALL_FILTER);
   const [attendance, setAttendance] = useState(ALL_FILTER);
   const [bertha, setBertha] = useState(ALL_FILTER);
+  const [outstanding, setOutstanding] = useState(ALL_FILTER);
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -154,9 +167,25 @@ export default function ConciergeRecentlyApprovedList({
       ) {
         return false;
       }
+      if (outstanding === NONE_OUTSTANDING_FILTER) {
+        if (row.outstandingItems.length !== 0) return false;
+      } else if (
+        outstanding !== ALL_FILTER &&
+        !row.outstandingItems.includes(outstanding)
+      ) {
+        return false;
+      }
       return true;
     });
-  }, [members, query, conciergeStatus, onboarding, attendance, bertha]);
+  }, [
+    members,
+    query,
+    conciergeStatus,
+    onboarding,
+    attendance,
+    bertha,
+    outstanding,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -262,6 +291,28 @@ export default function ConciergeRecentlyApprovedList({
                   {option}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="admin-filter">
+            <span className="admin-sr-only">Outstanding Items</span>
+            <select
+              className="admin-select"
+              value={outstanding}
+              onChange={(event) => {
+                setOutstanding(event.target.value);
+                resetPage();
+              }}
+              aria-label="All Outstanding Items"
+            >
+              <option value={ALL_FILTER}>All Outstanding Items</option>
+              {OUTSTANDING_ITEM_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+              <option value={NONE_OUTSTANDING_FILTER}>
+                No Outstanding Items
+              </option>
             </select>
           </label>
         </div>
