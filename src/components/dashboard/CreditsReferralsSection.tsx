@@ -208,7 +208,7 @@ export default function CreditsReferralsSection({
           <p className="credits-referrals__empty">No credit activity yet.</p>
         ) : (
           <div className="credits-table-wrap">
-            <table className="credits-table">
+            <table className="credits-table credits-history-table">
               <thead>
                 <tr>
                   <th>Date</th>

@@ -1647,8 +1647,29 @@ body {
   padding-bottom: 0;
 }
 
+.credits-history-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.credits-history-table th:nth-child(1),
+.credits-history-table td:nth-child(1) {
+  width: 27%;
+}
+
+.credits-history-table th:nth-child(2),
+.credits-history-table td:nth-child(2) {
+  width: 53%;
+}
+
+.credits-history-table th:nth-child(3),
+.credits-history-table td:nth-child(3) {
+  width: 20%;
+  text-align: left;
+}
+
 .credits-table__num {
-  text-align: right;
+  text-align: left;
   white-space: nowrap;
   font-weight: 600;
 }
