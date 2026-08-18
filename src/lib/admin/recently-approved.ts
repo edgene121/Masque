@@ -2,23 +2,26 @@ import "server-only";
 
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
+import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
 import type { ConciergeMember } from "@/types/admin-concierge";
 
 const APPLICATIONS_TABLE =
   process.env.AIRTABLE_APPLICATIONS_TABLE?.trim() || "Applications";
 
 const NAME_FIELD = "Name";
-const PHONE_FIELD = "Phone";
-const EMAIL_FIELD = "Email";
 const VETTING_STATUS_FIELD = "Vetting Status";
-const MEMBERSHIP_APPROVAL_DATE_FIELD = "Membership Approval Date";
+const LAST_MODIFIED_FIELD = "Last Modified";
+const LINKED_PERSON_FIELD = "Linked Person";
 
-const IDENTITY_FIELDS = [
+const APPLICATION_FIELDS = [
   NAME_FIELD,
-  PHONE_FIELD,
-  EMAIL_FIELD,
   VETTING_STATUS_FIELD,
+  LAST_MODIFIED_FIELD,
+  LINKED_PERSON_FIELD,
 ] as const;
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const LOOKBACK_DAYS = 60;
 
 interface AirtableRecord {
   id: string;
@@ -56,14 +59,33 @@ function asTrimmedString(value: unknown): string {
   return "";
 }
 
+function isRecordId(value: string): boolean {
+  return /^rec[a-zA-Z0-9]{10,}$/.test(value);
+}
+
+function recordIds(value: unknown): string[] {
+  if (value == null || value === "") return [];
+  if (!Array.isArray(value)) {
+    const single = asTrimmedString(value);
+    return isRecordId(single) ? [single] : [];
+  }
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item.trim();
+      if (item && typeof item === "object") {
+        const record = item as { id?: unknown; recordId?: unknown };
+        return asTrimmedString(record.id) || asTrimmedString(record.recordId);
+      }
+      return "";
+    })
+    .filter((id) => isRecordId(id));
+}
+
 function parseDateOnlyMs(raw: string): number | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
-  const iso = /^\d{4}-\d{2}-\d{2}/.test(trimmed)
-    ? trimmed.slice(0, 10)
-    : "";
-  if (iso) {
-    const [year, month, day] = iso.split("-").map(Number);
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    const [year, month, day] = trimmed.slice(0, 10).split("-").map(Number);
     if (!year || !month || !day) return null;
     return Date.UTC(year, month - 1, day);
   }
@@ -91,17 +113,26 @@ function displayOrDash(value: string): string {
   return value.trim() || "—";
 }
 
-function approvedStatusFormula(): string {
-  return `LOWER({${VETTING_STATUS_FIELD}})='${VETTING_STATUS_APPROVED}'`;
+function utcDateLabel(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
 }
 
-function recentlyApprovedFormula(): string {
-  return [
-    approvedStatusFormula(),
-    `NOT({${MEMBERSHIP_APPROVAL_DATE_FIELD}}=BLANK())`,
-    `DATETIME_DIFF(TODAY(),{${MEMBERSHIP_APPROVAL_DATE_FIELD}},'days')>=0`,
-    `DATETIME_DIFF(TODAY(),{${MEMBERSHIP_APPROVAL_DATE_FIELD}},'days')<=60`,
-  ].join(",");
+function todayUtcMs(now = new Date()): number {
+  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+}
+
+function peopleContactFromFields(fields: Record<string, unknown> | undefined): {
+  email: string;
+  phone: string;
+} {
+  if (!fields) return { email: "", phone: "" };
+  const email = asTrimmedString(fields.Email);
+  const keys = Object.keys(fields);
+  const phoneKey =
+    keys.find((key) => key === "Phone") ||
+    keys.find((key) => key.toLowerCase() === "phone");
+  const phone = phoneKey ? asTrimmedString(fields[phoneKey]) : "";
+  return { email, phone };
 }
 
 function logAirtableError(
@@ -113,7 +144,6 @@ function logAirtableError(
     table: string;
     fields: string[];
     filterByFormula: string | null;
-    sortField?: string | null;
   },
 ) {
   console.error("Recently Approved Airtable error", {
@@ -124,11 +154,11 @@ function logAirtableError(
     table: details.table,
     fields: details.fields,
     filterByFormula: details.filterByFormula,
-    sortField: details.sortField ?? null,
   });
 }
 
-async function queryApplications(options: {
+async function queryTable(options: {
+  table: string;
   maxRecords?: number;
   fields?: string[];
   filterByFormula?: string;
@@ -149,7 +179,7 @@ async function queryApplications(options: {
     };
   }
 
-  const encodedTable = encodeURIComponent(APPLICATIONS_TABLE);
+  const encodedTable = encodeURIComponent(options.table);
   const records: AirtableRecord[] = [];
   let offset: string | undefined;
 
@@ -158,7 +188,7 @@ async function queryApplications(options: {
       const params = new URLSearchParams({
         pageSize: String(Math.min(options.maxRecords ?? 100, 100)),
       });
-      if (options.maxRecords && !options.paginate) {
+      if (options.maxRecords && options.paginate === false) {
         params.set("maxRecords", String(options.maxRecords));
       }
       if (options.filterByFormula) {
@@ -220,127 +250,126 @@ async function queryApplications(options: {
   }
 }
 
-async function diagnoseRecentlyApprovedQuery() {
-  const tests: Array<{
-    id: "A" | "B" | "C" | "D";
-    fields?: string[];
-    filterByFormula?: string;
-    sortField?: string;
-  }> = [
-    { id: "A", fields: undefined, filterByFormula: undefined },
-    {
-      id: "B",
-      fields: [...IDENTITY_FIELDS, MEMBERSHIP_APPROVAL_DATE_FIELD],
-    },
-    {
-      id: "C",
-      fields: [...IDENTITY_FIELDS],
-      filterByFormula: approvedStatusFormula(),
-    },
-    {
-      id: "D",
-      fields: [...IDENTITY_FIELDS, MEMBERSHIP_APPROVAL_DATE_FIELD],
-      filterByFormula: `AND(${recentlyApprovedFormula()})`,
-      sortField: MEMBERSHIP_APPROVAL_DATE_FIELD,
-    },
-  ];
+function escapeAirtableFormulaString(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
 
-  for (const test of tests) {
-    const result = await queryApplications({
-      maxRecords: 3,
-      fields: test.fields,
-      filterByFormula: test.filterByFormula,
-      sortField: test.sortField,
-      paginate: false,
+async function fetchPeopleContactsByIds(
+  ids: string[],
+): Promise<{
+  contacts: Map<string, { email: string; phone: string }>;
+  failed: boolean;
+}> {
+  const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
+  const contacts = new Map<string, { email: string; phone: string }>();
+  if (unique.length === 0) return { contacts, failed: false };
+
+  const peopleTable = getPeopleTableName();
+  let failed = false;
+
+  for (let index = 0; index < unique.length; index += 20) {
+    const chunk = unique.slice(index, index + 20);
+    const formula =
+      chunk.length === 1
+        ? `RECORD_ID()='${escapeAirtableFormulaString(chunk[0])}'`
+        : `OR(${chunk
+            .map((id) => `RECORD_ID()='${escapeAirtableFormulaString(id)}'`)
+            .join(",")})`;
+
+    const result = await queryTable({
+      table: peopleTable,
+      filterByFormula: formula,
+      paginate: true,
     });
 
     if (!result.ok) {
-      logAirtableError(`TEST ${test.id} failed`, {
+      failed = true;
+      logAirtableError("People enrichment", {
         status: result.status,
         type: result.type,
         message: result.message,
-        table: APPLICATIONS_TABLE,
-        fields: test.fields ?? [],
-        filterByFormula: test.filterByFormula ?? null,
-        sortField: test.sortField ?? null,
+        table: peopleTable,
+        fields: [],
+        filterByFormula: formula,
       });
       continue;
     }
 
-    const sampleFieldNames = [
-      ...new Set(
-        result.records.flatMap((record) => Object.keys(record.fields ?? {})),
-      ),
-    ].sort();
-
-    console.error("Recently Approved Airtable probe", {
-      test: test.id,
-      ok: true,
-      recordCount: result.records.length,
-      table: APPLICATIONS_TABLE,
-      fieldsRequested: test.fields ?? "(all returned fields)",
-      filterByFormula: test.filterByFormula ?? null,
-      sampleFieldNames,
-    });
+    for (const record of result.records) {
+      if (!record.id) continue;
+      contacts.set(record.id, peopleContactFromFields(record.fields));
+    }
   }
+
+  return { contacts, failed };
 }
 
-function toConciergeMember(
-  record: AirtableRecord,
-): { member: ConciergeMember; approvalDateMs: number } | null {
-  const fields = record.fields ?? {};
-  const approvalRaw = asTrimmedString(fields[MEMBERSHIP_APPROVAL_DATE_FIELD]);
-  const approvalMs = parseDateOnlyMs(approvalRaw);
-  if (approvalMs == null) return null;
-
+function emptyConciergeDefaults(): Pick<
+  ConciergeMember,
+  | "attendance"
+  | "berthaTicketPurchased"
+  | "onboarding"
+  | "concierge"
+  | "outstandingItems"
+  | "dataQualityIssues"
+> {
   return {
-    approvalDateMs: approvalMs,
-    member: {
-      id: record.id,
-      name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
-      phone: displayOrDash(asTrimmedString(fields[PHONE_FIELD])),
-      email: displayOrDash(asTrimmedString(fields[EMAIL_FIELD])),
-      approvalDate: formatApprovalDate(approvalRaw),
-      attendance: {
-        hasEverAttended: false,
-        lastEventAttended: "—",
-      },
-      berthaTicketPurchased: false,
-      onboarding: {
-        verificationMethod: "Not Verified",
-        memberAgreement: "Missing",
-        portalAccountCreated: false,
-        portalLoginCompleted: false,
-      },
-      concierge: {
-        status: "Not Contacted",
-        welcomeDate: "",
-        lastContact: "",
-        notes: "",
-        escalation: "None",
-      },
-      outstandingItems: [],
-      dataQualityIssues: [],
+    attendance: {
+      hasEverAttended: false,
+      lastEventAttended: "—",
     },
+    berthaTicketPurchased: false,
+    onboarding: {
+      verificationMethod: "Not Verified",
+      memberAgreement: "Missing",
+      portalAccountCreated: false,
+      portalLoginCompleted: false,
+    },
+    concierge: {
+      status: "Not Contacted",
+      welcomeDate: "",
+      lastContact: "",
+      notes: "",
+      escalation: "None",
+    },
+    outstandingItems: [],
+    dataQualityIssues: [],
   };
 }
 
 /**
- * Applications approved in the last 60 days, newest approval first.
- * Identity fields only. Concierge workflow fields stay on defaults.
+ * Applications with Vetting Status = approved whose Last Modified
+ * (Vetting Status last-modified time) falls within the last 60 days.
  */
 export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprovedResult> {
-  const fields = [...IDENTITY_FIELDS, MEMBERSHIP_APPROVAL_DATE_FIELD];
-  const filterByFormula = `AND(${recentlyApprovedFormula()})`;
+  const filterByFormula = `LOWER({${VETTING_STATUS_FIELD}})='${VETTING_STATUS_APPROVED}'`;
 
   try {
-    const result = await queryApplications({
-      fields,
+    let result = await queryTable({
+      table: APPLICATIONS_TABLE,
+      fields: [...APPLICATION_FIELDS],
       filterByFormula,
-      sortField: MEMBERSHIP_APPROVAL_DATE_FIELD,
+      sortField: LAST_MODIFIED_FIELD,
       sortDirection: "desc",
       paginate: true,
     });
+
+    if (!result.ok) {
+      logAirtableError("listRecentlyApprovedMembers sorted", {
+        status: result.status,
+        type: result.type,
+        message: result.message,
+        table: APPLICATIONS_TABLE,
+        fields: [...APPLICATION_FIELDS],
+        filterByFormula,
+      });
+      result = await queryTable({
+        table: APPLICATIONS_TABLE,
+        fields: [...APPLICATION_FIELDS],
+        filterByFormula,
+        paginate: true,
+      });
+    }
 
     if (!result.ok) {
       logAirtableError("listRecentlyApprovedMembers", {
@@ -348,11 +377,9 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         type: result.type,
         message: result.message,
         table: APPLICATIONS_TABLE,
-        fields,
+        fields: [...APPLICATION_FIELDS],
         filterByFormula,
-        sortField: MEMBERSHIP_APPROVAL_DATE_FIELD,
       });
-      await diagnoseRecentlyApprovedQuery();
       return {
         ok: false,
         error: "Unable to load recently approved members right now.",
@@ -360,24 +387,68 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
       };
     }
 
-    const rows = result.records
-      .map((record) => (record?.id ? toConciergeMember(record) : null))
-      .filter(
-        (row): row is { member: ConciergeMember; approvalDateMs: number } =>
-          row != null,
-      )
-      .sort((left, right) => right.approvalDateMs - left.approvalDateMs);
+    const todayMs = todayUtcMs();
+    const cutoffMs = todayMs - LOOKBACK_DAYS * MS_PER_DAY;
+    const approvedCount = result.records.length;
 
-    return { ok: true, members: rows.map((row) => row.member) };
+    const recent = result.records
+      .map((record) => {
+        if (!record?.id) return null;
+        const fields = record.fields ?? {};
+        const lastModifiedRaw = asTrimmedString(fields[LAST_MODIFIED_FIELD]);
+        const approvalMs = parseDateOnlyMs(lastModifiedRaw);
+        if (approvalMs == null) return null;
+        if (approvalMs < cutoffMs || approvalMs > todayMs) return null;
+        return { record, fields, lastModifiedRaw, approvalMs };
+      })
+      .filter(
+        (
+          row,
+        ): row is {
+          record: AirtableRecord;
+          fields: Record<string, unknown>;
+          lastModifiedRaw: string;
+          approvalMs: number;
+        } => row != null,
+      )
+      .sort((left, right) => right.approvalMs - left.approvalMs);
+
+    const peopleIds = [
+      ...new Set(
+        recent.flatMap((row) => recordIds(row.fields[LINKED_PERSON_FIELD])),
+      ),
+    ];
+    const enrichment = await fetchPeopleContactsByIds(peopleIds);
+
+    console.error("[Recently Approved]", {
+      approvedApplicationsRetrieved: approvedCount,
+      cutoffDate: utcDateLabel(cutoffMs),
+      remainingAfter60DayFilter: recent.length,
+      peopleEnrichmentFailed: enrichment.failed,
+    });
+
+    const members = recent.map((row) => {
+      const personId = recordIds(row.fields[LINKED_PERSON_FIELD])[0];
+      const contact = personId ? enrichment.contacts.get(personId) : undefined;
+      return {
+        id: row.record.id,
+        name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
+        phone: displayOrDash(contact?.phone ?? ""),
+        email: displayOrDash(contact?.email ?? ""),
+        approvalDate: formatApprovalDate(row.lastModifiedRaw),
+        ...emptyConciergeDefaults(),
+      };
+    });
+
+    return { ok: true, members };
   } catch (error) {
     logAirtableError("listRecentlyApprovedMembers", {
       status: 503,
       type: "NETWORK",
       message: error instanceof Error ? error.message : String(error),
       table: APPLICATIONS_TABLE,
-      fields,
+      fields: [...APPLICATION_FIELDS],
       filterByFormula,
-      sortField: MEMBERSHIP_APPROVAL_DATE_FIELD,
     });
     return {
       ok: false,

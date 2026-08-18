@@ -19,7 +19,7 @@ import {
 } from "@/lib/admin/mock-concierge-members";
 
 const PAGE_SIZE = 10;
-const ALL = "";
+const ALL_FILTER = "__all__";
 
 const CONCIERGE_STATUS_OPTIONS: ConciergeStatus[] = [
   "Not Contacted",
@@ -97,10 +97,10 @@ export default function ConciergeRecentlyApprovedList({
   loadError?: string | null;
 }) {
   const [query, setQuery] = useState("");
-  const [conciergeStatus, setConciergeStatus] = useState(ALL);
-  const [onboarding, setOnboarding] = useState(ALL);
-  const [attendance, setAttendance] = useState(ALL);
-  const [bertha, setBertha] = useState(ALL);
+  const [conciergeStatus, setConciergeStatus] = useState(ALL_FILTER);
+  const [onboarding, setOnboarding] = useState(ALL_FILTER);
+  const [attendance, setAttendance] = useState(ALL_FILTER);
+  const [bertha, setBertha] = useState(ALL_FILTER);
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -111,16 +111,24 @@ export default function ConciergeRecentlyApprovedList({
         const haystack = `${row.name} ${row.phone} ${row.email}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
-      if (conciergeStatus && row.concierge.status !== conciergeStatus) {
+      if (conciergeStatus !== ALL_FILTER && row.concierge.status !== conciergeStatus) {
         return false;
       }
-      if (onboarding && conciergeOnboardingLabel(row) !== onboarding) {
+      if (
+        onboarding !== ALL_FILTER &&
+        conciergeOnboardingLabel(row) !== onboarding
+      ) {
         return false;
       }
-      if (attendance && conciergeAttendanceLabel(row) !== attendance) {
+      if (
+        attendance !== ALL_FILTER &&
+        conciergeAttendanceLabel(row) !== attendance
+      ) {
         return false;
       }
-      if (bertha && conciergeBerthaLabel(row) !== bertha) return false;
+      if (bertha !== ALL_FILTER && conciergeBerthaLabel(row) !== bertha) {
+        return false;
+      }
       return true;
     });
   }, [members, query, conciergeStatus, onboarding, attendance, bertha]);
@@ -166,7 +174,7 @@ export default function ConciergeRecentlyApprovedList({
               }}
               aria-label="All Concierge Statuses"
             >
-              <option value={ALL}>All Concierge Statuses</option>
+              <option value={ALL_FILTER}>All Concierge Statuses</option>
               {CONCIERGE_STATUS_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -185,7 +193,7 @@ export default function ConciergeRecentlyApprovedList({
               }}
               aria-label="All Onboarding Statuses"
             >
-              <option value={ALL}>All Onboarding Statuses</option>
+              <option value={ALL_FILTER}>All Onboarding Statuses</option>
               {ONBOARDING_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -204,7 +212,7 @@ export default function ConciergeRecentlyApprovedList({
               }}
               aria-label="All Attendance"
             >
-              <option value={ALL}>All Attendance</option>
+              <option value={ALL_FILTER}>All Attendance</option>
               {ATTENDANCE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -223,7 +231,7 @@ export default function ConciergeRecentlyApprovedList({
               }}
               aria-label="All Bertha Status"
             >
-              <option value={ALL}>All Bertha Status</option>
+              <option value={ALL_FILTER}>All Bertha Status</option>
               {BERTHA_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
