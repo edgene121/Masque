@@ -437,20 +437,6 @@ export async function getPortalCreditsByEmail(
       context: "Rewards for member",
     }),
   ]);
-    airtableList({
-      table: APPLICATIONS_TABLE,
-      params: new URLSearchParams({
-        filterByFormula: ownAppFormula,
-        maxRecords: "1",
-      }),
-      context: "Member application",
-    }),
-    airtableList({
-      table: REWARDS_TABLE,
-      params: new URLSearchParams({ filterByFormula: rewardsFormula }),
-      context: "Rewards for member",
-    }),
-  ]);
 
   const invitedFriends = invitedResult.ok
     ? invitedResult.records
