@@ -5454,6 +5454,20 @@ a.contact-info-card__detail:hover {
 
 .admin-concierge-workspace .admin-detail-summary dd {
   margin: 6px 0 0;
+}
+
+.admin-concierge-notes {
+  margin: 0;
+  white-space: pre-wrap;
+  color: #e2e8f0;
+}
+
+.admin-concierge-status-extra {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+  margin: 6px 0 0;
   color: #f8fafc;
   font-size: 14px;
   font-weight: 600;

@@ -16,6 +16,17 @@ import {
   getConciergePriority,
   isConciergeFieldResolved,
 } from "@/lib/admin/mock-concierge-members";
+import {
+  attendanceBadgeClass,
+  berthaBadgeClass,
+  conciergeStatusBadgeClass,
+  memberAttendanceLabel,
+  memberBerthaLabel,
+  onboardingBadgeClass,
+  outstandingItemClass,
+  peopleConciergeStatus,
+  peopleOnboardingState,
+} from "@/lib/admin/concierge-display";
 
 const PAGE_SIZE = 10;
 const ALL_FILTER = "__all__";
@@ -73,49 +84,6 @@ function getPageItems(
   if (end < total - 1) pushUnique("ellipsis");
   pushUnique(total);
   return items;
-}
-
-function attendanceBadgeClass(value: ConciergeAttendance): string {
-  return value === "Attended" ? "is-approved" : "is-vetting-amber";
-}
-
-function berthaBadgeClass(value: ConciergeBertha): string {
-  return value === "Purchased" ? "is-approved" : "is-neutral";
-}
-
-function onboardingBadgeClass(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === "completed") return "is-approved";
-  if (normalized === "in progress") return "is-vetting-amber";
-  if (normalized === "not started") return "is-neutral";
-  return "is-member-subtle";
-}
-
-function peopleOnboardingState(member: ConciergeMember): string | null {
-  const value = member.onboardingState?.trim() ?? "";
-  return value || null;
-}
-
-function peopleConciergeStatus(member: ConciergeMember): string | null {
-  const value = member.peopleConciergeStatus?.trim() ?? "";
-  return value || null;
-}
-
-function conciergeStatusBadgeClass(value: string): string {
-  switch (value) {
-    case "Welcome Completed":
-      return "is-approved";
-    case "Conversation Active":
-      return "is-vetting-blue";
-    case "Follow-up Needed":
-      return "is-vetting-amber";
-    case "Do Not Contact":
-      return "is-rejected";
-    case "Deferred":
-      return "is-member-subtle";
-    default:
-      return "is-neutral";
-  }
 }
 
 export default function ConciergeRecentlyApprovedList({
@@ -421,10 +389,8 @@ export default function ConciergeRecentlyApprovedList({
 
 function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const priority = getConciergePriority(row);
-  const attendanceResolved = isConciergeFieldResolved(row, "attendance");
-  const berthaResolved = isConciergeFieldResolved(row, "bertha");
-  const attendance = attendanceResolved ? conciergeAttendanceLabel(row) : null;
-  const bertha = berthaResolved ? conciergeBerthaLabel(row) : null;
+  const attendance = memberAttendanceLabel(row);
+  const bertha = memberBerthaLabel(row);
   const onboarding = peopleOnboardingState(row);
   const conciergeStatusValue = peopleConciergeStatus(row);
 
@@ -525,17 +491,4 @@ function OutstandingItems({ items }: { items: string[] }) {
       ))}
     </div>
   );
-}
-
-function outstandingItemClass(item: string): string {
-  const normalized = item.trim().toLowerCase();
-  if (normalized === "follow-up required") return "admin-concierge-tag--warning";
-  if (normalized === "id pending review" || normalized === "id review") {
-    return "admin-concierge-tag--info";
-  }
-  if (normalized === "agreement pending") return "admin-concierge-tag--amber";
-  if (normalized === "review required") return "admin-concierge-tag--warning";
-  if (normalized === "restriction hold") return "admin-concierge-tag--danger";
-  if (normalized.startsWith("onboarding")) return "admin-concierge-tag--info";
-  return "";
 }

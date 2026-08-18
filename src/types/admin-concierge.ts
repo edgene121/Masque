@@ -97,5 +97,10 @@ export interface ConciergeMember {
   onboardingState?: string;
   /** Exact People "Concierge Status" value. Blank/missing is omitted or "". */
   peopleConciergeStatus?: string;
+  /** Exact People "Compliance State" value. Blank/missing is omitted or "". */
+  complianceState?: string;
+  conciergeWelcomeDate?: string;
+  lastConciergeContact?: string;
+  conciergeNotes?: string;
   fieldAvailability?: ConciergeFieldAvailability;
 }

@@ -124,6 +124,29 @@ function formatApprovalDate(raw: string): string {
   });
 }
 
+function formatPeopleDate(value: unknown): string {
+  return formatApprovalDate(asTrimmedString(value));
+}
+
+function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
+  ConciergeMember,
+  | "onboardingState"
+  | "peopleConciergeStatus"
+  | "complianceState"
+  | "conciergeWelcomeDate"
+  | "lastConciergeContact"
+  | "conciergeNotes"
+> {
+  return {
+    onboardingState: contact?.onboardingState ?? "",
+    peopleConciergeStatus: contact?.conciergeStatus ?? "",
+    complianceState: contact?.complianceState ?? "",
+    conciergeWelcomeDate: contact?.conciergeWelcomeDate ?? "",
+    lastConciergeContact: contact?.lastConciergeContact ?? "",
+    conciergeNotes: contact?.conciergeNotes ?? "",
+  };
+}
+
 function displayOrDash(value: string): string {
   return value.trim() || "—";
 }
@@ -142,6 +165,9 @@ const MEMBERSHIP_STATUS_FIELD = "Membership Status";
 const COMPLIANCE_STATE_FIELD = "Compliance State";
 const FOLLOW_UP_REQUIRED_FIELD = "Follow-Up Required";
 const GOV_ID_FIELD = "Gov ID";
+const CONCIERGE_WELCOME_DATE_FIELD = "Concierge Welcome Date";
+const LAST_CONCIERGE_CONTACT_FIELD = "Last Concierge Contact";
+const CONCIERGE_NOTES_FIELD = "Concierge Notes";
 
 function findFieldKey(
   keys: string[],
@@ -196,6 +222,9 @@ type PeopleContact = {
   complianceState: string;
   followUpRequired: boolean;
   hasGovId: boolean;
+  conciergeWelcomeDate: string;
+  lastConciergeContact: string;
+  conciergeNotes: string;
 };
 
 function peopleContactFromFields(
@@ -211,6 +240,9 @@ function peopleContactFromFields(
       complianceState: "",
       followUpRequired: false,
       hasGovId: false,
+      conciergeWelcomeDate: "",
+      lastConciergeContact: "",
+      conciergeNotes: "",
     };
   }
   const email = asTrimmedString(fields.Email);
@@ -224,6 +256,9 @@ function peopleContactFromFields(
   const complianceKey = findFieldKey(keys, COMPLIANCE_STATE_FIELD);
   const followUpKey = findFieldKey(keys, FOLLOW_UP_REQUIRED_FIELD);
   const govIdKey = findFieldKey(keys, GOV_ID_FIELD);
+  const welcomeDateKey = findFieldKey(keys, CONCIERGE_WELCOME_DATE_FIELD);
+  const lastContactKey = findFieldKey(keys, LAST_CONCIERGE_CONTACT_FIELD);
+  const notesKey = findFieldKey(keys, CONCIERGE_NOTES_FIELD);
 
   return {
     email,
@@ -244,6 +279,13 @@ function peopleContactFromFields(
       ? isFollowUpRequiredCheckbox(fields[followUpKey])
       : false,
     hasGovId: govIdKey ? hasGovIdAttachment(fields[govIdKey]) : false,
+    conciergeWelcomeDate: welcomeDateKey
+      ? formatPeopleDate(fields[welcomeDateKey])
+      : "",
+    lastConciergeContact: lastContactKey
+      ? formatPeopleDate(fields[lastContactKey])
+      : "",
+    conciergeNotes: notesKey ? asTrimmedString(fields[notesKey]) : "",
   };
 }
 
@@ -645,8 +687,7 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
               email: displayOrDash(contact?.email ?? ""),
               approvalDate: formatApprovalDate(row.lastModifiedRaw),
               ...unresolvedConciergeFields(),
-              onboardingState: contact?.onboardingState ?? "",
-              peopleConciergeStatus: contact?.conciergeStatus ?? "",
+              ...peopleDisplayFields(contact),
             },
             personId,
             attendanceResult,
@@ -864,9 +905,8 @@ export async function getConciergeMemberByApplicationId(
           approvalDate: formatApprovalDate(
             asTrimmedString(fields[LAST_MODIFIED_FIELD]),
           ),
-          ...unresolvedConciergeFields(),
-          onboardingState: contact?.onboardingState ?? "",
-          peopleConciergeStatus: contact?.conciergeStatus ?? "",
+        ...unresolvedConciergeFields(),
+        ...peopleDisplayFields(contact),
         },
         personId,
         attendanceResult,
