@@ -5454,6 +5454,10 @@ a.contact-info-card__detail:hover {
 
 .admin-concierge-workspace .admin-detail-summary dd {
   margin: 6px 0 0;
+  color: #f8fafc;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
 }
 
 .admin-concierge-notes {
@@ -5466,12 +5470,6 @@ a.contact-info-card__detail:hover {
   margin-top: 8px;
   font-size: 13px;
   color: #94a3b8;
-}
-  margin: 6px 0 0;
-  color: #f8fafc;
-  font-size: 14px;
-  font-weight: 600;
-  word-break: break-word;
 }
 
 .admin-concierge-outstanding-card {
