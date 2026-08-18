@@ -37,9 +37,9 @@ export const EMPTY_PORTAL_CREDITS: PortalCreditsData = {
 };
 
 /**
- * UI-only mock for Invited By and Credit History.
- * Home summary cards, Referral Code, and Invited Friends are loaded from
- * People/Applications via /api/portal/credits.
+ * UI-only mock for Credit History.
+ * Home summary cards, Referral Code, Invited Friends, and Invited By are
+ * loaded from People/Applications via /api/portal/credits.
  * Do not write this data to Airtable.
  */
 export const MOCK_CREDITS_DATA: PortalCreditsData = {
@@ -47,8 +47,7 @@ export const MOCK_CREDITS_DATA: PortalCreditsData = {
   creditsAvailable: 250,
   qualifiedReferrals: 3,
   creditsRedeemed: 100,
-  invitedBy: "Alexander Morgan",
-  invitedByReferralCode: "ALEXANDER4821",
+  invitedBy: "",
   invitedFriends: [
     {
       id: "mock-friend-1",

@@ -186,15 +186,10 @@ export default function CreditsReferralsSection({
 
       <SectionHeading>Invited By</SectionHeading>
       <section className="profile-section profile-section--card credits-invited-by">
-        {data.invitedBy.trim() ? (
-          <>
-            <p className="credits-invited-by__name">{data.invitedBy.trim()}</p>
-            {data.invitedByReferralCode?.trim() ? (
-              <p className="credits-invited-by__code">
-                Referral Code: {data.invitedByReferralCode.trim()}
-              </p>
-            ) : null}
-          </>
+        {statsLoading ? (
+          <p className="credits-referrals__empty">Loading…</p>
+        ) : data.invitedBy.trim() ? (
+          <p className="credits-invited-by__name">{data.invitedBy.trim()}</p>
         ) : (
           <p className="credits-invited-by__name">No Referrer</p>
         )}

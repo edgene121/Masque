@@ -9,6 +9,7 @@ const ZERO_SUMMARY = {
   creditsRedeemed: 0,
   referralCode: "",
   invitedFriends: [],
+  invitedBy: "",
 };
 
 /**
@@ -42,5 +43,6 @@ export async function GET(request: Request) {
     creditsRedeemed: result.creditsRedeemed,
     referralCode: result.referralCode,
     invitedFriends: result.invitedFriends,
+    invitedBy: result.invitedBy,
   });
 }
