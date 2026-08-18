@@ -85,7 +85,12 @@ function peopleOnboardingState(member: ConciergeMember): string | null {
   return value || null;
 }
 
-function conciergeStatusBadgeClass(value: ConciergeStatus): string {
+function peopleConciergeStatus(member: ConciergeMember): string | null {
+  const value = member.peopleConciergeStatus?.trim() ?? "";
+  return value || null;
+}
+
+function conciergeStatusBadgeClass(value: string): string {
   switch (value) {
     case "Welcome Completed":
       return "is-approved";
@@ -94,7 +99,7 @@ function conciergeStatusBadgeClass(value: ConciergeStatus): string {
     case "Follow-up Needed":
       return "is-vetting-amber";
     case "Do Not Contact":
-      return "is-member-subtle";
+      return "is-rejected";
     case "Deferred":
       return "is-member-subtle";
     default:
@@ -126,8 +131,7 @@ export default function ConciergeRecentlyApprovedList({
       }
       if (
         conciergeStatus !== ALL_FILTER &&
-        (!isConciergeFieldResolved(row, "conciergeStatus") ||
-          row.concierge.status !== conciergeStatus)
+        peopleConciergeStatus(row) !== conciergeStatus
       ) {
         return false;
       }
@@ -369,14 +373,11 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
   const priority = getConciergePriority(row);
   const attendanceResolved = isConciergeFieldResolved(row, "attendance");
   const berthaResolved = isConciergeFieldResolved(row, "bertha");
-  const conciergeStatusResolved = isConciergeFieldResolved(
-    row,
-    "conciergeStatus",
-  );
   const outstandingResolved = isConciergeFieldResolved(row, "outstandingItems");
   const attendance = attendanceResolved ? conciergeAttendanceLabel(row) : null;
   const bertha = berthaResolved ? conciergeBerthaLabel(row) : null;
   const onboarding = peopleOnboardingState(row);
+  const conciergeStatusValue = peopleConciergeStatus(row);
 
   return (
     <tr>
@@ -429,11 +430,11 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
         )}
       </td>
       <td className="admin-col-concierge-status">
-        {conciergeStatusResolved ? (
+        {conciergeStatusValue ? (
           <span
-            className={`admin-status-badge ${conciergeStatusBadgeClass(row.concierge.status)}`}
+            className={`admin-status-badge ${conciergeStatusBadgeClass(conciergeStatusValue)}`}
           >
-            {row.concierge.status}
+            {conciergeStatusValue}
           </span>
         ) : (
           <UnresolvedValue />

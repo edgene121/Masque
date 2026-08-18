@@ -136,13 +136,17 @@ function todayUtcMs(now = new Date()): number {
 }
 
 const ONBOARDING_STATE_FIELD = "Onboarding State";
+const CONCIERGE_STATUS_FIELD = "Concierge Status";
 
 function peopleContactFromFields(fields: Record<string, unknown> | undefined): {
   email: string;
   phone: string;
   onboardingState: string;
+  conciergeStatus: string;
 } {
-  if (!fields) return { email: "", phone: "", onboardingState: "" };
+  if (!fields) {
+    return { email: "", phone: "", onboardingState: "", conciergeStatus: "" };
+  }
   const email = asTrimmedString(fields.Email);
   const keys = Object.keys(fields);
   const phoneKey =
@@ -152,22 +156,31 @@ function peopleContactFromFields(fields: Record<string, unknown> | undefined): {
   const onboardingKey =
     keys.find((key) => key === ONBOARDING_STATE_FIELD) ||
     keys.find((key) => key.toLowerCase() === ONBOARDING_STATE_FIELD.toLowerCase());
-  const onboardingState = onboardingKey
-    ? asOnboardingStateValue(fields[onboardingKey])
-    : "";
-  return { email, phone, onboardingState };
+  const conciergeKey =
+    keys.find((key) => key === CONCIERGE_STATUS_FIELD) ||
+    keys.find(
+      (key) => key.toLowerCase() === CONCIERGE_STATUS_FIELD.toLowerCase(),
+    );
+  return {
+    email,
+    phone,
+    onboardingState: onboardingKey
+      ? asPeopleSelectValue(fields[onboardingKey])
+      : "",
+    conciergeStatus: conciergeKey
+      ? asPeopleSelectValue(fields[conciergeKey])
+      : "",
+  };
 }
 
-function asOnboardingStateValue(value: unknown): string {
+function asPeopleSelectValue(value: unknown): string {
   if (value == null || value === "") return "";
   if (Array.isArray(value) && value.length === 1) {
-    return asOnboardingStateValue(value[0]);
+    return asPeopleSelectValue(value[0]);
   }
   if (typeof value === "object") {
     const record = value as { name?: unknown; label?: unknown };
-    return (
-      asTrimmedString(record.name) || asTrimmedString(record.label)
-    );
+    return asTrimmedString(record.name) || asTrimmedString(record.label);
   }
   return asTrimmedString(value);
 }
@@ -296,14 +309,24 @@ async function fetchPeopleContactsByIds(
 ): Promise<{
   contacts: Map<
     string,
-    { email: string; phone: string; onboardingState: string }
+    {
+      email: string;
+      phone: string;
+      onboardingState: string;
+      conciergeStatus: string;
+    }
   >;
   failed: boolean;
 }> {
   const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
   const contacts = new Map<
     string,
-    { email: string; phone: string; onboardingState: string }
+    {
+      email: string;
+      phone: string;
+      onboardingState: string;
+      conciergeStatus: string;
+    }
   >();
   if (unique.length === 0) return { contacts, failed: false };
 
@@ -540,6 +563,7 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
             approvalDate: formatApprovalDate(row.lastModifiedRaw),
             ...unresolvedConciergeFields(),
             onboardingState: contact?.onboardingState ?? "",
+            peopleConciergeStatus: contact?.conciergeStatus ?? "",
           },
           personId,
           attendanceResult,
@@ -756,6 +780,7 @@ export async function getConciergeMemberByApplicationId(
         ),
         ...unresolvedConciergeFields(),
         onboardingState: contact?.onboardingState ?? "",
+        peopleConciergeStatus: contact?.conciergeStatus ?? "",
       },
       personId,
       attendanceResult,

@@ -95,5 +95,7 @@ export interface ConciergeMember {
   dataQualityIssues: ConciergeDataQualityIssue[];
   /** Exact People "Onboarding State" value. Blank/missing is omitted or "". */
   onboardingState?: string;
+  /** Exact People "Concierge Status" value. Blank/missing is omitted or "". */
+  peopleConciergeStatus?: string;
   fieldAvailability?: ConciergeFieldAvailability;
 }
