@@ -2,6 +2,7 @@ export interface CreditsInvitedFriend {
   id: string;
   name: string;
   status: string;
+  applicationDate: string;
   creditStatus: string;
 }
 

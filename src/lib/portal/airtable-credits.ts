@@ -279,23 +279,72 @@ async function fetchPeopleByIds(ids: string[]): Promise<Map<string, string>> {
   return names;
 }
 
+function toPortalFriendStatus(raw: string): string {
+  const key = raw.trim().toLowerCase();
+  if (!key) return "";
+
+  if (key === "approved") return "Approved";
+  if (
+    key === "pending" ||
+    key === "under review" ||
+    key === "application received" ||
+    key === "hold"
+  ) {
+    return "Pending";
+  }
+  if (
+    key === "rejected" ||
+    key === "banned" ||
+    key === "duplicate submission" ||
+    key === "referral concern" ||
+    key === "not qualified"
+  ) {
+    return "Not Qualified";
+  }
+
+  return formatStatusLabel(raw);
+}
+
+function toPortalCreditStatus(raw: string): string {
+  const key = raw.trim().toLowerCase();
+  if (!key) return "";
+  if (key.includes("earn")) return "Credit Earned";
+  if (key.includes("pend")) return "Credit Pending";
+  if (
+    key.includes("not qualified") ||
+    key.includes("ineligib") ||
+    key.includes("reject")
+  ) {
+    return "Not Qualified";
+  }
+  return formatStatusLabel(raw);
+}
+
+function isEmailLike(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 function mapInvitedFriend(record: AirtableRecord): {
   id: string;
   name: string;
   status: string;
+  applicationDate: string;
   creditStatus: string;
 } {
   const fields = record.fields ?? {};
-  const name =
-    personNameFromFields(fields) ||
-    asDisplayString(getField(fields, ["Email"])) ||
-    "Member";
-  const status = formatStatusLabel(
+  const rawName = personNameFromFields(fields);
+  const name = rawName && !isEmailLike(rawName) ? rawName : "Member";
+  const status = toPortalFriendStatus(
     asDisplayString(
       getField(fields, ["Vetting Status", "Member Status", "Status"]),
     ),
   );
-  const creditStatus = formatStatusLabel(
+  const applicationDate = formatDisplayDate(
+    asDisplayString(getField(fields, ["Created Time", "Application Date"])) ||
+      record.createdTime ||
+      "",
+  );
+  const creditStatus = toPortalCreditStatus(
     asDisplayString(
       getField(fields, ["Credit Status", "Credits Status", "Credit State"]),
     ),
@@ -305,6 +354,7 @@ function mapInvitedFriend(record: AirtableRecord): {
     id: record.id,
     name,
     status,
+    applicationDate,
     creditStatus,
   };
 }

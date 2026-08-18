@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import ReferralDetailsSection from "@/components/profile/ReferralDetailsSection";
 import SectionHeading from "@/components/dashboard/SectionHeading";
 import type { PortalCreditsData } from "@/types/credits";
@@ -24,6 +26,8 @@ export default function CreditsReferralsSection({
   data,
   loading = false,
 }: CreditsReferralsSectionProps) {
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const invitedCount = data.invitedFriends.length;
   const stats = [
     { id: "available", label: "Available Credits", value: data.creditsAvailable },
     {
@@ -61,36 +65,89 @@ export default function CreditsReferralsSection({
         <ReferralDetailsSection referralCode={data.referralCode} />
       </section>
 
-      <SectionHeading>Invited Friends</SectionHeading>
-      <section className="profile-section profile-section--card credits-table-card">
-        {loading ? (
-          <p className="credits-referrals__empty">Loading…</p>
-        ) : data.invitedFriends.length === 0 ? (
-          <p className="credits-referrals__empty">
-            You haven&apos;t invited anyone yet.
-          </p>
-        ) : (
-          <div className="credits-table-wrap">
-            <table className="credits-table">
-              <thead>
-                <tr>
-                  <th>Friend</th>
-                  <th>Status</th>
-                  <th>Credit Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.invitedFriends.map((friend) => (
-                  <tr key={friend.id}>
-                    <td>{friend.name}</td>
-                    <td>{friend.status || "—"}</td>
-                    <td>{friend.creditStatus || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="profile-section profile-section--card credits-friends-card">
+        <button
+          type="button"
+          className="credits-friends__toggle"
+          aria-expanded={friendsOpen}
+          aria-controls="credits-invited-friends-panel"
+          onClick={() => setFriendsOpen((open) => !open)}
+        >
+          <span className="credits-friends__toggle-copy">
+            <span className="credits-friends__title">Invited Friends</span>
+            {!loading && invitedCount > 0 ? (
+              <span className="credits-friends__summary">
+                {invitedCount}{" "}
+                {invitedCount === 1 ? "Invited Friend" : "Invited Friends"}
+              </span>
+            ) : null}
+          </span>
+          <ChevronDown
+            className={`credits-friends__chevron${friendsOpen ? " is-open" : ""}`}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+        </button>
+
+        <div
+          id="credits-invited-friends-panel"
+          className={`credits-friends__panel${friendsOpen ? " is-open" : ""}`}
+        >
+          <div className="credits-friends__panel-inner">
+            {loading ? (
+              <p className="credits-referrals__empty">Loading…</p>
+            ) : data.invitedFriends.length === 0 ? (
+              <p className="credits-referrals__empty">
+                You haven&apos;t invited anyone yet.
+              </p>
+            ) : (
+              <>
+                <div className="credits-table-wrap credits-friends__table">
+                  <table className="credits-table">
+                    <thead>
+                      <tr>
+                        <th>Friend</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Credit</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.invitedFriends.map((friend) => (
+                        <tr key={friend.id}>
+                          <td>{friend.name}</td>
+                          <td>{friend.status || "—"}</td>
+                          <td>{friend.applicationDate || "—"}</td>
+                          <td>{friend.creditStatus || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <ul className="credits-friends__cards">
+                  {data.invitedFriends.map((friend) => (
+                    <li key={friend.id} className="credits-friend-card">
+                      <p className="credits-friend-card__name">{friend.name}</p>
+                      <p className="credits-friend-card__meta">
+                        <span>{friend.status || "—"}</span>
+                        <span className="credits-friend-card__dot" aria-hidden="true">
+                          •
+                        </span>
+                        <span>{friend.applicationDate || "—"}</span>
+                      </p>
+                      {friend.creditStatus ? (
+                        <p className="credits-friend-card__credit">
+                          {friend.creditStatus}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </section>
 
       <SectionHeading>Invited By</SectionHeading>
