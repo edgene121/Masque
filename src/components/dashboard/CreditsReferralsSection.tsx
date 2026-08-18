@@ -22,6 +22,24 @@ function formatCreditsDelta(value: number | null): string {
   return String(value);
 }
 
+function statusBadgeClass(status: string): string {
+  const key = status.trim().toLowerCase();
+  if (key === "qualified" || key === "approved") {
+    return "credits-status-badge credits-status-badge--qualified";
+  }
+  if (key === "pending") {
+    return "credits-status-badge credits-status-badge--pending";
+  }
+  return "credits-status-badge";
+}
+
+function historyActivityLabel(row: {
+  activity: string;
+  details: string;
+}): string {
+  return [row.activity.trim(), row.details.trim()].filter(Boolean).join(" — ");
+}
+
 export default function CreditsReferralsSection({
   data,
   loading = false,
@@ -116,7 +134,15 @@ export default function CreditsReferralsSection({
                       {data.invitedFriends.map((friend) => (
                         <tr key={friend.id}>
                           <td>{friend.name}</td>
-                          <td>{friend.status || "—"}</td>
+                          <td>
+                            {friend.status ? (
+                              <span className={statusBadgeClass(friend.status)}>
+                                {friend.status}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td>{friend.applicationDate || "—"}</td>
                           <td>{friend.creditStatus || "—"}</td>
                         </tr>
@@ -130,7 +156,13 @@ export default function CreditsReferralsSection({
                     <li key={friend.id} className="credits-friend-card">
                       <p className="credits-friend-card__name">{friend.name}</p>
                       <p className="credits-friend-card__meta">
-                        <span>{friend.status || "—"}</span>
+                        {friend.status ? (
+                          <span className={statusBadgeClass(friend.status)}>
+                            {friend.status}
+                          </span>
+                        ) : (
+                          <span>—</span>
+                        )}
                         <span className="credits-friend-card__dot" aria-hidden="true">
                           •
                         </span>
@@ -152,9 +184,20 @@ export default function CreditsReferralsSection({
 
       <SectionHeading>Invited By</SectionHeading>
       <section className="profile-section profile-section--card credits-invited-by">
-        <p className="credits-invited-by__name">
-          {loading ? "Loading…" : data.invitedBy.trim() || "No Referrer"}
-        </p>
+        {loading ? (
+          <p className="credits-invited-by__name">Loading…</p>
+        ) : data.invitedBy.trim() ? (
+          <>
+            <p className="credits-invited-by__name">{data.invitedBy.trim()}</p>
+            {data.invitedByReferralCode?.trim() ? (
+              <p className="credits-invited-by__code">
+                Referral Code: {data.invitedByReferralCode.trim()}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="credits-invited-by__name">No Referrer</p>
+        )}
       </section>
 
       <SectionHeading>Credit History</SectionHeading>
@@ -170,7 +213,6 @@ export default function CreditsReferralsSection({
                 <tr>
                   <th>Date</th>
                   <th>Activity</th>
-                  <th>Details</th>
                   <th className="credits-table__num">Credits</th>
                 </tr>
               </thead>
@@ -178,9 +220,16 @@ export default function CreditsReferralsSection({
                 {data.creditHistory.map((row) => (
                   <tr key={row.id}>
                     <td>{row.date || "—"}</td>
-                    <td>{row.activity || "—"}</td>
-                    <td>{row.details || "—"}</td>
-                    <td className="credits-table__num">
+                    <td>{historyActivityLabel(row) || "—"}</td>
+                    <td
+                      className={`credits-table__num${
+                        (row.credits ?? 0) < 0
+                          ? " credits-table__num--negative"
+                          : (row.credits ?? 0) > 0
+                            ? " credits-table__num--positive"
+                            : ""
+                      }`}
+                    >
                       {formatCreditsDelta(row.credits)}
                     </td>
                   </tr>

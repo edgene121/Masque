@@ -14,8 +14,7 @@ import type {
   MemberstackUser,
   MemberStatusData,
 } from "@/types/dashboard";
-import type { PortalCreditsData } from "@/types/credits";
-import { EMPTY_PORTAL_CREDITS } from "@/types/credits";
+import { MOCK_CREDITS_DATA } from "@/types/credits";
 import DashboardLayout from "./DashboardLayout";
 import MemberStatusCard from "./MemberStatusCard";
 import SectionHeading from "./SectionHeading";
@@ -54,8 +53,6 @@ export default function DashboardPage() {
   const [featuredEvent, setFeaturedEvent] = useState<FeaturedEventData | null>(
     null,
   );
-  const [credits, setCredits] = useState<PortalCreditsData>(EMPTY_PORTAL_CREDITS);
-  const [creditsLoading, setCreditsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -64,14 +61,6 @@ export default function DashboardPage() {
       try {
         const memberstack = getMemberstack();
         const { data: currentMember } = await memberstack.getCurrentMember();
-        const email = currentMember?.auth?.email?.trim() ?? "";
-
-        const creditsPromise = email
-          ? fetch(
-              `/api/portal/credits?email=${encodeURIComponent(email)}`,
-              { cache: "no-store" },
-            )
-          : null;
 
         const eventResponse = await fetch("/api/portal/events?scope=featured");
 
@@ -90,42 +79,6 @@ export default function DashboardPage() {
         setFeaturedEvent(eventPayload?.event ?? null);
         setMemberReady(true);
 
-        if (creditsPromise) {
-          const creditsResponse = await creditsPromise;
-          if (!mounted) return;
-          const creditsPayload = (await creditsResponse
-            .json()
-            .catch(() => null)) as (PortalCreditsData & { ok?: boolean }) | null;
-          if (creditsPayload?.ok) {
-            setCredits({
-              referralCode: String(creditsPayload.referralCode ?? "").trim(),
-              creditsAvailable:
-                typeof creditsPayload.creditsAvailable === "number"
-                  ? creditsPayload.creditsAvailable
-                  : null,
-              qualifiedReferrals:
-                typeof creditsPayload.qualifiedReferrals === "number"
-                  ? creditsPayload.qualifiedReferrals
-                  : null,
-              creditsRedeemed:
-                typeof creditsPayload.creditsRedeemed === "number"
-                  ? creditsPayload.creditsRedeemed
-                  : null,
-              invitedFriends: Array.isArray(creditsPayload.invitedFriends)
-                ? creditsPayload.invitedFriends
-                : [],
-              invitedBy: String(creditsPayload.invitedBy ?? "").trim(),
-              creditHistory: Array.isArray(creditsPayload.creditHistory)
-                ? creditsPayload.creditHistory
-                : [],
-            });
-          } else {
-            setCredits(EMPTY_PORTAL_CREDITS);
-          }
-        } else {
-          setCredits(EMPTY_PORTAL_CREDITS);
-        }
-
         if (process.env.NODE_ENV === "development") {
           const status = getOnboardingStatus(currentMember);
           console.log("[Home] Onboarding Status:", status || "(empty)");
@@ -139,11 +92,9 @@ export default function DashboardPage() {
         if (!mounted) return;
         setMember(null);
         setHeaderUser(EMPTY_HEADER_USER);
-        setCredits(EMPTY_PORTAL_CREDITS);
       } finally {
         if (mounted) {
           setMemberReady(true);
-          setCreditsLoading(false);
         }
       }
     }
@@ -189,7 +140,8 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <CreditsReferralsSection data={credits} loading={creditsLoading} />
+          {/* MOCK UI: swap MOCK_CREDITS_DATA for /api/portal/credits later. */}
+          <CreditsReferralsSection data={MOCK_CREDITS_DATA} />
 
           <CommunityFooterCard />
         </>
