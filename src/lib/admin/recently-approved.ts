@@ -4,6 +4,10 @@ import {
   fetchAttendanceByPersonIds,
   type AttendanceByPersonResult,
 } from "@/lib/admin/airtable-attendance";
+import {
+  fetchBerthaByPersonIds,
+  type BerthaByPersonResult,
+} from "@/lib/admin/airtable-bertha";
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
@@ -377,6 +381,27 @@ function applyAttendance(
   };
 }
 
+function applyBertha(
+  member: ConciergeMember,
+  personId: string | undefined,
+  berthaResult: BerthaByPersonResult,
+): ConciergeMember {
+  if (!berthaResult.ok || !personId) return member;
+  const bertha = berthaResult.byPerson.get(personId);
+  if (!bertha) return member;
+  return {
+    ...member,
+    berthaTicketPurchased: bertha.purchased,
+    fieldAvailability: {
+      attendance: member.fieldAvailability?.attendance ?? false,
+      bertha: true,
+      onboarding: member.fieldAvailability?.onboarding ?? false,
+      conciergeStatus: member.fieldAvailability?.conciergeStatus ?? false,
+      outstandingItems: member.fieldAvailability?.outstandingItems ?? false,
+    },
+  };
+}
+
 /**
  * Applications with Vetting Status = approved whose Last Modified
  * (Vetting Status last-modified time) falls within the last 60 days.
@@ -458,9 +483,10 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         recent.flatMap((row) => recordIds(row.fields[LINKED_PERSON_FIELD])),
       ),
     ];
-    const [enrichment, attendanceResult] = await Promise.all([
+    const [enrichment, attendanceResult, berthaResult] = await Promise.all([
       fetchPeopleContactsByIds(peopleIds),
       fetchAttendanceByPersonIds(peopleIds),
+      fetchBerthaByPersonIds(peopleIds),
     ]);
 
     console.error("[Recently Approved]", {
@@ -469,22 +495,27 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
       remainingAfter60DayFilter: recent.length,
       peopleEnrichmentFailed: enrichment.failed,
       attendanceLookupFailed: !attendanceResult.ok,
+      berthaLookupFailed: !berthaResult.ok,
     });
 
     const members = recent.map((row) => {
       const personId = recordIds(row.fields[LINKED_PERSON_FIELD])[0];
       const contact = personId ? enrichment.contacts.get(personId) : undefined;
-      return applyAttendance(
-        {
-          id: row.record.id,
-          name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
-          phone: displayOrDash(contact?.phone ?? ""),
-          email: displayOrDash(contact?.email ?? ""),
-          approvalDate: formatApprovalDate(row.lastModifiedRaw),
-          ...unresolvedConciergeFields(),
-        },
+      return applyBertha(
+        applyAttendance(
+          {
+            id: row.record.id,
+            name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
+            phone: displayOrDash(contact?.phone ?? ""),
+            email: displayOrDash(contact?.email ?? ""),
+            approvalDate: formatApprovalDate(row.lastModifiedRaw),
+            ...unresolvedConciergeFields(),
+          },
+          personId,
+          attendanceResult,
+        ),
         personId,
-        attendanceResult,
+        berthaResult,
       );
     });
 
@@ -515,6 +546,43 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         numberOfMatchingAttendanceRecords: debug?.matchingCount ?? 0,
         attendanceStatusValuesFound: debug?.statuses ?? [],
         finalCalculatedAttendanceStatus,
+      });
+    }
+
+    for (const row of recent.slice(0, 3)) {
+      const linkedPersonValue = row.fields[LINKED_PERSON_FIELD];
+      const peopleRecordId = recordIds(linkedPersonValue)[0];
+      const berthaDebug =
+        berthaResult.ok && peopleRecordId
+          ? berthaResult.debugByPerson.get(peopleRecordId)
+          : undefined;
+      const bertha =
+        berthaResult.ok && peopleRecordId
+          ? berthaResult.byPerson.get(peopleRecordId)
+          : undefined;
+      const finalBerthaStatus = !berthaResult.ok
+        ? "unresolved"
+        : !peopleRecordId
+          ? "unresolved"
+          : bertha?.purchased
+            ? "Purchased"
+            : "No Ticket";
+
+      console.error("[Recently Approved Bertha Debug]", {
+        memberName: asTrimmedString(row.fields[NAME_FIELD]),
+        applicationRecordId: row.record.id,
+        linkedPersonId: peopleRecordId ?? null,
+        matchingTicketBuyersGuestRecords:
+          berthaDebug?.matchingRecords.map((match) => ({
+            recordId: match.recordId,
+            eventName: match.eventName,
+            ticketType: match.ticketType,
+          })) ?? [],
+        eventName:
+          berthaDebug?.matchingRecords.map((match) => match.eventName) ?? [],
+        ticketType:
+          berthaDebug?.matchingRecords.map((match) => match.ticketType) ?? [],
+        finalBerthaStatus,
       });
     }
 
@@ -639,24 +707,29 @@ export async function getConciergeMemberByApplicationId(
   const personId = recordIds(fields[LINKED_PERSON_FIELD])[0];
   const peopleIds = personId ? [personId] : [];
 
-  const [enrichment, attendanceResult] = await Promise.all([
+  const [enrichment, attendanceResult, berthaResult] = await Promise.all([
     fetchPeopleContactsByIds(peopleIds),
     fetchAttendanceByPersonIds(peopleIds),
+    fetchBerthaByPersonIds(peopleIds),
   ]);
 
   const contact = personId ? enrichment.contacts.get(personId) : undefined;
-  return applyAttendance(
-    {
-      id: record.id,
-      name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
-      phone: displayOrDash(contact?.phone ?? ""),
-      email: displayOrDash(contact?.email ?? ""),
-      approvalDate: formatApprovalDate(
-        asTrimmedString(fields[LAST_MODIFIED_FIELD]),
-      ),
-      ...unresolvedConciergeFields(),
-    },
+  return applyBertha(
+    applyAttendance(
+      {
+        id: record.id,
+        name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
+        phone: displayOrDash(contact?.phone ?? ""),
+        email: displayOrDash(contact?.email ?? ""),
+        approvalDate: formatApprovalDate(
+          asTrimmedString(fields[LAST_MODIFIED_FIELD]),
+        ),
+        ...unresolvedConciergeFields(),
+      },
+      personId,
+      attendanceResult,
+    ),
     personId,
-    attendanceResult,
+    berthaResult,
   );
 }
