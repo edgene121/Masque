@@ -5442,6 +5442,7 @@ a.contact-info-card__detail:hover {
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  align-self: start;
 }
 
 .admin-concierge-subsection {

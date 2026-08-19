@@ -57,170 +57,174 @@ export default function ConciergeMemberWorkspace({
       </section>
 
       <div className="admin-concierge-workspace__grid">
-        <section className="admin-detail-card">
-          <h3 className="admin-detail-card__title">Member Information</h3>
-          <dl className="admin-detail-summary">
-            <div>
-              <dt className="admin-detail-label">Member Name</dt>
-              <dd>{displayDash(member.name)}</dd>
-            </div>
-            <div>
-              <dt className="admin-detail-label">Phone Number</dt>
-              <dd>{displayDash(member.phone)}</dd>
-            </div>
-            <div>
-              <dt className="admin-detail-label">Email Address</dt>
-              <dd>{displayDash(member.email)}</dd>
-            </div>
-            <div>
-              <dt className="admin-detail-label">Membership Approval Date</dt>
-              <dd>{displayDash(member.approvalDate)}</dd>
-            </div>
-          </dl>
-        </section>
+        <div className="admin-concierge-workspace__main">
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Member Information</h3>
+            <dl className="admin-detail-summary">
+              <div>
+                <dt className="admin-detail-label">Member Name</dt>
+                <dd>{displayDash(member.name)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Phone Number</dt>
+                <dd>{displayDash(member.phone)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Email Address</dt>
+                <dd>{displayDash(member.email)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Membership Approval Date</dt>
+                <dd>{displayDash(member.approvalDate)}</dd>
+              </div>
+            </dl>
+          </section>
 
-        <section className="admin-detail-card admin-concierge-outstanding-card">
-          <h3 className="admin-detail-card__title">Outstanding Items</h3>
-          <OutstandingItemBadges
-            items={member.outstandingItems}
-            emptyLabel="No Outstanding Items"
-            large
-          />
-        </section>
-
-        <section className="admin-detail-card">
-          <h3 className="admin-detail-card__title">Event Status</h3>
-          <dl className="admin-detail-summary">
-            <div>
-              <dt className="admin-detail-label">Has Ever Attended</dt>
-              <dd>
-                <StatusBadge
-                  value={hasEverAttended}
-                  className={
-                    hasEverAttended === "Yes"
-                      ? "is-approved"
-                      : hasEverAttended === "No"
-                        ? "is-vetting-amber"
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Event Status</h3>
+            <dl className="admin-detail-summary">
+              <div>
+                <dt className="admin-detail-label">Has Ever Attended</dt>
+                <dd>
+                  <StatusBadge
+                    value={hasEverAttended}
+                    className={
+                      hasEverAttended === "Yes"
+                        ? "is-approved"
+                        : hasEverAttended === "No"
+                          ? "is-vetting-amber"
+                          : undefined
+                    }
+                  />
+                </dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Last Event Attended</dt>
+                <dd>
+                  {attendanceResolved && member.attendance.hasEverAttended ? (
+                    <LastEventAttended
+                      name={member.attendance.lastEventName}
+                      date={member.attendance.lastEventDate}
+                      fallback={member.attendance.lastEventAttended}
+                    />
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Bertha Ticket Purchased</dt>
+                <dd>
+                  <StatusBadge
+                    value={berthaPurchased}
+                    className={
+                      berthaPurchased
+                        ? yesNoBadgeClass(berthaPurchased)
                         : undefined
-                  }
-                />
-              </dd>
-            </div>
-            <div>
-              <dt className="admin-detail-label">Last Event Attended</dt>
-              <dd>
-                {attendanceResolved && member.attendance.hasEverAttended ? (
-                  <LastEventAttended
-                    name={member.attendance.lastEventName}
-                    date={member.attendance.lastEventDate}
-                    fallback={member.attendance.lastEventAttended}
-                  />
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="admin-detail-label">Bertha Ticket Purchased</dt>
-              <dd>
-                <StatusBadge
-                  value={berthaPurchased}
-                  className={
-                    berthaPurchased
-                      ? yesNoBadgeClass(berthaPurchased)
-                      : undefined
-                  }
-                />
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="admin-detail-card">
-          <h3 className="admin-detail-card__title">Concierge Information</h3>
-          <ConciergeInformationForm member={member} />
-        </section>
-
-        <section className="admin-detail-card">
-          <h3 className="admin-detail-card__title">Onboarding</h3>
-
-          <div className="admin-concierge-subsection">
-            <h4 className="admin-concierge-subsection__title">Verification</h4>
-            <dl className="admin-detail-summary">
-              <div>
-                <dt className="admin-detail-label">Verification Method</dt>
-                <dd>{displayDash(member.verificationMethod)}</dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">ID Verified</dt>
-                <dd>
-                  <StatusBadge
-                    value={displayYesNo(Boolean(member.idVerified))}
-                    className={yesNoBadgeClass(
-                      displayYesNo(Boolean(member.idVerified)),
-                    )}
+                    }
                   />
                 </dd>
               </div>
-              <div>
-                <dt className="admin-detail-label">ID Verification Date</dt>
-                <dd>{displayDash(member.idVerificationDate)}</dd>
-              </div>
             </dl>
-          </div>
+          </section>
 
-          <div className="admin-concierge-subsection">
-            <h4 className="admin-concierge-subsection__title">
-              Member Agreement
-            </h4>
-            <dl className="admin-detail-summary">
-              <div>
-                <dt className="admin-detail-label">Member Agreement Status</dt>
-                <dd>{displayDash(member.memberAgreementStatus)}</dd>
-              </div>
-            </dl>
-          </div>
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Onboarding</h3>
 
-          <div className="admin-concierge-subsection">
-            <h4 className="admin-concierge-subsection__title">Portal</h4>
-            <dl className="admin-detail-summary">
-              <div>
-                <dt className="admin-detail-label">Portal Access State</dt>
-                <dd>{displayDash(member.portalAccessState)}</dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">Portal Account Created</dt>
-                <dd>
-                  <StatusBadge
-                    value={displayYesNo(Boolean(member.portalAccountCreated))}
-                    className={yesNoBadgeClass(
-                      displayYesNo(Boolean(member.portalAccountCreated)),
-                    )}
-                  />
-                </dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">Last Portal Login</dt>
-                <dd>{displayDash(member.lastPortalLogin)}</dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">
-                  Portal Invitation Sent Date
-                </dt>
-                <dd>{displayDash(member.portalInvitationSentDate)}</dd>
-              </div>
-            </dl>
-          </div>
-        </section>
+            <div className="admin-concierge-subsection">
+              <h4 className="admin-concierge-subsection__title">Verification</h4>
+              <dl className="admin-detail-summary">
+                <div>
+                  <dt className="admin-detail-label">Verification Method</dt>
+                  <dd>{displayDash(member.verificationMethod)}</dd>
+                </div>
+                <div>
+                  <dt className="admin-detail-label">ID Verified</dt>
+                  <dd>
+                    <StatusBadge
+                      value={displayYesNo(Boolean(member.idVerified))}
+                      className={yesNoBadgeClass(
+                        displayYesNo(Boolean(member.idVerified)),
+                      )}
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="admin-detail-label">ID Verification Date</dt>
+                  <dd>{displayDash(member.idVerificationDate)}</dd>
+                </div>
+              </dl>
+            </div>
 
-        <section className="admin-detail-card">
-          <h3 className="admin-detail-card__title">Data Quality</h3>
-          <OutstandingItemBadges
-            items={member.dataQualityIssues}
-            emptyLabel="No Known Data Quality Issues"
-            large
-          />
-        </section>
+            <div className="admin-concierge-subsection">
+              <h4 className="admin-concierge-subsection__title">
+                Member Agreement
+              </h4>
+              <dl className="admin-detail-summary">
+                <div>
+                  <dt className="admin-detail-label">Member Agreement Status</dt>
+                  <dd>{displayDash(member.memberAgreementStatus)}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="admin-concierge-subsection">
+              <h4 className="admin-concierge-subsection__title">Portal</h4>
+              <dl className="admin-detail-summary">
+                <div>
+                  <dt className="admin-detail-label">Portal Access State</dt>
+                  <dd>{displayDash(member.portalAccessState)}</dd>
+                </div>
+                <div>
+                  <dt className="admin-detail-label">Portal Account Created</dt>
+                  <dd>
+                    <StatusBadge
+                      value={displayYesNo(Boolean(member.portalAccountCreated))}
+                      className={yesNoBadgeClass(
+                        displayYesNo(Boolean(member.portalAccountCreated)),
+                      )}
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="admin-detail-label">Last Portal Login</dt>
+                  <dd>{displayDash(member.lastPortalLogin)}</dd>
+                </div>
+                <div>
+                  <dt className="admin-detail-label">
+                    Portal Invitation Sent Date
+                  </dt>
+                  <dd>{displayDash(member.portalInvitationSentDate)}</dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+        </div>
+
+        <div className="admin-concierge-workspace__side">
+          <section className="admin-detail-card admin-concierge-outstanding-card">
+            <h3 className="admin-detail-card__title">Outstanding Items</h3>
+            <OutstandingItemBadges
+              items={member.outstandingItems}
+              emptyLabel="No Outstanding Items"
+              large
+            />
+          </section>
+
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Concierge Information</h3>
+            <ConciergeInformationForm member={member} />
+          </section>
+
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Data Quality</h3>
+            <OutstandingItemBadges
+              items={member.dataQualityIssues}
+              emptyLabel="No Known Data Quality Issues"
+              large
+            />
+          </section>
+        </div>
       </div>
     </div>
   );
