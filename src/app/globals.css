@@ -5520,21 +5520,38 @@ a.contact-info-card__detail:hover {
   align-items: start;
 }
 
-.admin-concierge-workspace__main,
-.admin-concierge-workspace__side {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.admin-concierge-workspace__span-full {
+  grid-column: 1 / -1;
   min-width: 0;
-  align-self: start;
+}
+
+.admin-concierge-onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px 28px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.admin-concierge-onboarding-grid .admin-concierge-subsection {
+  margin-top: 0;
+}
+
+.admin-concierge-onboarding-grid .admin-detail-summary {
+  grid-template-columns: 1fr;
 }
 
 .admin-concierge-subsection {
   margin-top: 18px;
+  min-width: 0;
 }
 
 .admin-concierge-subsection:first-of-type {
   margin-top: 16px;
+}
+
+.admin-concierge-onboarding-grid .admin-concierge-subsection:first-of-type {
+  margin-top: 0;
 }
 
 .admin-concierge-subsection__title {
@@ -5712,7 +5729,8 @@ a.contact-info-card__detail:hover {
   }
 
   .admin-concierge-workspace__grid,
-  .admin-concierge-form__row {
+  .admin-concierge-form__row,
+  .admin-concierge-onboarding-grid {
     grid-template-columns: 1fr;
   }
 }
