@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { formatApprovalDate, parseDateOnlyMs } from "@/lib/admin/airtable-dates";
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
@@ -53,14 +54,6 @@ export type OnboardedMembersListResult =
 export type OnboardedMembersCountResult =
   | { ok: true; count: number }
   | { ok: false; error: string };
-
-export function onboardedMemberFilterFormula(): string {
-  return `{${ONBOARDING_STATE_FIELD}}='${ONBOARDED_STATE_VALUE}'`;
-}
-
-export function isOnboardedState(value: unknown): boolean {
-  return asSelectValue(value) === ONBOARDED_STATE_VALUE;
-}
 
 function asTrimmedString(value: unknown): string {
   if (value == null) return "";
@@ -122,15 +115,37 @@ function asSelectValue(value: unknown): string {
 }
 
 function fieldValue(
-  fields: Record<string, unknown>,
+  fields: Record<string, unknown> | undefined,
   ...names: string[]
 ): unknown {
+  if (!fields) return undefined;
   const keys = Object.keys(fields);
   for (const name of names) {
     const key = findFieldKey(keys, name);
     if (key) return fields[key];
   }
   return undefined;
+}
+
+function matchesCompleted(value: unknown): boolean {
+  if (value === ONBOARDED_STATE_VALUE) return true;
+  if (Array.isArray(value)) return value.some((item) => matchesCompleted(item));
+  if (value && typeof value === "object") {
+    const record = value as { name?: unknown; label?: unknown };
+    return (
+      record.name === ONBOARDED_STATE_VALUE ||
+      record.label === ONBOARDED_STATE_VALUE
+    );
+  }
+  return false;
+}
+
+export function isOnboardedPeopleRecord(record: AirtableRecord): boolean {
+  const fields = record.fields ?? {};
+  const raw = Object.prototype.hasOwnProperty.call(fields, ONBOARDING_STATE_FIELD)
+    ? fields[ONBOARDING_STATE_FIELD]
+    : fieldValue(fields, ONBOARDING_STATE_FIELD);
+  return matchesCompleted(raw);
 }
 
 async function queryTable(options: {
@@ -154,6 +169,7 @@ async function queryTable(options: {
   const encodedTable = encodeURIComponent(options.table);
   const records: AirtableRecord[] = [];
   let offset: string | undefined;
+  let pageCount = 0;
 
   try {
     do {
@@ -198,6 +214,7 @@ async function queryTable(options: {
         };
       }
 
+      pageCount += 1;
       for (const record of data.records) {
         if (record?.id) records.push(record);
       }
@@ -205,6 +222,7 @@ async function queryTable(options: {
       offset = data.offset;
     } while (offset);
 
+    console.log("[Onboarded] Airtable pages fetched:", pageCount);
     return { ok: true, records };
   } catch (error) {
     return {
@@ -216,32 +234,23 @@ async function queryTable(options: {
   }
 }
 
-function isOnboardedPeopleRecord(record: AirtableRecord): boolean {
-  const fields = record.fields ?? {};
-  return isOnboardedState(fieldValue(fields, ONBOARDING_STATE_FIELD));
-}
-
-async function fetchOnboardedPeopleRecords(
-  fields?: string[],
+const fetchAllPeopleRecords = cache(async function fetchAllPeopleRecords(
+  fields?: readonly string[],
 ): Promise<AirtableQueryResult> {
   const peopleTable = getPeopleTableName();
-  const filterByFormula = onboardedMemberFilterFormula();
+  const requestedFields = fields ? [...fields] : undefined;
   let result = await queryTable({
     table: peopleTable,
-    fields,
-    filterByFormula,
+    fields: requestedFields,
   });
 
   if (
     !result.ok &&
-    fields &&
-    fields.length > 0 &&
+    requestedFields &&
+    requestedFields.length > 0 &&
     (result.type === "UNKNOWN_FIELD_NAME" || result.status === 422)
   ) {
-    result = await queryTable({
-      table: peopleTable,
-      filterByFormula,
-    });
+    result = await queryTable({ table: peopleTable });
   }
 
   if (!result.ok) {
@@ -251,11 +260,29 @@ async function fetchOnboardedPeopleRecords(
       message: result.message,
       table: peopleTable,
       field: ONBOARDING_STATE_FIELD,
-      value: ONBOARDED_STATE_VALUE,
     });
   }
 
   return result;
+});
+
+function debugOnboardingCounts(allPeople: AirtableRecord[]): number {
+  const completed = allPeople.filter(isOnboardedPeopleRecord);
+  const valueCounts = new Map<string, number>();
+  for (const person of allPeople) {
+    const raw = person.fields?.[ONBOARDING_STATE_FIELD];
+    const key = raw === undefined ? "<missing>" : JSON.stringify(raw);
+    valueCounts.set(key, (valueCounts.get(key) ?? 0) + 1);
+  }
+
+  console.log("Total People fetched:", allPeople.length);
+  console.log("Completed Onboarding:", completed.length);
+  console.log(
+    "[Onboarded] Onboarding State value counts:",
+    Object.fromEntries(valueCounts),
+  );
+
+  return completed.length;
 }
 
 async function fetchApprovalDatesByPeopleId(): Promise<Map<string, string>> {
@@ -327,14 +354,24 @@ function mapOnboardedMember(
     phone: asTrimmedString(fieldValue(fields, PHONE_FIELD)),
     email: asTrimmedString(fieldValue(fields, EMAIL_FIELD)),
     approvalDate: approvalDates.get(record.id) ?? "",
-    onboardingState: asSelectValue(fieldValue(fields, ONBOARDING_STATE_FIELD)),
+    onboardingState: ONBOARDED_STATE_VALUE,
     membershipStatus: asSelectValue(fieldValue(fields, MEMBERSHIP_STATUS_FIELD)),
   };
 }
 
+const loadOnboardedPeople = cache(async function loadOnboardedPeople(): Promise<
+  AirtableQueryResult
+> {
+  const result = await fetchAllPeopleRecords(PEOPLE_LIST_FIELDS);
+  if (result.ok) {
+    debugOnboardingCounts(result.records);
+  }
+  return result;
+});
+
 export async function listOnboardedMembers(): Promise<OnboardedMembersListResult> {
   const [peopleResult, approvalDates] = await Promise.all([
-    fetchOnboardedPeopleRecords([...PEOPLE_LIST_FIELDS]),
+    loadOnboardedPeople(),
     fetchApprovalDatesByPeopleId(),
   ]);
 
@@ -350,7 +387,7 @@ export async function listOnboardedMembers(): Promise<OnboardedMembersListResult
 }
 
 export async function countOnboardedMembers(): Promise<OnboardedMembersCountResult> {
-  const result = await fetchOnboardedPeopleRecords([ONBOARDING_STATE_FIELD]);
+  const result = await loadOnboardedPeople();
   if (!result.ok) {
     return { ok: false, error: ONBOARDED_MEMBERS_LOAD_ERROR };
   }
