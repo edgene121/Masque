@@ -1,19 +1,22 @@
 import "server-only";
 
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import { cache } from "react";
 import { formatApprovalDate, parseDateOnlyMs } from "@/lib/admin/airtable-dates";
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
-import type { OnboardedMember } from "@/types/admin-onboarded-members";
+import { getMemberByPeopleRecordId } from "@/lib/admin/recently-approved";
+import type {
+  OnboardedMember,
+  OnboardedMemberDetail,
+} from "@/types/admin-onboarded-members";
 
 export const ONBOARDING_STATE_FIELD = "Onboarding State";
 export const ONBOARDED_STATE_VALUE = "Completed";
 export const ONBOARDED_MEMBERS_LOAD_ERROR =
   "Unable to load onboarded members right now.";
-
-/** Exact Airtable single-select condition. No other predicates. */
-export const ONBOARDED_FILTER_BY_FORMULA = `{${ONBOARDING_STATE_FIELD}} = "${ONBOARDED_STATE_VALUE}"`;
 
 const APPLICATIONS_TABLE =
   process.env.AIRTABLE_APPLICATIONS_TABLE?.trim() || "Applications";
@@ -26,14 +29,6 @@ const MEMBERSHIP_STATUS_FIELD = "Membership Status";
 const VETTING_STATUS_FIELD = "Vetting Status";
 const LAST_MODIFIED_FIELD = "Last Modified";
 const LINKED_PERSON_FIELD = "Linked Person";
-
-const PEOPLE_LIST_FIELDS = [
-  ONBOARDING_STATE_FIELD,
-  FULL_NAME_FIELD,
-  PHONE_FIELD,
-  EMAIL_FIELD,
-  MEMBERSHIP_STATUS_FIELD,
-] as const;
 
 const AIRTABLE_PAGE_SIZE = 100;
 const AIRTABLE_MAX_PAGES = 100;
@@ -134,13 +129,43 @@ function fieldValue(
   return undefined;
 }
 
+function rawOnboardingState(fields: Record<string, unknown> | undefined): unknown {
+  if (!fields) return undefined;
+  if (Object.prototype.hasOwnProperty.call(fields, ONBOARDING_STATE_FIELD)) {
+    return fields[ONBOARDING_STATE_FIELD];
+  }
+  const key = findFieldKey(Object.keys(fields), ONBOARDING_STATE_FIELD);
+  return key ? fields[key] : undefined;
+}
+
+/**
+ * Count the same bucket as the un-normalized diagnostic:
+ * String(value) === "Completed"
+ *
+ * Airtable returns a single-select as "Completed" and a lookup of that select
+ * as ["Completed"]. Both stringify to "Completed". Do not lowercase or trim.
+ */
+function isExactCompleted(value: unknown): boolean {
+  if (value == null || value === "") return false;
+  if (value === ONBOARDED_STATE_VALUE) return true;
+  if (Array.isArray(value)) {
+    return value.length === 1 && isExactCompleted(value[0]);
+  }
+  if (typeof value === "object") {
+    const record = value as { name?: unknown; label?: unknown };
+    return (
+      record.name === ONBOARDED_STATE_VALUE ||
+      record.label === ONBOARDED_STATE_VALUE
+    );
+  }
+  return String(value) === ONBOARDED_STATE_VALUE;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function queryOnboardedPeople(options: {
-  fields?: string[];
-}): Promise<AirtableQueryResult> {
+async function queryAllPeopleRecords(): Promise<AirtableQueryResult> {
   let accessToken: string;
   let baseId: string;
   try {
@@ -160,26 +185,21 @@ async function queryOnboardedPeople(options: {
   let offset: string | undefined;
   let pageCount = 0;
 
-  console.log("[Onboarded] Airtable query", {
+  console.log("Airtable Base ID:", baseId);
+  console.log("Airtable Table Name:", table);
+  console.log("[Onboarded] People query", {
     table,
     view: null,
-    filterByFormula: ONBOARDED_FILTER_BY_FORMULA,
+    filterByFormula: null,
+    fieldsWhitelist: null,
     pageSize: AIRTABLE_PAGE_SIZE,
-    fields: options.fields ?? null,
   });
 
   try {
     while (pageCount < AIRTABLE_MAX_PAGES) {
       const params = new URLSearchParams({
         pageSize: String(AIRTABLE_PAGE_SIZE),
-        filterByFormula: ONBOARDED_FILTER_BY_FORMULA,
       });
-      for (const field of options.fields ?? []) {
-        params.append("fields[]", field);
-      }
-
-      // Keep `/` in Airtable offsets unencoded. URLSearchParams turns it into
-      // %2F, which can cause Airtable to stop returning further pages.
       const query = params.toString();
       const offsetQuery = offset ? `&offset=${offset}` : "";
       const requestUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}?${query}${offsetQuery}`;
@@ -233,7 +253,7 @@ async function queryOnboardedPeople(options: {
       }
 
       pageCount += 1;
-      console.log("Onboarded Airtable page size:", data.records.length);
+      console.log(`Page ${pageCount} records:`, data.records.length);
       console.log("Onboarded Airtable offset:", data.offset ?? null);
 
       for (const record of data.records) {
@@ -244,7 +264,8 @@ async function queryOnboardedPeople(options: {
       if (!offset) break;
     }
 
-    console.log("Total onboarded records after pagination:", allRecords.length);
+    console.log("Total People fetched:", allRecords.length);
+    console.log("Number of People records fetched:", allRecords.length);
 
     if (offset) {
       return {
@@ -266,33 +287,127 @@ async function queryOnboardedPeople(options: {
   }
 }
 
+function resolveOnboardingFieldName(allPeople: AirtableRecord[]): string {
+  let exactHits = 0;
+  const onboardNames = new Map<string, number>();
+
+  for (const record of allPeople) {
+    const fields = record.fields ?? {};
+    if (Object.prototype.hasOwnProperty.call(fields, ONBOARDING_STATE_FIELD)) {
+      exactHits += 1;
+    }
+    for (const name of Object.keys(fields)) {
+      if (/onboard/i.test(name)) {
+        onboardNames.set(name, (onboardNames.get(name) || 0) + 1);
+      }
+    }
+  }
+
+  console.log("Field names containing onboard:", Object.fromEntries(onboardNames));
+
+  if (exactHits > 0) return ONBOARDING_STATE_FIELD;
+  if (onboardNames.size === 1) {
+    const actual = [...onboardNames.keys()][0];
+    console.log(
+      '[Onboarded] Exact key "Onboarding State" was absent; using raw field name:',
+      actual,
+    );
+    return actual;
+  }
+
+  return ONBOARDING_STATE_FIELD;
+}
+
+function logRawOnboardingDiagnostics(allPeople: AirtableRecord[]): {
+  fieldName: string;
+  counts: Record<string, number>;
+  jsonCounts: Record<string, number>;
+  exactCompleted: number;
+} {
+  const fieldName = resolveOnboardingFieldName(allPeople);
+
+  console.log(
+    allPeople.slice(0, 10).map((record) => ({
+      id: record.id,
+      name: record.fields?.[FULL_NAME_FIELD],
+      onboardingState: record.fields?.[fieldName],
+      allFieldNames: record.fields ? Object.keys(record.fields) : [],
+    })),
+  );
+
+  const counts: Record<string, number> = {};
+  const jsonCounts: Record<string, number> = {};
+
+  for (const record of allPeople) {
+    const value = record.fields?.[fieldName];
+    const key = value == null ? "(blank)" : String(value);
+    counts[key] = (counts[key] || 0) + 1;
+    const jsonKey = value == null ? "(blank)" : JSON.stringify(value);
+    jsonCounts[jsonKey] = (jsonCounts[jsonKey] || 0) + 1;
+  }
+
+  console.log("Onboarding State distribution:", counts);
+  console.log("Onboarding State JSON distribution:", jsonCounts);
+
+  const exactCompleted = allPeople.filter((record) =>
+    isExactCompleted(record.fields?.[fieldName]),
+  ).length;
+  console.log("Exact Completed count:", exactCompleted);
+
+  const sample = allPeople.slice(0, 10).map((record) => ({
+    id: record.id,
+    name: record.fields?.[FULL_NAME_FIELD],
+    onboardingState: record.fields?.[fieldName],
+    allFieldNames: record.fields ? Object.keys(record.fields) : [],
+  }));
+
+  void writeFile(
+    path.join(process.cwd(), "onboarded-diagnostic-output.json"),
+    JSON.stringify(
+      {
+        table: getPeopleTableName(),
+        fieldName,
+        totalPeople: allPeople.length,
+        sample,
+        counts,
+        jsonCounts,
+        exactCompleted,
+      },
+      null,
+      2,
+    ),
+  ).catch(() => {
+    /* diagnostics are also in console.log */
+  });
+
+  return { fieldName, counts, jsonCounts, exactCompleted };
+}
+
 const loadOnboardedPeople = cache(async function loadOnboardedPeople(): Promise<
   AirtableQueryResult
 > {
-  const peopleTable = getPeopleTableName();
-  let result = await queryOnboardedPeople({
-    fields: [...PEOPLE_LIST_FIELDS],
-  });
-
-  if (
-    !result.ok &&
-    (result.type === "UNKNOWN_FIELD_NAME" || result.status === 422)
-  ) {
-    result = await queryOnboardedPeople({});
-  }
-
+  const result = await queryAllPeopleRecords();
   if (!result.ok) {
     console.error("[Dashboard] Onboarded members Airtable error", {
       status: result.status,
       type: result.type,
       message: result.message,
-      table: peopleTable,
+      table: getPeopleTableName(),
       view: null,
-      filterByFormula: ONBOARDED_FILTER_BY_FORMULA,
+      filterByFormula: null,
+      fieldsWhitelist: null,
     });
+    return result;
   }
 
-  return result;
+  const diagnostics = logRawOnboardingDiagnostics(result.records);
+
+  return {
+    ok: true,
+    records: result.records.filter((record) =>
+      isExactCompleted(record.fields?.[diagnostics.fieldName]),
+    ),
+  };
 });
 
 async function fetchApprovalDatesByPeopleId(): Promise<Map<string, string>> {
@@ -436,7 +551,7 @@ function mapOnboardedMember(
   approvalDates: Map<string, string>,
 ): OnboardedMember {
   const fields = record.fields ?? {};
-  const rawState = asSelectValue(fieldValue(fields, ONBOARDING_STATE_FIELD));
+  const rawState = asSelectValue(rawOnboardingState(fields));
   return {
     id: record.id,
     name: asSelectValue(fieldValue(fields, FULL_NAME_FIELD, NAME_FIELD)),
@@ -477,3 +592,98 @@ export async function countOnboardedMembers(): Promise<OnboardedMembersCountResu
     count: result.records.length,
   };
 }
+
+const ONBOARDING_OUTSTANDING_LABELS = new Set([
+  "Verification",
+  "Member Agreement",
+  "Portal Login",
+  "ID Review",
+  "ID Pending Review",
+  "Agreement Pending",
+  "Review Required",
+  "Restriction Hold",
+  "Data Quality Issue",
+]);
+
+function isOnboardingOrDataQualityOutstanding(item: string): boolean {
+  const trimmed = item.trim();
+  if (ONBOARDING_OUTSTANDING_LABELS.has(trimmed)) return true;
+  return trimmed.toLowerCase().startsWith("onboarding");
+}
+
+function onboardingCompletedDateFromFields(
+  fields: Record<string, unknown> | undefined,
+): string {
+  if (!fields) return "";
+  const keys = Object.keys(fields);
+  const exact =
+    findFieldKey(keys, "Onboarding Completed Date") ||
+    keys.find((key) => {
+      const lower = key.toLowerCase();
+      return (
+        lower.includes("onboard") &&
+        lower.includes("complet") &&
+        lower.includes("date")
+      );
+    });
+  if (!exact) return "";
+  const raw = asTrimmedString(fields[exact]);
+  return formatApprovalDate(raw) || raw;
+}
+
+async function fetchPeopleRecordById(
+  recordId: string,
+): Promise<AirtableRecord | null> {
+  if (!isRecordId(recordId)) return null;
+
+  let accessToken: string;
+  let baseId: string;
+  try {
+    ({ accessToken, baseId } = getAirtableConfig());
+  } catch {
+    return null;
+  }
+
+  const table = getPeopleTableName();
+  const requestUrl = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}/${encodeURIComponent(recordId)}`;
+
+  try {
+    const response = await fetch(requestUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as AirtableRecord & {
+      error?: { type?: string; message?: string };
+    };
+    if (!data?.id) return null;
+    return { id: data.id, fields: data.fields };
+  } catch {
+    return null;
+  }
+}
+
+export const getOnboardedMemberByPeopleRecordId = cache(
+  async function getOnboardedMemberByPeopleRecordId(
+    routeId: string,
+  ): Promise<OnboardedMemberDetail | null> {
+    const member = await getMemberByPeopleRecordId(routeId);
+    if (!member) return null;
+
+    const peopleRecord = await fetchPeopleRecordById(member.id);
+    const onboardingCompletedDate = onboardingCompletedDateFromFields(
+      peopleRecord?.fields,
+    );
+
+    return {
+      ...member,
+      onboardingState: member.onboardingState?.trim() || ONBOARDED_STATE_VALUE,
+      onboardingCompletedDate,
+      outstandingItems: member.outstandingItems.filter(
+        isOnboardingOrDataQualityOutstanding,
+      ),
+    };
+  },
+);

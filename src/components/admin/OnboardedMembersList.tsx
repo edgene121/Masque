@@ -160,7 +160,7 @@ export default function OnboardedMembersList({
                   </td>
                   <td>
                     <Link
-                      href={`/admin/dashboard/registered/${encodeURIComponent(row.id)}`}
+                      href={`/admin/dashboard/onboarded/${encodeURIComponent(row.id)}`}
                       className="admin-table-action"
                     >
                       View
