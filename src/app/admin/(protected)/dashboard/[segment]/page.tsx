@@ -6,12 +6,14 @@ import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import RegisteredMembersList from "@/components/admin/RegisteredMembersList";
 import OnboardedMembersList from "@/components/admin/OnboardedMembersList";
+import IncompleteMembersList from "@/components/admin/IncompleteMembersList";
 import {
   DASHBOARD_SEGMENT_SLUGS,
   getDashboardSegmentConfig,
 } from "@/lib/admin/dashboard-segments";
 import { requireAdmin } from "@/lib/admin/auth";
 import { listOnboardedMembers } from "@/lib/admin/onboarded-members";
+import { listIncompleteMembers } from "@/lib/admin/incomplete-members";
 import { listRegisteredMembers } from "@/lib/admin/registered-members";
 
 interface DashboardSegmentPageProps {
@@ -71,6 +73,13 @@ export default async function DashboardSegmentPage({
             description={config.description}
           />
         </Suspense>
+      ) : config.segment === "incomplete" ? (
+        <Suspense fallback={<AdminPageLoader />}>
+          <IncompleteMembersFromAirtable
+            title={config.title}
+            description={config.description}
+          />
+        </Suspense>
       ) : (
         <AdminMemberSegmentList
           segment={config.segment}
@@ -112,6 +121,25 @@ async function OnboardedMembersFromAirtable({
 
   return (
     <OnboardedMembersList
+      title={title}
+      description={description}
+      members={result.ok ? result.members : []}
+      loadError={result.ok ? null : result.error}
+    />
+  );
+}
+
+async function IncompleteMembersFromAirtable({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  const result = await listIncompleteMembers();
+
+  return (
+    <IncompleteMembersList
       title={title}
       description={description}
       members={result.ok ? result.members : []}

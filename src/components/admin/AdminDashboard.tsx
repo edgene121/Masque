@@ -89,10 +89,12 @@ const SEGMENTS = [
 export default function AdminDashboard({
   registeredMembersCount,
   onboardedMembersCount,
+  incompleteMembersCount,
   approvedLast60DaysCount,
 }: {
   registeredMembersCount: number | null;
   onboardedMembersCount: number | null;
+  incompleteMembersCount: number | null;
   approvedLast60DaysCount: number | null;
 }) {
   const data = MOCK_ADMIN_DASHBOARD_DATA;
@@ -119,9 +121,11 @@ export default function AdminDashboard({
                   ? registeredMembersCount
                   : metric.segmentId === "onboarded"
                     ? onboardedMembersCount
-                    : metric.segmentId === "approvedLast60Days"
-                      ? approvedLast60DaysCount
-                      : data[metric.valueKey]
+                    : metric.segmentId === "incomplete"
+                      ? incompleteMembersCount
+                      : metric.segmentId === "approvedLast60Days"
+                        ? approvedLast60DaysCount
+                        : data[metric.valueKey]
               }
               supportingText={metric.supportingText}
             />

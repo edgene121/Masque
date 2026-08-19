@@ -5,6 +5,7 @@ import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/auth";
 import { countOnboardedMembers } from "@/lib/admin/onboarded-members";
+import { countIncompleteMembers } from "@/lib/admin/incomplete-members";
 import { countRegisteredMembers } from "@/lib/admin/registered-members";
 import { listRecentlyApprovedMembers } from "@/lib/admin/recently-approved";
 
@@ -32,11 +33,12 @@ export default async function AdminDashboardPage() {
 }
 
 async function AdminDashboardFromAirtable() {
-  const [recentlyApproved, registeredMembers, onboardedMembers] =
+  const [recentlyApproved, registeredMembers, onboardedMembers, incompleteMembers] =
     await Promise.all([
       listRecentlyApprovedMembers(),
       countRegisteredMembers(),
       countOnboardedMembers(),
+      countIncompleteMembers(),
     ]);
 
   return (
@@ -46,6 +48,9 @@ async function AdminDashboardFromAirtable() {
       }
       onboardedMembersCount={
         onboardedMembers.ok ? onboardedMembers.count : null
+      }
+      incompleteMembersCount={
+        incompleteMembers.ok ? incompleteMembers.count : null
       }
       approvedLast60DaysCount={
         recentlyApproved.ok ? recentlyApproved.members.length : null
