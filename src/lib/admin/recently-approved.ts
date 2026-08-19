@@ -125,8 +125,13 @@ function formatApprovalDate(raw: string): string {
   });
 }
 
-function formatPeopleDate(value: unknown): string {
-  return formatApprovalDate(asTrimmedString(value));
+function toDateInputValue(value: unknown): string {
+  const raw = asTrimmedString(value);
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const ms = parseDateOnlyMs(raw);
+  if (ms == null) return "";
+  return utcDateLabel(ms);
 }
 
 function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
@@ -286,10 +291,10 @@ function peopleContactFromFields(
       : false,
     hasGovId: govIdKey ? hasGovIdAttachment(fields[govIdKey]) : false,
     conciergeWelcomeDate: welcomeDateKey
-      ? formatPeopleDate(fields[welcomeDateKey])
+      ? toDateInputValue(fields[welcomeDateKey])
       : "",
     lastConciergeContact: lastContactKey
-      ? formatPeopleDate(fields[lastContactKey])
+      ? toDateInputValue(fields[lastContactKey])
       : "",
     conciergeNotes: notesKey ? asTrimmedString(fields[notesKey]) : "",
   };

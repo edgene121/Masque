@@ -14,6 +14,15 @@ export type ConciergeStatus =
   | "Deferred"
   | "Do Not Contact";
 
+export const PEOPLE_CONCIERGE_STATUS_OPTIONS: readonly ConciergeStatus[] = [
+  "Not Contacted",
+  "Welcome Completed",
+  "Conversation Active",
+  "Follow-up Needed",
+  "Deferred",
+  "Do Not Contact",
+];
+
 export type ConciergeOutstandingItem =
   | "Verification"
   | "Member Agreement"

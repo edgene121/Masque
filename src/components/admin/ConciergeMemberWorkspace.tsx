@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import type { ConciergeMember } from "@/types/admin-concierge";
 import OutstandingItemBadges from "@/components/admin/OutstandingItemBadges";
+import ConciergeInformationForm from "@/components/admin/ConciergeInformationForm";
 import {
   attendanceBadgeClass,
   berthaBadgeClass,
@@ -42,22 +43,19 @@ export default function ConciergeMemberWorkspace({
 
         <div className="admin-concierge-workspace__title-row">
           <div>
-            <h2 className="admin-concierge-workspace__title">
-              Concierge Member Detail
-            </h2>
+            <p className="admin-detail-label">Member Name</p>
             <p className="admin-concierge-workspace__name">{member.name}</p>
             <p className="admin-concierge-workspace__since">
               Member since {displayDash(member.approvalDate)}
             </p>
           </div>
-          <StatusBadge
-            value={conciergeStatus}
-            className={
-              conciergeStatus
-                ? conciergeStatusBadgeClass(conciergeStatus)
-                : undefined
-            }
-          />
+          {conciergeStatus ? (
+            <span
+              className={`admin-status-badge ${conciergeStatusBadgeClass(conciergeStatus)}`}
+            >
+              {conciergeStatus}
+            </span>
+          ) : null}
         </div>
       </section>
 
@@ -170,39 +168,7 @@ export default function ConciergeMemberWorkspace({
 
           <section className="admin-detail-card">
             <h3 className="admin-detail-card__title">Concierge Information</h3>
-            <dl className="admin-detail-summary">
-              <div>
-                <dt className="admin-detail-label">Concierge Status</dt>
-                <dd>
-                  <StatusBadge
-                    value={conciergeStatus}
-                    className={
-                      conciergeStatus
-                        ? conciergeStatusBadgeClass(conciergeStatus)
-                        : undefined
-                    }
-                  />
-                </dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">Concierge Welcome Date</dt>
-                <dd>{displayDash(member.conciergeWelcomeDate)}</dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">Last Concierge Contact</dt>
-                <dd>{displayDash(member.lastConciergeContact)}</dd>
-              </div>
-              <div>
-                <dt className="admin-detail-label">Concierge Notes</dt>
-                <dd>
-                  {member.conciergeNotes?.trim() ? (
-                    <p className="admin-concierge-notes">{member.conciergeNotes}</p>
-                  ) : (
-                    "—"
-                  )}
-                </dd>
-              </div>
-            </dl>
+            <ConciergeInformationForm member={member} />
           </section>
         </div>
       </div>
