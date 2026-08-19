@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Calendar } from "lucide-react";
 import type { FeaturedEventData } from "@/types/dashboard";
-import featuredEventImage from "../../assets/featured-event.png";
 
 interface FeaturedEventCardProps {
   event: FeaturedEventData;
@@ -21,16 +20,10 @@ function formatEventDate(isoDate: string): string {
 }
 
 export default function FeaturedEventCard({ event }: FeaturedEventCardProps) {
-  const imageSrc = event.imageSrc ?? featuredEventImage.src;
   const formattedDate = formatEventDate(event.date);
 
   return (
     <Link href={event.href} className="featured-event-card featured-event-card--link">
-      <div className="featured-event-card__media">
-        {/* Replace src/assets/featured-event.png or pass event.imageSrc from Airtable */}
-        <img src={imageSrc} alt={event.title} />
-      </div>
-
       <div className="featured-event-card__body">
         <div className="featured-event-card__badges">
           <span className="featured-event-card__badge featured-event-card__badge--date">
