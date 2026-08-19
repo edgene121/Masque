@@ -5,6 +5,8 @@ import { getAirtableConfig } from "@/lib/admin/config";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
 import {
   PEOPLE_CONCIERGE_STATUS_OPTIONS,
+  PEOPLE_ESCALATION_OPTIONS,
+  type ConciergeEscalation,
   type ConciergeStatus,
 } from "@/types/admin-concierge";
 
@@ -12,6 +14,7 @@ const CONCIERGE_STATUS_FIELD = "Concierge Status";
 const CONCIERGE_WELCOME_DATE_FIELD = "Concierge Welcome Date";
 const LAST_CONCIERGE_CONTACT_FIELD = "Last Concierge Contact";
 const CONCIERGE_NOTES_FIELD = "Concierge Notes";
+const ESCALATION_FIELD = "Escalation";
 
 const GENERIC_ERROR = "Unable to save Concierge information. Please try again.";
 
@@ -20,6 +23,7 @@ export type ConciergeUpdateInput = {
   conciergeWelcomeDate: string;
   lastConciergeContact: string;
   conciergeNotes: string;
+  escalation: string;
 };
 
 export type ConciergeUpdateResult =
@@ -30,6 +34,7 @@ export type ConciergeUpdateResult =
         conciergeWelcomeDate: string;
         lastConciergeContact: string;
         conciergeNotes: string;
+        escalation: string;
       };
     }
   | { ok: false; error: string; status: number };
@@ -40,6 +45,10 @@ function isRecordId(value: string): boolean {
 
 function isAllowedStatus(value: string): value is ConciergeStatus {
   return (PEOPLE_CONCIERGE_STATUS_OPTIONS as readonly string[]).includes(value);
+}
+
+function isAllowedEscalation(value: string): value is ConciergeEscalation {
+  return (PEOPLE_ESCALATION_OPTIONS as readonly string[]).includes(value);
 }
 
 function isIsoDate(value: string): boolean {
@@ -81,8 +90,12 @@ export async function updatePeopleConciergeFields(
   const conciergeWelcomeDate = input.conciergeWelcomeDate.trim();
   const lastConciergeContact = input.lastConciergeContact.trim();
   const conciergeNotes = input.conciergeNotes;
+  const escalation = input.escalation.trim();
 
   if (conciergeStatus && !isAllowedStatus(conciergeStatus)) {
+    return { ok: false, error: GENERIC_ERROR, status: 400 };
+  }
+  if (escalation && !isAllowedEscalation(escalation)) {
     return { ok: false, error: GENERIC_ERROR, status: 400 };
   }
   if (conciergeWelcomeDate && !isIsoDate(conciergeWelcomeDate)) {
@@ -116,6 +129,7 @@ export async function updatePeopleConciergeFields(
           [CONCIERGE_WELCOME_DATE_FIELD]: conciergeWelcomeDate || null,
           [LAST_CONCIERGE_CONTACT_FIELD]: lastConciergeContact || null,
           [CONCIERGE_NOTES_FIELD]: conciergeNotes,
+          [ESCALATION_FIELD]: escalation || null,
         },
       }),
       cache: "no-store",
@@ -150,6 +164,7 @@ export async function updatePeopleConciergeFields(
           CONCIERGE_WELCOME_DATE_FIELD,
           LAST_CONCIERGE_CONTACT_FIELD,
           CONCIERGE_NOTES_FIELD,
+          ESCALATION_FIELD,
         ],
       });
 
@@ -177,14 +192,26 @@ export async function updatePeopleConciergeFields(
     return {
       ok: true,
       values: {
-        conciergeStatus: asTrimmedString(fields[CONCIERGE_STATUS_FIELD]),
-        conciergeWelcomeDate: toDateInputValue(
-          fields[CONCIERGE_WELCOME_DATE_FIELD],
-        ),
-        lastConciergeContact: toDateInputValue(
-          fields[LAST_CONCIERGE_CONTACT_FIELD],
-        ),
-        conciergeNotes: asTrimmedString(fields[CONCIERGE_NOTES_FIELD]),
+        conciergeStatus:
+          CONCIERGE_STATUS_FIELD in fields
+            ? asTrimmedString(fields[CONCIERGE_STATUS_FIELD])
+            : conciergeStatus,
+        conciergeWelcomeDate:
+          CONCIERGE_WELCOME_DATE_FIELD in fields
+            ? toDateInputValue(fields[CONCIERGE_WELCOME_DATE_FIELD])
+            : conciergeWelcomeDate,
+        lastConciergeContact:
+          LAST_CONCIERGE_CONTACT_FIELD in fields
+            ? toDateInputValue(fields[LAST_CONCIERGE_CONTACT_FIELD])
+            : lastConciergeContact,
+        conciergeNotes:
+          CONCIERGE_NOTES_FIELD in fields
+            ? asTrimmedString(fields[CONCIERGE_NOTES_FIELD])
+            : conciergeNotes,
+        escalation:
+          ESCALATION_FIELD in fields
+            ? asTrimmedString(fields[ESCALATION_FIELD])
+            : escalation,
       },
     };
   } catch (error) {

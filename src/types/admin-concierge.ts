@@ -50,6 +50,13 @@ export type ConciergeEscalation =
   | "Operations Follow-up"
   | "Founder Follow-up";
 
+export const PEOPLE_ESCALATION_OPTIONS: readonly ConciergeEscalation[] = [
+  "None",
+  "Concierge Follow-up",
+  "Operations Follow-up",
+  "Founder Follow-up",
+];
+
 export type ConciergeDataQualityIssue =
   | "Duplicate Phone Number"
   | "Duplicate Email Address"
@@ -113,5 +120,7 @@ export interface ConciergeMember {
   conciergeWelcomeDate?: string;
   lastConciergeContact?: string;
   conciergeNotes?: string;
+  /** Exact People "Escalation" value. Blank/missing is omitted or "". */
+  peopleEscalation?: string;
   fieldAvailability?: ConciergeFieldAvailability;
 }

@@ -142,6 +142,7 @@ function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
   | "conciergeWelcomeDate"
   | "lastConciergeContact"
   | "conciergeNotes"
+  | "peopleEscalation"
 > {
   return {
     onboardingState: contact?.onboardingState ?? "",
@@ -150,6 +151,7 @@ function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
     conciergeWelcomeDate: contact?.conciergeWelcomeDate ?? "",
     lastConciergeContact: contact?.lastConciergeContact ?? "",
     conciergeNotes: contact?.conciergeNotes ?? "",
+    peopleEscalation: contact?.escalation ?? "",
   };
 }
 
@@ -174,6 +176,7 @@ const GOV_ID_FIELD = "Gov ID";
 const CONCIERGE_WELCOME_DATE_FIELD = "Concierge Welcome Date";
 const LAST_CONCIERGE_CONTACT_FIELD = "Last Concierge Contact";
 const CONCIERGE_NOTES_FIELD = "Concierge Notes";
+const ESCALATION_FIELD = "Escalation";
 
 function findFieldKey(
   keys: string[],
@@ -232,6 +235,7 @@ type PeopleContact = {
   conciergeWelcomeDate: string;
   lastConciergeContact: string;
   conciergeNotes: string;
+  escalation: string;
 };
 
 function peopleContactFromFields(
@@ -251,6 +255,7 @@ function peopleContactFromFields(
       conciergeWelcomeDate: "",
       lastConciergeContact: "",
       conciergeNotes: "",
+      escalation: "",
     };
   }
   const email = asTrimmedString(fields.Email);
@@ -269,6 +274,7 @@ function peopleContactFromFields(
   const welcomeDateKey = findFieldKey(keys, CONCIERGE_WELCOME_DATE_FIELD);
   const lastContactKey = findFieldKey(keys, LAST_CONCIERGE_CONTACT_FIELD);
   const notesKey = findFieldKey(keys, CONCIERGE_NOTES_FIELD);
+  const escalationKey = findFieldKey(keys, ESCALATION_FIELD);
 
   return {
     name: nameKey ? asPeopleSelectValue(fields[nameKey]) : "",
@@ -297,6 +303,9 @@ function peopleContactFromFields(
       ? toDateInputValue(fields[lastContactKey])
       : "",
     conciergeNotes: notesKey ? asTrimmedString(fields[notesKey]) : "",
+    escalation: escalationKey
+      ? asPeopleSelectValue(fields[escalationKey])
+      : "",
   };
 }
 
@@ -578,6 +587,7 @@ function applyOutstanding(
       complianceState: contact.complianceState,
       followUpRequired: contact.followUpRequired,
       hasGovId: contact.hasGovId,
+      escalation: contact.escalation,
     }),
     fieldAvailability: {
       attendance: member.fieldAvailability?.attendance ?? false,

@@ -4,6 +4,7 @@ export interface PeopleOutstandingSource {
   complianceState: string;
   followUpRequired: boolean;
   hasGovId: boolean;
+  escalation?: string;
 }
 
 function normalizeStatus(value: string): string {
@@ -52,6 +53,15 @@ function complianceOutstandingLabel(complianceState: string): string | null {
   return null;
 }
 
+function escalationOutstandingLabel(escalation: string): string | null {
+  const trimmed = escalation.trim();
+  if (!trimmed || normalizeStatus(trimmed) === "none") return null;
+  if (trimmed === "Concierge Follow-up") return "Concierge Follow-up";
+  if (trimmed === "Operations Follow-up") return "Operations Follow-up";
+  if (trimmed === "Founder Follow-up") return "Founder Follow-up";
+  return null;
+}
+
 /**
  * Derives outstanding-item labels from People fields.
  * Follow-Up Required is only added from the explicit checkbox.
@@ -78,6 +88,9 @@ export function deriveOutstandingItems(
 
   const onboardingItem = onboardingOutstandingLabel(source.onboardingState);
   if (onboardingItem) addUnique(items, onboardingItem);
+
+  const escalationItem = escalationOutstandingLabel(source.escalation ?? "");
+  if (escalationItem) addUnique(items, escalationItem);
 
   return items;
 }

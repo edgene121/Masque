@@ -39,12 +39,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   const conciergeWelcomeDate = readString(body, "conciergeWelcomeDate");
   const lastConciergeContact = readString(body, "lastConciergeContact");
   const conciergeNotes = readString(body, "conciergeNotes");
+  const escalation = readString(body, "escalation");
 
   if (
     conciergeStatus == null ||
     conciergeWelcomeDate == null ||
     lastConciergeContact == null ||
-    conciergeNotes == null
+    conciergeNotes == null ||
+    escalation == null
   ) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 400 });
   }
@@ -54,6 +56,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     conciergeWelcomeDate,
     lastConciergeContact,
     conciergeNotes,
+    escalation,
   });
 
   if (!result.ok) {

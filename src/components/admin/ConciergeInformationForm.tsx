@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   PEOPLE_CONCIERGE_STATUS_OPTIONS,
+  PEOPLE_ESCALATION_OPTIONS,
   type ConciergeMember,
 } from "@/types/admin-concierge";
 
@@ -11,11 +12,17 @@ const GENERIC_ERROR = "Unable to save Concierge information. Please try again.";
 
 function initialFormState(member: ConciergeMember) {
   const status = member.peopleConciergeStatus?.trim() ?? "";
+  const escalation = member.peopleEscalation?.trim() ?? "";
   return {
     conciergeStatus: (PEOPLE_CONCIERGE_STATUS_OPTIONS as readonly string[]).includes(
       status,
     )
       ? status
+      : "",
+    escalation: (PEOPLE_ESCALATION_OPTIONS as readonly string[]).includes(
+      escalation,
+    )
+      ? escalation
       : "",
     conciergeWelcomeDate: member.conciergeWelcomeDate?.trim() ?? "",
     lastConciergeContact: member.lastConciergeContact?.trim() ?? "",
@@ -39,6 +46,7 @@ export default function ConciergeInformationForm({
   }, [
     member.id,
     member.peopleConciergeStatus,
+    member.peopleEscalation,
     member.conciergeWelcomeDate,
     member.lastConciergeContact,
     member.conciergeNotes,
@@ -82,6 +90,7 @@ export default function ConciergeInformationForm({
       if (data.values) {
         setForm({
           conciergeStatus: data.values.conciergeStatus ?? form.conciergeStatus,
+          escalation: data.values.escalation ?? form.escalation,
           conciergeWelcomeDate:
             data.values.conciergeWelcomeDate ?? form.conciergeWelcomeDate,
           lastConciergeContact:
@@ -111,6 +120,23 @@ export default function ConciergeInformationForm({
         >
           <option value="">Select status</option>
           {PEOPLE_CONCIERGE_STATUS_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="admin-concierge-form__field">
+        <span>Escalation</span>
+        <select
+          className="admin-select"
+          value={form.escalation}
+          onChange={(event) => updateField("escalation", event.target.value)}
+          disabled={saving}
+        >
+          <option value="">Select escalation</option>
+          {PEOPLE_ESCALATION_OPTIONS.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>

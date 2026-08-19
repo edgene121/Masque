@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import type {
   ConciergeAttendance,
   ConciergeBertha,
+  ConciergeEscalation,
   ConciergeMember,
   ConciergeStatus,
   PeopleOnboardingState,
@@ -25,6 +26,7 @@ import {
   onboardingBadgeClass,
   outstandingItemClass,
   peopleConciergeStatus,
+  peopleEscalation,
   peopleOnboardingState,
 } from "@/lib/admin/concierge-display";
 
@@ -54,6 +56,12 @@ const ATTENDANCE_OPTIONS: ConciergeAttendance[] = [
   "Attended",
 ];
 const BERTHA_OPTIONS: ConciergeBertha[] = ["Purchased", "No Ticket"];
+const ESCALATION_OPTIONS: ConciergeEscalation[] = [
+  "None",
+  "Concierge Follow-up",
+  "Operations Follow-up",
+  "Founder Follow-up",
+];
 const NONE_OUTSTANDING_FILTER = "__none__";
 const OUTSTANDING_ITEM_OPTIONS = [
   "Follow-Up Required",
@@ -65,6 +73,9 @@ const OUTSTANDING_ITEM_OPTIONS = [
   "Onboarding Not Started",
   "Onboarding In Progress",
   "Onboarding Submitted",
+  "Concierge Follow-up",
+  "Operations Follow-up",
+  "Founder Follow-up",
 ] as const;
 
 function getPageItems(
@@ -102,6 +113,7 @@ export default function ConciergeRecentlyApprovedList({
   const [onboarding, setOnboarding] = useState(ALL_FILTER);
   const [attendance, setAttendance] = useState(ALL_FILTER);
   const [bertha, setBertha] = useState(ALL_FILTER);
+  const [escalation, setEscalation] = useState(ALL_FILTER);
   const [outstanding, setOutstanding] = useState(ALL_FILTER);
   const [page, setPage] = useState(1);
 
@@ -139,6 +151,14 @@ export default function ConciergeRecentlyApprovedList({
       ) {
         return false;
       }
+      if (escalation !== ALL_FILTER) {
+        const rowEscalation = peopleEscalation(row);
+        if (escalation === "None") {
+          if (rowEscalation && rowEscalation !== "None") return false;
+        } else if (rowEscalation !== escalation) {
+          return false;
+        }
+      }
       if (outstanding === NONE_OUTSTANDING_FILTER) {
         if (row.outstandingItems.length !== 0) return false;
       } else if (
@@ -156,6 +176,7 @@ export default function ConciergeRecentlyApprovedList({
     onboarding,
     attendance,
     bertha,
+    escalation,
     outstanding,
   ]);
 
@@ -259,6 +280,25 @@ export default function ConciergeRecentlyApprovedList({
             >
               <option value={ALL_FILTER}>All Bertha Status</option>
               {BERTHA_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-filter">
+            <span className="admin-sr-only">Escalation</span>
+            <select
+              className="admin-select"
+              value={escalation}
+              onChange={(event) => {
+                setEscalation(event.target.value);
+                resetPage();
+              }}
+              aria-label="All Escalations"
+            >
+              <option value={ALL_FILTER}>All Escalations</option>
+              {ESCALATION_OPTIONS.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>

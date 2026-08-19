@@ -20,6 +20,11 @@ export function peopleComplianceState(member: ConciergeMember): string | null {
   return value || null;
 }
 
+export function peopleEscalation(member: ConciergeMember): string | null {
+  const value = member.peopleEscalation?.trim() ?? "";
+  return value || null;
+}
+
 export function memberAttendanceLabel(member: ConciergeMember): string | null {
   if (!isConciergeFieldResolved(member, "attendance")) return null;
   return conciergeAttendanceLabel(member);
@@ -89,6 +94,9 @@ export function outstandingItemClass(item: string): string {
   if (normalized === "review required") return "admin-concierge-tag--warning";
   if (normalized === "restriction hold") return "admin-concierge-tag--danger";
   if (normalized.startsWith("onboarding")) return "admin-concierge-tag--info";
+  if (normalized === "concierge follow-up") return "admin-concierge-tag--warning";
+  if (normalized === "operations follow-up") return "admin-concierge-tag--amber";
+  if (normalized === "founder follow-up") return "admin-concierge-tag--danger";
   return "";
 }
 
