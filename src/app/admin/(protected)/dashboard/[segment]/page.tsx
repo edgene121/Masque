@@ -17,6 +17,8 @@ interface DashboardSegmentPageProps {
   params: Promise<{ segment: string }>;
 }
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return DASHBOARD_SEGMENT_SLUGS.map((segment) => ({ segment }));
 }

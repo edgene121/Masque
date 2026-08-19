@@ -6,6 +6,8 @@ import { countOnboardedMembers } from "@/lib/admin/onboarded-members";
 import { countRegisteredMembers } from "@/lib/admin/registered-members";
 import { listRecentlyApprovedMembers } from "@/lib/admin/recently-approved";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Dashboard | Masqué Admin",
   description: "Masqué Admin Portal dashboard.",
