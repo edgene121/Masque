@@ -4977,7 +4977,28 @@ a.contact-info-card__detail:hover {
 }
 
 .admin-table--segment-incomplete {
-  min-width: 1180px;
+  min-width: 1280px;
+}
+
+.admin-table--segment-incomplete th:nth-child(4),
+.admin-table--segment-incomplete td:nth-child(4) {
+  width: 190px;
+  min-width: 170px;
+  padding-right: 28px;
+  box-sizing: border-box;
+}
+
+.admin-table--segment-incomplete th:nth-child(4) {
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.admin-table--segment-incomplete th:nth-child(5),
+.admin-table--segment-incomplete td:nth-child(5) {
+  width: 150px;
+  min-width: 150px;
+  padding-left: 20px;
+  box-sizing: border-box;
 }
 
 .admin-table--segment .admin-table-action:hover:not(:disabled) {
