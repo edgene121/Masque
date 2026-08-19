@@ -45,7 +45,7 @@ export default function RegisteredMemberWorkspace({
         </div>
       </section>
 
-      <div className="admin-concierge-workspace__grid">
+      <div className="admin-registered-detail__body">
         <MemberProfileSections member={member} />
       </div>
     </div>

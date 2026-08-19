@@ -5514,15 +5514,8 @@ a.contact-info-card__detail:hover {
 }
 
 .admin-concierge-workspace__grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.admin-concierge-workspace__columns {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   gap: 16px;
   align-items: start;
 }
@@ -5534,7 +5527,28 @@ a.contact-info-card__detail:hover {
   min-width: 0;
 }
 
-.admin-concierge-onboarding-grid {
+.admin-registered-detail__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-registered-detail__columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-registered-detail__column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-registered-detail__onboarding-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px 28px;
@@ -5542,12 +5556,16 @@ a.contact-info-card__detail:hover {
   align-items: start;
 }
 
-.admin-concierge-onboarding-grid .admin-concierge-subsection {
+.admin-registered-detail__onboarding-grid .admin-concierge-subsection {
   margin-top: 0;
 }
 
-.admin-concierge-onboarding-grid .admin-detail-summary {
+.admin-registered-detail__onboarding-grid .admin-detail-summary {
   grid-template-columns: 1fr;
+}
+
+.admin-registered-detail__onboarding-grid .admin-concierge-subsection:first-of-type {
+  margin-top: 0;
 }
 
 .admin-concierge-subsection {
@@ -5557,10 +5575,6 @@ a.contact-info-card__detail:hover {
 
 .admin-concierge-subsection:first-of-type {
   margin-top: 16px;
-}
-
-.admin-concierge-onboarding-grid .admin-concierge-subsection:first-of-type {
-  margin-top: 0;
 }
 
 .admin-concierge-subsection__title {
@@ -5737,9 +5751,10 @@ a.contact-info-card__detail:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-concierge-workspace__columns,
+  .admin-concierge-workspace__grid,
+  .admin-registered-detail__columns,
   .admin-concierge-form__row,
-  .admin-concierge-onboarding-grid {
+  .admin-registered-detail__onboarding-grid {
     grid-template-columns: 1fr;
   }
 }

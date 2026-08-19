@@ -2,7 +2,13 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import type { ConciergeMember } from "@/types/admin-concierge";
 import ConciergeInformationForm from "@/components/admin/ConciergeInformationForm";
-import MemberProfileSections from "@/components/admin/MemberProfileSections";
+import {
+  DataQualityCard,
+  EventStatusCard,
+  MemberInformationCard,
+  OnboardingCard,
+  OutstandingItemsCard,
+} from "@/components/admin/MemberDetailCards";
 import {
   conciergeStatusBadgeClass,
   displayDash,
@@ -46,15 +52,19 @@ export default function ConciergeMemberWorkspace({
       </section>
 
       <div className="admin-concierge-workspace__grid">
-        <MemberProfileSections
-          member={member}
-          sideExtra={
-            <section className="admin-detail-card">
-              <h3 className="admin-detail-card__title">Concierge Information</h3>
-              <ConciergeInformationForm member={member} />
-            </section>
-          }
-        />
+        <div className="admin-concierge-workspace__column">
+          <MemberInformationCard member={member} />
+          <EventStatusCard member={member} />
+          <OnboardingCard member={member} layout="stacked" />
+        </div>
+        <div className="admin-concierge-workspace__column">
+          <OutstandingItemsCard member={member} />
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Concierge Information</h3>
+            <ConciergeInformationForm member={member} />
+          </section>
+          <DataQualityCard member={member} />
+        </div>
       </div>
     </div>
   );
