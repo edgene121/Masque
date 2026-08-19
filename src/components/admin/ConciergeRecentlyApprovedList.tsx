@@ -31,6 +31,10 @@ import {
 const PAGE_SIZE = 10;
 const ALL_FILTER = "__all__";
 
+function isAirtablePeopleRecordId(value: string): boolean {
+  return /^rec[a-zA-Z0-9]{10,}$/.test(value);
+}
+
 const CONCIERGE_STATUS_OPTIONS: ConciergeStatus[] = [
   "Not Contacted",
   "Welcome Completed",
@@ -331,7 +335,10 @@ export default function ConciergeRecentlyApprovedList({
               </tr>
             ) : (
               pageRows.map((row) => (
-                <ConciergeMemberRow key={row.id} row={row} />
+                <ConciergeMemberRow
+                  key={row.applicationId || row.id}
+                  row={row}
+                />
               ))
             )}
           </tbody>
@@ -459,12 +466,16 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
         <OutstandingItems items={row.outstandingItems} />
       </td>
       <td className="admin-col-action">
-        <Link
-          href={`/admin/concierge/members/${encodeURIComponent(row.id)}`}
-          className="admin-table-action"
-        >
-          View
-        </Link>
+        {isAirtablePeopleRecordId(row.id) ? (
+          <Link
+            href={`/admin/concierge/members/${encodeURIComponent(row.id)}`}
+            className="admin-table-action"
+          >
+            View
+          </Link>
+        ) : (
+          <UnresolvedValue />
+        )}
       </td>
     </tr>
   );

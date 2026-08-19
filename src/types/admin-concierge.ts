@@ -83,6 +83,8 @@ export type ConciergeFieldAvailability = Record<ConciergeListField, boolean>;
 
 export interface ConciergeMember {
   id: string;
+  /** Application record ID for list uniqueness only. Not used as the detail route id. */
+  applicationId?: string;
   name: string;
   phone: string;
   email: string;

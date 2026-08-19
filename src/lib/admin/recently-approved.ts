@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import {
   fetchAttendanceByPersonIds,
   type AttendanceByPersonResult,
@@ -214,6 +215,7 @@ function looksLikeAttachment(value: unknown): boolean {
 }
 
 type PeopleContact = {
+  name: string;
   email: string;
   phone: string;
   onboardingState: string;
@@ -232,6 +234,7 @@ function peopleContactFromFields(
 ): PeopleContact {
   if (!fields) {
     return {
+      name: "",
       email: "",
       phone: "",
       onboardingState: "",
@@ -250,6 +253,8 @@ function peopleContactFromFields(
   const phoneKey =
     findFieldKey(keys, "Phone") ||
     keys.find((key) => key.toLowerCase() === "phone");
+  const nameKey =
+    findFieldKey(keys, NAME_FIELD) || findFieldKey(keys, "Full Name");
   const onboardingKey = findFieldKey(keys, ONBOARDING_STATE_FIELD);
   const conciergeKey = findFieldKey(keys, CONCIERGE_STATUS_FIELD);
   const membershipKey = findFieldKey(keys, MEMBERSHIP_STATUS_FIELD);
@@ -261,6 +266,7 @@ function peopleContactFromFields(
   const notesKey = findFieldKey(keys, CONCIERGE_NOTES_FIELD);
 
   return {
+    name: nameKey ? asPeopleSelectValue(fields[nameKey]) : "",
     email,
     phone: phoneKey ? asTrimmedString(fields[phoneKey]) : "",
     onboardingState: onboardingKey
@@ -681,7 +687,8 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
         applyBertha(
           applyAttendance(
             {
-              id: row.record.id,
+              id: personId && isRecordId(personId) ? personId : "",
+              applicationId: row.record.id,
               name: displayOrDash(asTrimmedString(row.fields[NAME_FIELD])),
               phone: displayOrDash(contact?.phone ?? ""),
               email: displayOrDash(contact?.email ?? ""),
@@ -784,7 +791,8 @@ export async function listRecentlyApprovedMembers(): Promise<ListRecentlyApprove
   }
 }
 
-async function fetchApplicationById(
+async function fetchRecordById(
+  table: string,
   recordId: string,
 ): Promise<AirtableQueryResult> {
   if (!isRecordId(recordId)) {
@@ -792,7 +800,7 @@ async function fetchApplicationById(
       ok: false,
       status: 404,
       type: "NOT_FOUND",
-      message: "Invalid application record ID",
+      message: "Invalid Airtable record ID",
     };
   }
 
@@ -809,14 +817,9 @@ async function fetchApplicationById(
     };
   }
 
-  const params = new URLSearchParams();
-  for (const field of APPLICATION_FIELDS) {
-    params.append("fields[]", field);
-  }
-
-  const encodedTable = encodeURIComponent(APPLICATIONS_TABLE);
+  const encodedTable = encodeURIComponent(table);
   const encodedId = encodeURIComponent(recordId);
-  const requestUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}/${encodedId}?${params.toString()}`;
+  const requestUrl = `https://api.airtable.com/v0/${baseId}/${encodedTable}/${encodedId}`;
 
   try {
     const response = await fetch(requestUrl, {
@@ -851,7 +854,7 @@ async function fetchApplicationById(
         ok: false,
         status: 404,
         type: "NOT_FOUND",
-        message: "Application record missing",
+        message: "Record missing",
       };
     }
     return { ok: true, records: [record] };
@@ -865,55 +868,136 @@ async function fetchApplicationById(
   }
 }
 
-export async function getConciergeMemberByApplicationId(
-  recordId: string,
-): Promise<ConciergeMember | null> {
-  const result = await fetchApplicationById(recordId);
-  if (!result.ok) {
-    logAirtableError("getConciergeMemberByApplicationId", {
-      status: result.status,
-      type: result.type,
-      message: result.message,
-      table: APPLICATIONS_TABLE,
-      fields: [...APPLICATION_FIELDS],
-      filterByFormula: null,
-    });
-    return null;
+function normalizeRecordIdParam(raw: string): string {
+  const trimmed = raw.trim();
+  try {
+    return decodeURIComponent(trimmed).trim();
+  } catch {
+    return trimmed;
+  }
+}
+
+async function fetchLatestApprovedApplicationForPerson(
+  peopleId: string,
+): Promise<{ name: string; approvalDate: string; applicationId: string } | null> {
+  const filterByFormula = `LOWER({${VETTING_STATUS_FIELD}})='${VETTING_STATUS_APPROVED}'`;
+  const result = await queryTable({
+    table: APPLICATIONS_TABLE,
+    fields: [...APPLICATION_FIELDS],
+    filterByFormula,
+    paginate: true,
+  });
+  if (!result.ok) return null;
+
+  const todayMs = todayUtcMs();
+  const cutoffMs = todayMs - LOOKBACK_DAYS * MS_PER_DAY;
+
+  const ranked = result.records
+    .map((record) => {
+      if (!record?.id) return null;
+      if (!recordIds(record.fields?.[LINKED_PERSON_FIELD]).includes(peopleId)) {
+        return null;
+      }
+      const fields = record.fields ?? {};
+      const lastModifiedRaw = asTrimmedString(fields[LAST_MODIFIED_FIELD]);
+      const approvalMs = parseDateOnlyMs(lastModifiedRaw);
+      return {
+        id: record.id,
+        name: asTrimmedString(fields[NAME_FIELD]),
+        lastModifiedRaw,
+        approvalMs,
+      };
+    })
+    .filter(
+      (
+        row,
+      ): row is {
+        id: string;
+        name: string;
+        lastModifiedRaw: string;
+        approvalMs: number | null;
+      } => row != null,
+    )
+    .sort((left, right) => (right.approvalMs ?? 0) - (left.approvalMs ?? 0));
+
+  const recent = ranked.find(
+    (row) =>
+      row.approvalMs != null &&
+      row.approvalMs >= cutoffMs &&
+      row.approvalMs <= todayMs,
+  );
+  const chosen = recent ?? ranked[0];
+  if (!chosen) return null;
+  return {
+    applicationId: chosen.id,
+    name: chosen.name,
+    approvalDate: formatApprovalDate(chosen.lastModifiedRaw),
+  };
+}
+
+async function fetchPeopleRecordForRoute(
+  routeId: string,
+): Promise<AirtableRecord | null> {
+  const recordId = normalizeRecordIdParam(routeId);
+  if (!isRecordId(recordId)) return null;
+
+  const peopleTable = getPeopleTableName();
+  const peopleResult = await fetchRecordById(peopleTable, recordId);
+  if (peopleResult.ok && peopleResult.records[0]?.id) {
+    return peopleResult.records[0];
   }
 
-  const record = result.records[0];
-  if (!record?.id) return null;
-  const fields = record.fields ?? {};
-  const personId = recordIds(fields[LINKED_PERSON_FIELD])[0];
-  const peopleIds = personId ? [personId] : [];
+  const applicationResult = await fetchRecordById(APPLICATIONS_TABLE, recordId);
+  const linkedPerson = recordIds(
+    applicationResult.ok
+      ? applicationResult.records[0]?.fields?.[LINKED_PERSON_FIELD]
+      : undefined,
+  )[0];
+  if (!linkedPerson) return null;
 
-  const [enrichment, attendanceResult, berthaResult] = await Promise.all([
-    fetchPeopleContactsByIds(peopleIds),
-    fetchAttendanceByPersonIds(peopleIds),
-    fetchBerthaByPersonIds(peopleIds),
-  ]);
-
-  const contact = personId ? enrichment.contacts.get(personId) : undefined;
-  return applyOutstanding(
-    applyBertha(
-      applyAttendance(
-        {
-          id: record.id,
-          name: displayOrDash(asTrimmedString(fields[NAME_FIELD])),
-          phone: displayOrDash(contact?.phone ?? ""),
-          email: displayOrDash(contact?.email ?? ""),
-          approvalDate: formatApprovalDate(
-            asTrimmedString(fields[LAST_MODIFIED_FIELD]),
-          ),
-        ...unresolvedConciergeFields(),
-        ...peopleDisplayFields(contact),
-        },
-        personId,
-        attendanceResult,
-      ),
-      personId,
-      berthaResult,
-    ),
-    contact,
-  );
+  const linkedPeopleResult = await fetchRecordById(peopleTable, linkedPerson);
+  if (!linkedPeopleResult.ok || !linkedPeopleResult.records[0]?.id) {
+    return null;
+  }
+  return linkedPeopleResult.records[0];
 }
+
+export const getConciergeMemberByPeopleId = cache(
+  async function getConciergeMemberByPeopleId(
+    routeId: string,
+  ): Promise<ConciergeMember | null> {
+    const peopleRecord = await fetchPeopleRecordForRoute(routeId);
+    if (!peopleRecord?.id) return null;
+
+    const peopleId = peopleRecord.id;
+    const [attendanceResult, berthaResult, application] = await Promise.all([
+      fetchAttendanceByPersonIds([peopleId]),
+      fetchBerthaByPersonIds([peopleId]),
+      fetchLatestApprovedApplicationForPerson(peopleId),
+    ]);
+
+    const contact = peopleContactFromFields(peopleRecord.fields);
+
+    return applyOutstanding(
+      applyBertha(
+        applyAttendance(
+          {
+            id: peopleRecord.id,
+            applicationId: application?.applicationId,
+            name: displayOrDash(application?.name || contact.name),
+            phone: displayOrDash(contact.phone),
+            email: displayOrDash(contact.email),
+            approvalDate: application?.approvalDate || "",
+            ...unresolvedConciergeFields(),
+            ...peopleDisplayFields(contact),
+          },
+          peopleId,
+          attendanceResult,
+        ),
+        peopleId,
+        berthaResult,
+      ),
+      contact,
+    );
+  },
+);
