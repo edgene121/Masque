@@ -638,57 +638,70 @@ function dateSortTime(value: unknown): number {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 }
 
-function extractRewardDate(fields: Record<string, unknown>): string {
-  const issued = getField(fields, ["Issued"]);
-  if (isUsableDateValue(issued)) {
-    return formatDisplayDate(asDisplayString(issued));
-  }
+const REWARD_DATE_FIELD_NAMES = [
+  "Issued Date",
+  "Redeemed Date",
+  "Redemption Date",
+  "Date Issued",
+  "Reward Date",
+  "Date",
+];
 
-  const fallback = getField(fields, [
-    "Issued Date",
-    "Redeemed Date",
-    "Date Issued",
-    "Date",
-    "Created Time",
-    "Created",
-  ]);
-  if (isUsableDateValue(fallback)) {
-    return formatDisplayDate(asDisplayString(fallback));
-  }
-
-  return "";
-}
+const EVENT_DATE_FIELD_NAMES = ["Date", "Event Date", "Start Date"];
 
 function extractRewardDateRaw(fields: Record<string, unknown>): unknown {
-  const issued = getField(fields, ["Issued"]);
-  if (isUsableDateValue(issued)) return issued;
-  const fallback = getField(fields, [
-    "Issued Date",
-    "Redeemed Date",
-    "Date Issued",
-    "Date",
-    "Created Time",
-    "Created",
-  ]);
-  if (isUsableDateValue(fallback)) return fallback;
+  // `Issued` is a checkbox, not a date. Do not read it as a transaction date.
+  const preferred = getField(fields, REWARD_DATE_FIELD_NAMES);
+  if (isUsableDateValue(preferred)) return preferred;
+
+  for (const [key, value] of Object.entries(fields)) {
+    const lower = key.trim().toLowerCase();
+    if (lower === "issued") continue;
+    if (/created|modified|updated/.test(lower)) continue;
+    if (!/date/.test(lower) && !/redeem/.test(lower)) continue;
+    if (isUsableDateValue(value)) return value;
+  }
   return undefined;
 }
 
-function isUnissuedCheckbox(value: unknown): boolean {
-  if (value === false) return true;
+function extractRewardDate(fields: Record<string, unknown>): string {
+  const raw = extractRewardDateRaw(fields);
+  if (!isUsableDateValue(raw)) return "";
+  return formatDisplayDate(asDisplayString(raw));
+}
+
+function extractEventDate(fields: Record<string, unknown> | undefined): string {
+  const raw = getField(fields, EVENT_DATE_FIELD_NAMES);
+  if (!isUsableDateValue(raw)) return "";
+  return formatDisplayDate(asDisplayString(raw));
+}
+
+function isIssuedReward(value: unknown): boolean {
+  if (value === true || value === 1) return true;
   if (typeof value === "string") {
     const key = value.trim().toLowerCase();
-    return key === "false" || key === "unchecked" || key === "no";
+    return key === "true" || key === "checked" || key === "yes" || key === "1";
   }
   return false;
 }
 
-async function fetchEventNamesByIds(
+/**
+ * Rewards.`Credits Used` is a redemption amount, not an earned credit.
+ * If Airtable already stored a negative, keep it. If it stored a positive
+ * usage amount, display it as a single negative ledger entry.
+ */
+function redemptionCreditDelta(creditsUsed: number): number {
+  return creditsUsed < 0 ? creditsUsed : -creditsUsed;
+}
+
+type EventCreditDetails = { name: string; date: string };
+
+async function fetchEventDetailsByIds(
   ids: string[],
-): Promise<Map<string, string>> {
+): Promise<Map<string, EventCreditDetails>> {
   const unique = [...new Set(ids.filter((id) => isRecordId(id)))];
-  const names = new Map<string, string>();
-  if (unique.length === 0) return names;
+  const details = new Map<string, EventCreditDetails>();
+  if (unique.length === 0) return details;
 
   const formula =
     unique.length === 1
@@ -698,13 +711,22 @@ async function fetchEventNamesByIds(
           .join(",")})`;
   const params = new URLSearchParams({ filterByFormula: formula });
   params.append("fields[]", "Name");
+  params.append("fields[]", "Date");
 
-  const result = await airtableList({
+  let result = await airtableList({
     table: getEventsTableName(),
     params,
-    context: "Event names for Rewards",
+    context: "Event details for Rewards",
   });
-  if (!result.ok) return names;
+
+  if (!result.ok && (result.status === 422 || result.errorType === "UNKNOWN_FIELD_NAME")) {
+    result = await airtableList({
+      table: getEventsTableName(),
+      params: new URLSearchParams({ filterByFormula: formula }),
+      context: "Event details for Rewards (all fields)",
+    });
+  }
+  if (!result.ok) return details;
 
   for (const record of result.records) {
     const name =
@@ -717,9 +739,12 @@ async function fetchEventNamesByIds(
           "Event",
         ]),
       ) || personNameFromFields(record.fields);
-    if (name) names.set(record.id, name);
+    details.set(record.id, {
+      name,
+      date: extractEventDate(record.fields),
+    });
   }
-  return names;
+  return details;
 }
 
 function rewardActivityDescription(
@@ -738,19 +763,22 @@ async function fetchCreditHistoryForPerson(
 ): Promise<CreditsHistoryRow[]> {
   if (!isRecordId(peopleRecordId)) return [];
 
-  const params = new URLSearchParams();
-  params.append("fields[]", "Person");
-  params.append("fields[]", "Event Redeemed For");
-  params.append("fields[]", "Ticket Type");
-  params.append("fields[]", "Credits Used");
-  params.append("fields[]", "Status");
-  params.append("fields[]", "Issued");
+  const formula = `FIND('${escapeAirtableFormulaString(peopleRecordId)}', ARRAYJOIN({Person}))`;
+  const params = new URLSearchParams({ filterByFormula: formula });
 
-  const result = await airtableList({
+  let result = await airtableList({
     table: REWARDS_TABLE,
     params,
     context: "Rewards credit history by Person",
   });
+
+  if (!result.ok && (result.status === 422 || result.errorType === "UNKNOWN_FIELD_NAME")) {
+    result = await airtableList({
+      table: REWARDS_TABLE,
+      params: new URLSearchParams(),
+      context: "Rewards credit history by Person (all fields)",
+    });
+  }
 
   if (!result.ok) {
     console.error("[Credits] Unable to load Rewards credit history", {
@@ -769,16 +797,28 @@ async function fetchCreditHistoryForPerson(
   const eventIds = new Set<string>();
   for (const record of matches) {
     const eventRaw = getField(record.fields, ["Event Redeemed For"]);
-    if (humanReadableReferredBy(eventRaw)) continue;
     for (const id of recordIds(eventRaw)) eventIds.add(id);
   }
-  const eventNames = await fetchEventNamesByIds([...eventIds]);
+  const eventDetails = await fetchEventDetailsByIds([...eventIds]);
 
+  const anyIssued = matches.some((record) =>
+    isIssuedReward(getField(record.fields ?? {}, ["Issued"])),
+  );
+
+  const skipped: Array<Record<string, unknown>> = [];
   const rows = matches
     .map((record) => {
       const fields = record.fields ?? {};
-      const issuedRaw = getField(fields, ["Issued"]);
-      if (isUnissuedCheckbox(issuedRaw)) return null;
+      const issued = isIssuedReward(getField(fields, ["Issued"]));
+      if (anyIssued && !issued) {
+        skipped.push({
+          rewardId: record.id,
+          reason: "unissued",
+          issued: getField(fields, ["Issued"]) ?? "(omitted)",
+          creditsUsed: asNumber(getField(fields, ["Credits Used"])),
+        });
+        return null;
+      }
 
       const status = asDisplayString(getField(fields, ["Status"])).toLowerCase();
       if (
@@ -786,37 +826,85 @@ async function fetchCreditHistoryForPerson(
         status.includes("void") ||
         status.includes("refund")
       ) {
+        skipped.push({
+          rewardId: record.id,
+          reason: "status",
+          status,
+        });
         return null;
       }
 
       const creditsUsed = asNumber(getField(fields, ["Credits Used"]));
-      if (creditsUsed == null || creditsUsed === 0) return null;
+      if (creditsUsed == null || creditsUsed === 0) {
+        skipped.push({
+          rewardId: record.id,
+          reason: "no-credits-used",
+          creditsUsed,
+        });
+        return null;
+      }
 
       const ticketType = humanReadableReferredBy(
         getField(fields, ["Ticket Type"]),
       );
       const eventRaw = getField(fields, ["Event Redeemed For"]);
+      const linkedEventIds = recordIds(eventRaw);
+      const linkedEvent = linkedEventIds
+        .map((id) => eventDetails.get(id))
+        .find((item) => item && (item.name || item.date));
       const eventName =
-        humanReadableReferredBy(eventRaw) ||
-        recordIds(eventRaw)
-          .map((id) => eventNames.get(id) ?? "")
-          .find((part) => part.trim()) ||
-        "";
+        humanReadableReferredBy(eventRaw) || linkedEvent?.name || "";
+
+      const rewardDate = extractRewardDate(fields);
+      const eventDate = linkedEvent?.date ?? "";
+      const date = rewardDate || eventDate;
+      const dateRaw = extractRewardDateRaw(fields);
 
       return {
-        id: `history-${record.createdTime ?? ""}-${creditsUsed}`,
-        date: extractRewardDate(fields),
+        id: record.id,
+        date,
         activity: rewardActivityDescription(ticketType, eventName),
         details: "",
-        credits: -Math.abs(creditsUsed),
-        sortTime: dateSortTime(extractRewardDateRaw(fields)),
+        credits: redemptionCreditDelta(creditsUsed),
+        sortTime: dateSortTime(dateRaw) || dateSortTime(eventDate),
+        debug: {
+          rewardId: record.id,
+          fieldKeys: Object.keys(fields),
+          issued: getField(fields, ["Issued"]) ?? "(omitted)",
+          status: asDisplayString(getField(fields, ["Status"])) || "(none)",
+          creditsUsedRaw: creditsUsed,
+          creditsDisplayed: redemptionCreditDelta(creditsUsed),
+          dateSource: rewardDate
+            ? "Rewards date field"
+            : eventDate
+              ? "Events.Date"
+              : "none",
+          rewardDate: rewardDate || "(none)",
+          eventDate: eventDate || "(none)",
+          eventName: eventName || "(none)",
+        },
       };
     })
     .filter((row): row is NonNullable<typeof row> => row != null)
     .sort((a, b) => b.sortTime - a.sortTime);
 
-  return rows.map((row, index) => ({
-    id: `history-${index}`,
+  if (process.env.NODE_ENV === "development") {
+    const redeemedFromHistory = rows.reduce(
+      (sum, row) => sum + Math.abs(row.credits),
+      0,
+    );
+    console.log("[Credits] Credit History transactions", {
+      peopleRecordId,
+      rewardFieldKeys: matches[0] ? Object.keys(matches[0].fields ?? {}) : [],
+      anyIssued,
+      skipped,
+      transactions: rows.map((row) => row.debug),
+      historyRedemptionTotal: redeemedFromHistory,
+    });
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
     date: row.date,
     activity: row.activity,
     details: row.details,
@@ -920,6 +1008,20 @@ export async function getPeopleCreditSummaryByEmail(
       peopleFullName: personNameFromFields(fields),
       applicationIdSource: ownApps.source,
       currentApplicationIds: ownApps.ids,
+    });
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[Credits] People summary vs history", {
+      peopleRecordId: person.id,
+      creditsAvailable: asCreditCount(getField(fields, ["Credits Available"])),
+      qualifiedReferrals: asCreditCount(getField(fields, ["Qualified Referrals"])),
+      creditsRedeemed: asCreditCount(getField(fields, ["Credits Redeemed"])),
+      historyCount: creditHistory.length,
+      historyAbsSum: creditHistory.reduce(
+        (sum, row) => sum + Math.abs(row.credits ?? 0),
+        0,
+      ),
     });
   }
 
