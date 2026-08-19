@@ -19,7 +19,6 @@ interface IncompleteMembersListProps {
 
 const PAGE_SIZE = 10;
 const ALL_STATUS = "";
-const FROM_HREF = "/admin/dashboard/incomplete";
 
 function getPageItems(
   current: number,
@@ -245,7 +244,7 @@ export default function IncompleteMembersList({
                     <td>{displayDash(row.missingStep)}</td>
                     <td>
                       <Link
-                        href={`/admin/members/${encodeURIComponent(row.id)}?from=${encodeURIComponent(FROM_HREF)}`}
+                        href={`/admin/dashboard/incomplete/${encodeURIComponent(row.id)}`}
                         className="admin-table-action"
                       >
                         View

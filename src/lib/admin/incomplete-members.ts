@@ -8,7 +8,9 @@ import {
   ONBOARDED_STATE_VALUE,
   ONBOARDING_STATE_FIELD,
 } from "@/lib/admin/onboarded-members";
+import { getMemberByPeopleRecordId } from "@/lib/admin/recently-approved";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
+import type { ConciergeMember } from "@/types/admin-concierge";
 import type { IncompleteMember } from "@/types/admin-incomplete-members";
 
 export const INCOMPLETE_MEMBERS_LOAD_ERROR =
@@ -491,3 +493,26 @@ export async function countIncompleteMembers(): Promise<IncompleteMembersCountRe
     count: result.records.length,
   };
 }
+
+function normalizeRecordIdParam(raw: string): string {
+  const trimmed = raw.trim();
+  try {
+    return decodeURIComponent(trimmed).trim();
+  } catch {
+    return trimmed;
+  }
+}
+
+/**
+ * Load one Incomplete member by Airtable People record ID.
+ * Fetches that People record directly — not from the list page slice.
+ */
+export const getIncompleteMemberByPeopleRecordId = cache(
+  async function getIncompleteMemberByPeopleRecordId(
+    routeId: string,
+  ): Promise<ConciergeMember | null> {
+    const recordId = normalizeRecordIdParam(routeId);
+    if (!isRecordId(recordId)) return null;
+    return getMemberByPeopleRecordId(recordId);
+  },
+);
