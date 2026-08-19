@@ -30,109 +30,117 @@ export default function MemberProfileSections({
 
   return (
     <>
-      <section className="admin-detail-card">
-        <h3 className="admin-detail-card__title">Member Information</h3>
-        <dl className="admin-detail-summary">
-          <div>
-            <dt className="admin-detail-label">Member Name</dt>
-            <dd>{displayDash(member.name)}</dd>
-          </div>
-          <div>
-            <dt className="admin-detail-label">Phone Number</dt>
-            <dd>{displayDash(member.phone)}</dd>
-          </div>
-          <div>
-            <dt className="admin-detail-label">Email Address</dt>
-            <dd>{displayDash(member.email)}</dd>
-          </div>
-          <div>
-            <dt className="admin-detail-label">Membership Approval Date</dt>
-            <dd>{displayDash(member.approvalDate)}</dd>
-          </div>
-          <div>
-            <dt className="admin-detail-label">Membership Status</dt>
-            <dd>
-              {membershipStatus ? (
-                <span
-                  className={`admin-status-badge ${membershipStatusBadgeClass(membershipStatus)}`}
-                >
-                  {membershipStatus}
-                </span>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      <div className="admin-concierge-workspace__columns">
+        <div className="admin-concierge-workspace__column">
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Member Information</h3>
+            <dl className="admin-detail-summary">
+              <div>
+                <dt className="admin-detail-label">Member Name</dt>
+                <dd>{displayDash(member.name)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Phone Number</dt>
+                <dd>{displayDash(member.phone)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Email Address</dt>
+                <dd>{displayDash(member.email)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Membership Approval Date</dt>
+                <dd>{displayDash(member.approvalDate)}</dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Membership Status</dt>
+                <dd>
+                  {membershipStatus ? (
+                    <span
+                      className={`admin-status-badge ${membershipStatusBadgeClass(membershipStatus)}`}
+                    >
+                      {membershipStatus}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+            </dl>
+          </section>
 
-      {showOutstandingItems ? (
-        <section className="admin-detail-card admin-concierge-outstanding-card">
-          <h3 className="admin-detail-card__title">Outstanding Items</h3>
-          <OutstandingItemBadges
-            items={member.outstandingItems}
-            emptyLabel="No Outstanding Items"
-            large
-          />
-        </section>
-      ) : null}
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Event Status</h3>
+            <dl className="admin-detail-summary">
+              <div>
+                <dt className="admin-detail-label">Has Ever Attended</dt>
+                <dd>
+                  <StatusBadge
+                    value={hasEverAttended}
+                    className={
+                      hasEverAttended === "Yes"
+                        ? "is-approved"
+                        : hasEverAttended === "No"
+                          ? "is-vetting-amber"
+                          : undefined
+                    }
+                  />
+                </dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Last Event Attended</dt>
+                <dd>
+                  {attendanceResolved && member.attendance.hasEverAttended ? (
+                    <LastEventAttended
+                      name={member.attendance.lastEventName}
+                      date={member.attendance.lastEventDate}
+                      fallback={member.attendance.lastEventAttended}
+                    />
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="admin-detail-label">Bertha Ticket Purchased</dt>
+                <dd>
+                  <StatusBadge
+                    value={berthaPurchased}
+                    className={
+                      berthaPurchased
+                        ? yesNoBadgeClass(berthaPurchased)
+                        : undefined
+                    }
+                  />
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </div>
 
-      <section className="admin-detail-card">
-        <h3 className="admin-detail-card__title">Event Status</h3>
-        <dl className="admin-detail-summary">
-          <div>
-            <dt className="admin-detail-label">Has Ever Attended</dt>
-            <dd>
-              <StatusBadge
-                value={hasEverAttended}
-                className={
-                  hasEverAttended === "Yes"
-                    ? "is-approved"
-                    : hasEverAttended === "No"
-                      ? "is-vetting-amber"
-                      : undefined
-                }
+        <div className="admin-concierge-workspace__column">
+          {showOutstandingItems ? (
+            <section className="admin-detail-card admin-concierge-outstanding-card">
+              <h3 className="admin-detail-card__title">Outstanding Items</h3>
+              <OutstandingItemBadges
+                items={member.outstandingItems}
+                emptyLabel="No Outstanding Items"
+                large
               />
-            </dd>
-          </div>
-          <div>
-            <dt className="admin-detail-label">Last Event Attended</dt>
-            <dd>
-              {attendanceResolved && member.attendance.hasEverAttended ? (
-                <LastEventAttended
-                  name={member.attendance.lastEventName}
-                  date={member.attendance.lastEventDate}
-                  fallback={member.attendance.lastEventAttended}
-                />
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="admin-detail-label">Bertha Ticket Purchased</dt>
-            <dd>
-              <StatusBadge
-                value={berthaPurchased}
-                className={
-                  berthaPurchased ? yesNoBadgeClass(berthaPurchased) : undefined
-                }
-              />
-            </dd>
-          </div>
-        </dl>
-      </section>
+            </section>
+          ) : null}
+
+          <section className="admin-detail-card">
+            <h3 className="admin-detail-card__title">Data Quality</h3>
+            <OutstandingItemBadges
+              items={member.dataQualityIssues}
+              emptyLabel="No Known Data Quality Issues"
+              large
+            />
+          </section>
+        </div>
+      </div>
 
       <section className="admin-detail-card">
-        <h3 className="admin-detail-card__title">Data Quality</h3>
-        <OutstandingItemBadges
-          items={member.dataQualityIssues}
-          emptyLabel="No Known Data Quality Issues"
-          large
-        />
-      </section>
-
-      <section className="admin-detail-card admin-concierge-workspace__span-full">
         <h3 className="admin-detail-card__title">Onboarding</h3>
         <div className="admin-concierge-onboarding-grid">
           <div className="admin-concierge-subsection">
@@ -205,9 +213,7 @@ export default function MemberProfileSections({
         </div>
       </section>
 
-      {sideExtra ? (
-        <div className="admin-concierge-workspace__span-full">{sideExtra}</div>
-      ) : null}
+      {sideExtra}
     </>
   );
 }

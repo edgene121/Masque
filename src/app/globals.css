@@ -5514,14 +5514,23 @@ a.contact-info-card__detail:hover {
 }
 
 .admin-concierge-workspace__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.admin-concierge-workspace__columns {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   align-items: start;
 }
 
-.admin-concierge-workspace__span-full {
-  grid-column: 1 / -1;
+.admin-concierge-workspace__column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   min-width: 0;
 }
 
@@ -5728,7 +5737,7 @@ a.contact-info-card__detail:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .admin-concierge-workspace__grid,
+  .admin-concierge-workspace__columns,
   .admin-concierge-form__row,
   .admin-concierge-onboarding-grid {
     grid-template-columns: 1fr;
