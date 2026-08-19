@@ -58,12 +58,19 @@ function onboardingOutstandingLabel(raw: string): string | null {
   return `Onboarding: ${trimmed}`;
 }
 
+function isIdSubmittedAwaitingReview(complianceState: string): boolean {
+  const normalized = normalizeStatus(complianceState);
+  return (
+    normalized === "id submitted" || normalized.startsWith("id submitted")
+  );
+}
+
 function complianceOutstandingLabel(complianceState: string): string | null {
   const trimmed = complianceState.trim();
   if (!trimmed || isCompletedState(trimmed)) return null;
 
   const normalized = normalizeStatus(trimmed);
-  if (normalized === "id submitted") return "ID Review";
+  if (isIdSubmittedAwaitingReview(trimmed)) return "ID Review";
   if (normalized === "agreement pending") return "Agreement Pending";
   if (normalized === "review required") return "Review Required";
   if (normalized === "restriction hold") return "Restriction Hold";
@@ -82,6 +89,17 @@ function escalationOutstandingLabel(escalation: string): string | null {
 function isVerificationComplete(source: PeopleOutstandingSource): boolean {
   if (source.idVerified) return true;
   return Boolean(source.verificationMethod?.trim());
+}
+
+function hasSpecificIdOutstandingItem(
+  items: string[],
+  complianceState: string,
+): boolean {
+  return (
+    items.includes("ID Review") ||
+    items.includes("ID Pending Review") ||
+    isIdSubmittedAwaitingReview(complianceState)
+  );
 }
 
 /**
@@ -129,7 +147,10 @@ export function deriveOutstandingItems(
   const escalationItem = escalationOutstandingLabel(source.escalation ?? "");
   if (escalationItem) addUnique(items, escalationItem);
 
-  if (!isVerificationComplete(source)) {
+  if (
+    !isVerificationComplete(source) &&
+    !hasSpecificIdOutstandingItem(items, source.complianceState)
+  ) {
     addUnique(items, "Verification");
   }
 
