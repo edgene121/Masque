@@ -7,6 +7,7 @@ import { formatPortalEventDate } from "@/data/events";
 
 interface UpcomingEventFeatureProps {
   event: PortalEvent;
+  showCta?: boolean;
 }
 
 /** Local posters in /public/events — keyed by slug, used before Airtable. */
@@ -122,6 +123,7 @@ function resolveFeaturedCopy(event: PortalEvent): {
 
 export default function UpcomingEventFeature({
   event,
+  showCta = true,
 }: UpcomingEventFeatureProps) {
   const imageSrc = resolveFeaturedImageSrc(event);
   const isLocalImage = imageSrc.startsWith("/events/");
@@ -191,20 +193,22 @@ export default function UpcomingEventFeature({
           <p className="events-feature-card__desc">{description}</p>
         ) : null}
 
-        {/^https?:\/\//i.test(event.href) ? (
-          <a
-            href={event.href}
-            className="events-feature-card__cta"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View Event
-          </a>
-        ) : (
-          <Link href={event.href} className="events-feature-card__cta">
-            View Event
-          </Link>
-        )}
+        {showCta ? (
+          /^https?:\/\//i.test(event.href) ? (
+            <a
+              href={event.href}
+              className="events-feature-card__cta"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View Event
+            </a>
+          ) : (
+            <Link href={event.href} className="events-feature-card__cta">
+              View Event
+            </Link>
+          )
+        ) : null}
       </div>
     </article>
   );

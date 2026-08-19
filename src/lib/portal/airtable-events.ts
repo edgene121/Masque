@@ -697,6 +697,45 @@ export async function getFeaturedEventForDashboard(): Promise<FeaturedEventData 
   return toFeaturedEventData(event);
 }
 
+function decodePathSegment(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  try {
+    return decodeURIComponent(trimmed);
+  } catch {
+    return trimmed;
+  }
+}
+
+function portalEventHrefSegment(event: PortalEvent): string {
+  if (isHttpUrl(event.href)) return "";
+  const last = event.href.split("/").filter(Boolean).pop() ?? "";
+  return decodePathSegment(last);
+}
+
+/**
+ * Resolve a Member Portal event by the same identifier already used in
+ * `event.href` (`/events/{slug}`) or by Airtable record ID.
+ */
+export async function getPortalEventBySlug(
+  slug: string,
+): Promise<PortalEvent | null> {
+  const requested = decodePathSegment(slug);
+  if (!requested) return null;
+
+  const result = await listPortalEvents();
+  if (!result.ok) return null;
+
+  const all = [...result.upcoming, ...result.past];
+  return (
+    all.find((event) => {
+      if (event.id === requested || event.id === slug.trim()) return true;
+      const segment = portalEventHrefSegment(event);
+      return Boolean(segment) && (segment === requested || segment === slug.trim());
+    }) ?? null
+  );
+}
+
 export function getEventsTableName(): string {
   return EVENTS_TABLE;
 }
