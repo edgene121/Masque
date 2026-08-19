@@ -137,7 +137,10 @@ export function deriveOutstandingItems(
     addUnique(items, "Member Agreement");
   }
 
-  if (source.portalAccountCreated && !source.lastPortalLogin?.trim()) {
+  // Last Portal Login is stronger evidence of successful portal access than the
+  // legacy account-created checkbox. A login timestamp completes Portal Login
+  // even when that checkbox is unchecked.
+  if (!source.lastPortalLogin?.trim() && source.portalAccountCreated) {
     addUnique(items, "Portal Login");
   }
 
