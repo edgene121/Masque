@@ -8,11 +8,12 @@ interface DashboardMetricCardProps {
   href: string;
   icon: LucideIcon;
   label: string;
-  value: number;
+  value: number | null;
   supportingText: string;
 }
 
-function formatMetric(value: number): string {
+function formatMetric(value: number | null): string {
+  if (value == null) return "—";
   return value.toLocaleString("en-US");
 }
 
