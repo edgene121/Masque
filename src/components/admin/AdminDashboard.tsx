@@ -87,8 +87,10 @@ const SEGMENTS = [
 ];
 
 export default function AdminDashboard({
+  registeredMembersCount,
   approvedLast60DaysCount,
 }: {
+  registeredMembersCount: number | null;
   approvedLast60DaysCount: number | null;
 }) {
   const data = MOCK_ADMIN_DASHBOARD_DATA;
@@ -111,9 +113,11 @@ export default function AdminDashboard({
               icon={metric.icon}
               label={metric.label}
               value={
-                metric.segmentId === "approvedLast60Days"
-                  ? approvedLast60DaysCount
-                  : data[metric.valueKey]
+                metric.segmentId === "registered"
+                  ? registeredMembersCount
+                  : metric.segmentId === "approvedLast60Days"
+                    ? approvedLast60DaysCount
+                    : data[metric.valueKey]
               }
               supportingText={metric.supportingText}
             />

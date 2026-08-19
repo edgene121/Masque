@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/auth";
+import { countRegisteredMembers } from "@/lib/admin/registered-members";
 import { listRecentlyApprovedMembers } from "@/lib/admin/recently-approved";
 
 export const metadata: Metadata = {
@@ -11,7 +12,10 @@ export const metadata: Metadata = {
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
-  const recentlyApproved = await listRecentlyApprovedMembers();
+  const [recentlyApproved, registeredMembers] = await Promise.all([
+    listRecentlyApprovedMembers(),
+    countRegisteredMembers(),
+  ]);
 
   return (
     <AdminShell
@@ -20,6 +24,9 @@ export default async function AdminDashboardPage() {
       description="Overview Of Administrative Operations."
     >
       <AdminDashboard
+        registeredMembersCount={
+          registeredMembers.ok ? registeredMembers.count : null
+        }
         approvedLast60DaysCount={
           recentlyApproved.ok ? recentlyApproved.members.length : null
         }
