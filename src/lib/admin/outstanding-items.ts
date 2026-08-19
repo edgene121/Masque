@@ -1,3 +1,5 @@
+import type { ConciergeDataQualityIssue } from "@/types/admin-concierge";
+
 export interface PeopleOutstandingSource {
   membershipStatus: string;
   onboardingState: string;
@@ -5,6 +7,21 @@ export interface PeopleOutstandingSource {
   followUpRequired: boolean;
   hasGovId: boolean;
   escalation?: string;
+  verificationMethod?: string;
+  idVerified?: boolean;
+  memberAgreementStatus?: string;
+  portalAccountCreated?: boolean;
+  lastPortalLogin?: string;
+  /** null when Bertha lookup is unresolved; do not invent a Bertha item. */
+  berthaTicketPurchased?: boolean | null;
+  hasDataQualityIssues?: boolean;
+}
+
+export interface PeopleDataQualitySource {
+  email: string;
+  phone: string;
+  instagramHandle: string;
+  duplicateFlag: boolean;
 }
 
 function normalizeStatus(value: string): string {
@@ -62,8 +79,28 @@ function escalationOutstandingLabel(escalation: string): string | null {
   return null;
 }
 
+function isVerificationComplete(source: PeopleOutstandingSource): boolean {
+  if (source.idVerified) return true;
+  return Boolean(source.verificationMethod?.trim());
+}
+
 /**
- * Derives outstanding-item labels from People fields.
+ * Known People data-quality issues from existing Airtable rules.
+ * Does not invent hygiene checks beyond Duplicate Flag / Email / Phone / Instagram.
+ */
+export function deriveDataQualityIssues(
+  source: PeopleDataQualitySource,
+): ConciergeDataQualityIssue[] {
+  const items: ConciergeDataQualityIssue[] = [];
+  if (source.duplicateFlag) addUnique(items, "Duplicate Record");
+  if (!source.email.trim()) addUnique(items, "Missing Email");
+  if (!source.phone.trim()) addUnique(items, "Missing Phone");
+  if (!source.instagramHandle.trim()) addUnique(items, "Missing Instagram");
+  return items;
+}
+
+/**
+ * Derives outstanding-item labels from People fields plus resolved Bertha.
  * Follow-Up Required is only added from the explicit checkbox.
  */
 export function deriveOutstandingItems(
@@ -91,6 +128,26 @@ export function deriveOutstandingItems(
 
   const escalationItem = escalationOutstandingLabel(source.escalation ?? "");
   if (escalationItem) addUnique(items, escalationItem);
+
+  if (!isVerificationComplete(source)) {
+    addUnique(items, "Verification");
+  }
+
+  if (normalizeStatus(source.memberAgreementStatus ?? "") === "missing") {
+    addUnique(items, "Member Agreement");
+  }
+
+  if (source.portalAccountCreated && !source.lastPortalLogin?.trim()) {
+    addUnique(items, "Portal Login");
+  }
+
+  if (source.berthaTicketPurchased === false) {
+    addUnique(items, "Bertha");
+  }
+
+  if (source.hasDataQualityIssues) {
+    addUnique(items, "Data Quality Issue");
+  }
 
   return items;
 }

@@ -11,7 +11,7 @@ import {
 } from "@/lib/admin/airtable-bertha";
 import { getAirtableConfig } from "@/lib/admin/config";
 import { VETTING_STATUS_APPROVED } from "@/lib/admin/government-id";
-import { deriveOutstandingItems } from "@/lib/admin/outstanding-items";
+import { deriveOutstandingItems, deriveDataQualityIssues } from "@/lib/admin/outstanding-items";
 import { getPeopleTableName } from "@/lib/portal/airtable-people-referral";
 import type { ConciergeMember } from "@/types/admin-concierge";
 
@@ -134,6 +134,21 @@ function toDateInputValue(value: unknown): string {
   return utcDateLabel(ms);
 }
 
+function formatPeopleDateTime(value: unknown): string {
+  const raw = asTrimmedString(value);
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return formatApprovalDate(raw);
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return formatApprovalDate(raw);
+  return parsed.toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
   ConciergeMember,
   | "onboardingState"
@@ -143,6 +158,16 @@ function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
   | "lastConciergeContact"
   | "conciergeNotes"
   | "peopleEscalation"
+  | "verificationMethod"
+  | "idVerified"
+  | "idVerificationDate"
+  | "memberAgreementStatus"
+  | "portalAccessState"
+  | "portalAccountCreated"
+  | "lastPortalLogin"
+  | "portalInvitationSentDate"
+  | "instagramHandle"
+  | "duplicateFlag"
 > {
   return {
     onboardingState: contact?.onboardingState ?? "",
@@ -152,6 +177,16 @@ function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
     lastConciergeContact: contact?.lastConciergeContact ?? "",
     conciergeNotes: contact?.conciergeNotes ?? "",
     peopleEscalation: contact?.escalation ?? "",
+    verificationMethod: contact?.verificationMethod ?? "",
+    idVerified: contact?.idVerified ?? false,
+    idVerificationDate: contact?.idVerificationDate ?? "",
+    memberAgreementStatus: contact?.memberAgreementStatus ?? "",
+    portalAccessState: contact?.portalAccessState ?? "",
+    portalAccountCreated: contact?.portalAccountCreated ?? false,
+    lastPortalLogin: contact?.lastPortalLogin ?? "",
+    portalInvitationSentDate: contact?.portalInvitationSentDate ?? "",
+    instagramHandle: contact?.instagramHandle ?? "",
+    duplicateFlag: contact?.duplicateFlag ?? false,
   };
 }
 
@@ -177,6 +212,16 @@ const CONCIERGE_WELCOME_DATE_FIELD = "Concierge Welcome Date";
 const LAST_CONCIERGE_CONTACT_FIELD = "Last Concierge Contact";
 const CONCIERGE_NOTES_FIELD = "Concierge Notes";
 const ESCALATION_FIELD = "Escalation";
+const VERIFICATION_METHOD_FIELD = "Verification Method";
+const ID_VERIFIED_FIELD = "ID Verified";
+const ID_VERIFICATION_DATE_FIELD = "ID Verification Date";
+const MEMBER_AGREEMENT_STATUS_FIELD = "Member Agreement Status";
+const PORTAL_ACCESS_STATE_FIELD = "Portal Access State";
+const PORTAL_ACCOUNT_CREATED_FIELD = "Portal Account Created";
+const LAST_PORTAL_LOGIN_FIELD = "Last Portal Login";
+const PORTAL_INVITATION_SENT_DATE_FIELD = "Portal Invitation Sent Date";
+const INSTAGRAM_HANDLE_FIELD = "Instagram Handle";
+const DUPLICATE_FLAG_FIELD = "Duplicate Flag";
 
 function findFieldKey(
   keys: string[],
@@ -236,6 +281,16 @@ type PeopleContact = {
   lastConciergeContact: string;
   conciergeNotes: string;
   escalation: string;
+  verificationMethod: string;
+  idVerified: boolean;
+  idVerificationDate: string;
+  memberAgreementStatus: string;
+  portalAccessState: string;
+  portalAccountCreated: boolean;
+  lastPortalLogin: string;
+  portalInvitationSentDate: string;
+  instagramHandle: string;
+  duplicateFlag: boolean;
 };
 
 function peopleContactFromFields(
@@ -256,6 +311,16 @@ function peopleContactFromFields(
       lastConciergeContact: "",
       conciergeNotes: "",
       escalation: "",
+      verificationMethod: "",
+      idVerified: false,
+      idVerificationDate: "",
+      memberAgreementStatus: "",
+      portalAccessState: "",
+      portalAccountCreated: false,
+      lastPortalLogin: "",
+      portalInvitationSentDate: "",
+      instagramHandle: "",
+      duplicateFlag: false,
     };
   }
   const email = asTrimmedString(fields.Email);
@@ -275,6 +340,16 @@ function peopleContactFromFields(
   const lastContactKey = findFieldKey(keys, LAST_CONCIERGE_CONTACT_FIELD);
   const notesKey = findFieldKey(keys, CONCIERGE_NOTES_FIELD);
   const escalationKey = findFieldKey(keys, ESCALATION_FIELD);
+  const verificationMethodKey = findFieldKey(keys, VERIFICATION_METHOD_FIELD);
+  const idVerifiedKey = findFieldKey(keys, ID_VERIFIED_FIELD);
+  const idVerificationDateKey = findFieldKey(keys, ID_VERIFICATION_DATE_FIELD);
+  const memberAgreementKey = findFieldKey(keys, MEMBER_AGREEMENT_STATUS_FIELD);
+  const portalAccessKey = findFieldKey(keys, PORTAL_ACCESS_STATE_FIELD);
+  const portalAccountKey = findFieldKey(keys, PORTAL_ACCOUNT_CREATED_FIELD);
+  const lastPortalLoginKey = findFieldKey(keys, LAST_PORTAL_LOGIN_FIELD);
+  const invitationSentKey = findFieldKey(keys, PORTAL_INVITATION_SENT_DATE_FIELD);
+  const instagramKey = findFieldKey(keys, INSTAGRAM_HANDLE_FIELD);
+  const duplicateFlagKey = findFieldKey(keys, DUPLICATE_FLAG_FIELD);
 
   return {
     name: nameKey ? asPeopleSelectValue(fields[nameKey]) : "",
@@ -306,6 +381,38 @@ function peopleContactFromFields(
     escalation: escalationKey
       ? asPeopleSelectValue(fields[escalationKey])
       : "",
+    verificationMethod: verificationMethodKey
+      ? asPeopleSelectValue(fields[verificationMethodKey])
+      : "",
+    idVerified: idVerifiedKey
+      ? isFollowUpRequiredCheckbox(fields[idVerifiedKey])
+      : false,
+    idVerificationDate: idVerificationDateKey
+      ? formatApprovalDate(asTrimmedString(fields[idVerificationDateKey])) ||
+        toDateInputValue(fields[idVerificationDateKey])
+      : "",
+    memberAgreementStatus: memberAgreementKey
+      ? asPeopleSelectValue(fields[memberAgreementKey])
+      : "",
+    portalAccessState: portalAccessKey
+      ? asPeopleSelectValue(fields[portalAccessKey])
+      : "",
+    portalAccountCreated: portalAccountKey
+      ? isFollowUpRequiredCheckbox(fields[portalAccountKey])
+      : false,
+    lastPortalLogin: lastPortalLoginKey
+      ? formatPeopleDateTime(fields[lastPortalLoginKey])
+      : "",
+    portalInvitationSentDate: invitationSentKey
+      ? formatApprovalDate(asTrimmedString(fields[invitationSentKey])) ||
+        toDateInputValue(fields[invitationSentKey])
+      : "",
+    instagramHandle: instagramKey
+      ? asTrimmedString(fields[instagramKey])
+      : "",
+    duplicateFlag: duplicateFlagKey
+      ? isFollowUpRequiredCheckbox(fields[duplicateFlagKey])
+      : false,
   };
 }
 
@@ -579,8 +686,15 @@ function applyOutstanding(
   contact: PeopleContact | undefined,
 ): ConciergeMember {
   if (!contact) return member;
+  const dataQualityIssues = deriveDataQualityIssues({
+    email: contact.email,
+    phone: contact.phone,
+    instagramHandle: contact.instagramHandle,
+    duplicateFlag: contact.duplicateFlag,
+  });
   return {
     ...member,
+    dataQualityIssues,
     outstandingItems: deriveOutstandingItems({
       membershipStatus: contact.membershipStatus,
       onboardingState: contact.onboardingState,
@@ -588,6 +702,15 @@ function applyOutstanding(
       followUpRequired: contact.followUpRequired,
       hasGovId: contact.hasGovId,
       escalation: contact.escalation,
+      verificationMethod: contact.verificationMethod,
+      idVerified: contact.idVerified,
+      memberAgreementStatus: contact.memberAgreementStatus,
+      portalAccountCreated: contact.portalAccountCreated,
+      lastPortalLogin: contact.lastPortalLogin,
+      berthaTicketPurchased: member.fieldAvailability?.bertha
+        ? member.berthaTicketPurchased
+        : null,
+      hasDataQualityIssues: dataQualityIssues.length > 0,
     }),
     fieldAvailability: {
       attendance: member.fieldAvailability?.attendance ?? false,

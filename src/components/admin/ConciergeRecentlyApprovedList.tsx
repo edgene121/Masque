@@ -76,6 +76,11 @@ const OUTSTANDING_ITEM_OPTIONS = [
   "Concierge Follow-up",
   "Operations Follow-up",
   "Founder Follow-up",
+  "Verification",
+  "Member Agreement",
+  "Portal Login",
+  "Bertha",
+  "Data Quality Issue",
 ] as const;
 
 function getPageItems(

@@ -5444,6 +5444,25 @@ a.contact-info-card__detail:hover {
   min-width: 0;
 }
 
+.admin-concierge-subsection {
+  margin-top: 18px;
+}
+
+.admin-concierge-subsection:first-of-type {
+  margin-top: 16px;
+}
+
+.admin-concierge-subsection__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: #e2e8f0;
+}
+
+.admin-concierge-subsection .admin-detail-summary {
+  margin-top: 10px;
+}
+
 .admin-concierge-workspace .admin-detail-card {
   margin: 0;
 }

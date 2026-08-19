@@ -58,6 +58,10 @@ export const PEOPLE_ESCALATION_OPTIONS: readonly ConciergeEscalation[] = [
 ];
 
 export type ConciergeDataQualityIssue =
+  | "Duplicate Record"
+  | "Missing Email"
+  | "Missing Phone"
+  | "Missing Instagram"
   | "Duplicate Phone Number"
   | "Duplicate Email Address"
   | "Missing Phone Number"
@@ -122,5 +126,15 @@ export interface ConciergeMember {
   conciergeNotes?: string;
   /** Exact People "Escalation" value. Blank/missing is omitted or "". */
   peopleEscalation?: string;
+  verificationMethod?: string;
+  idVerified?: boolean;
+  idVerificationDate?: string;
+  memberAgreementStatus?: string;
+  portalAccessState?: string;
+  portalAccountCreated?: boolean;
+  lastPortalLogin?: string;
+  portalInvitationSentDate?: string;
+  instagramHandle?: string;
+  duplicateFlag?: boolean;
   fieldAvailability?: ConciergeFieldAvailability;
 }

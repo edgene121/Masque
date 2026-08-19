@@ -97,10 +97,31 @@ export function outstandingItemClass(item: string): string {
   if (normalized === "concierge follow-up") return "admin-concierge-tag--warning";
   if (normalized === "operations follow-up") return "admin-concierge-tag--amber";
   if (normalized === "founder follow-up") return "admin-concierge-tag--danger";
+  if (normalized === "verification") return "admin-concierge-tag--info";
+  if (normalized === "member agreement") return "admin-concierge-tag--amber";
+  if (normalized === "portal login") return "admin-concierge-tag--warning";
+  if (normalized === "bertha") return "admin-concierge-tag--amber";
+  if (normalized === "data quality issue") return "admin-concierge-tag--warning";
+  if (
+    normalized === "duplicate record" ||
+    normalized === "missing email" ||
+    normalized === "missing phone" ||
+    normalized === "missing instagram"
+  ) {
+    return "admin-concierge-tag--warning";
+  }
   return "";
 }
 
 export function displayDash(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
   return trimmed || "—";
+}
+
+export function displayYesNo(value: boolean): "Yes" | "No" {
+  return value ? "Yes" : "No";
+}
+
+export function yesNoBadgeClass(value: "Yes" | "No" | string): string {
+  return value === "Yes" ? "is-approved" : "is-neutral";
 }
