@@ -16,10 +16,9 @@ function formatSummaryStat(value: number | null): string {
   return String(value);
 }
 
-function formatCreditsDelta(value: number | null): string {
+function formatCreditsUsed(value: number | null): string {
   if (value == null) return "—";
-  if (value > 0) return `+${value}`;
-  return String(value);
+  return String(Math.abs(value));
 }
 
 function statusBadgeClass(status: string): string {
@@ -289,16 +288,8 @@ export default function CreditsReferralsSection({
                   <tr key={row.id}>
                     <td>{row.date || "—"}</td>
                     <td>{historyActivityLabel(row) || "—"}</td>
-                    <td
-                      className={`credits-table__num${
-                        (row.credits ?? 0) < 0
-                          ? " credits-table__num--negative"
-                          : (row.credits ?? 0) > 0
-                            ? " credits-table__num--positive"
-                            : ""
-                      }`}
-                    >
-                      {formatCreditsDelta(row.credits)}
+                    <td className="credits-table__num">
+                      {formatCreditsUsed(row.credits)}
                     </td>
                   </tr>
                 ))}
