@@ -5260,6 +5260,17 @@ a.contact-info-card__detail:hover {
   vertical-align: bottom;
 }
 
+.admin-table.admin-table--concierge th.admin-col-member,
+.admin-table.admin-table--concierge td.admin-col-member,
+.admin-table.admin-table--concierge th.admin-col-phone,
+.admin-table.admin-table--concierge td.admin-col-phone,
+.admin-table.admin-table--concierge th.admin-col-email,
+.admin-table.admin-table--concierge td.admin-col-email,
+.admin-table.admin-table--concierge th.admin-col-approval,
+.admin-table.admin-table--concierge td.admin-col-approval {
+  text-align: left;
+}
+
 .admin-table.admin-table--concierge th.admin-col-onboarding,
 .admin-table.admin-table--concierge td.admin-col-onboarding,
 .admin-table.admin-table--concierge th.admin-col-concierge-status,
@@ -5273,12 +5284,39 @@ a.contact-info-card__detail:hover {
   white-space: normal;
 }
 
+.admin-table.admin-table--concierge th.admin-col-attendance,
+.admin-table.admin-table--concierge td.admin-col-attendance,
+.admin-table.admin-table--concierge th.admin-col-bertha,
+.admin-table.admin-table--concierge td.admin-col-bertha,
+.admin-table.admin-table--concierge th.admin-col-onboarding,
+.admin-table.admin-table--concierge td.admin-col-onboarding,
+.admin-table.admin-table--concierge th.admin-col-concierge-status,
+.admin-table.admin-table--concierge td.admin-col-concierge-status,
+.admin-table.admin-table--concierge th.admin-col-outstanding,
+.admin-table.admin-table--concierge th.admin-col-action,
+.admin-table.admin-table--concierge td.admin-col-action {
+  text-align: center;
+}
+
+.admin-table.admin-table--concierge td.admin-col-attendance,
+.admin-table.admin-table--concierge td.admin-col-bertha,
+.admin-table.admin-table--concierge td.admin-col-onboarding,
+.admin-table.admin-table--concierge td.admin-col-concierge-status,
+.admin-table.admin-table--concierge td.admin-col-action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.admin-table.admin-table--concierge td.admin-col-outstanding {
+  text-align: left;
+}
+
 .admin-table.admin-table--concierge th.admin-col-action,
 .admin-table.admin-table--concierge td.admin-col-action {
   white-space: nowrap;
   padding-left: 4px;
   padding-right: 4px;
-  text-align: center;
 }
 
 .admin-table--concierge .admin-col-onboarding .admin-status-badge,
