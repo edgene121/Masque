@@ -4,11 +4,13 @@ import { Suspense } from "react";
 import AdminMemberSegmentList from "@/components/admin/AdminMemberSegmentList";
 import AdminShell from "@/components/admin/AdminShell";
 import RegisteredMembersList from "@/components/admin/RegisteredMembersList";
+import OnboardedMembersList from "@/components/admin/OnboardedMembersList";
 import {
   DASHBOARD_SEGMENT_SLUGS,
   getDashboardSegmentConfig,
 } from "@/lib/admin/dashboard-segments";
 import { requireAdmin } from "@/lib/admin/auth";
+import { listOnboardedMembers } from "@/lib/admin/onboarded-members";
 import { listRegisteredMembers } from "@/lib/admin/registered-members";
 
 interface DashboardSegmentPageProps {
@@ -67,6 +69,21 @@ export default async function DashboardSegmentPage({
             description={config.description}
           />
         </Suspense>
+      ) : config.segment === "onboarded" ? (
+        <Suspense
+          fallback={
+            <OnboardedMembersList
+              title={config.title}
+              description={config.description}
+              loading
+            />
+          }
+        >
+          <OnboardedMembersFromAirtable
+            title={config.title}
+            description={config.description}
+          />
+        </Suspense>
       ) : (
         <AdminMemberSegmentList
           segment={config.segment}
@@ -89,6 +106,25 @@ async function RegisteredMembersFromAirtable({
 
   return (
     <RegisteredMembersList
+      title={title}
+      description={description}
+      members={result.ok ? result.members : []}
+      loadError={result.ok ? null : result.error}
+    />
+  );
+}
+
+async function OnboardedMembersFromAirtable({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  const result = await listOnboardedMembers();
+
+  return (
+    <OnboardedMembersList
       title={title}
       description={description}
       members={result.ok ? result.members : []}

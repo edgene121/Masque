@@ -46,7 +46,7 @@ export const DASHBOARD_SEGMENT_CONFIG: Record<
     segment: "onboarded",
     href: "/admin/dashboard/onboarded",
     title: "Onboarded Members",
-    description: "Members who have completed onboarding requirements.",
+    description: "People whose Onboarding State is Completed.",
     extraColumns: [],
     statusFilter: "membership",
   },
