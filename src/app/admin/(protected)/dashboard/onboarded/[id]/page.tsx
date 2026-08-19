@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import OnboardedMemberWorkspace from "@/components/admin/OnboardedMemberWorkspace";
 import { requireAdmin } from "@/lib/admin/auth";
 import { getOnboardedMemberByPeopleRecordId } from "@/lib/admin/onboarded-members";
+import type { AdminSessionPayload } from "@/types/admin";
 
 interface OnboardedMemberDetailPageProps {
   params: Promise<{ id: string }>;
@@ -30,6 +33,31 @@ export default async function OnboardedMemberDetailPage({
 }: OnboardedMemberDetailPageProps) {
   const admin = await requireAdmin();
   const { id } = await params;
+
+  return (
+    <Suspense
+      fallback={
+        <AdminShell
+          admin={admin}
+          title="Onboarded Member Detail"
+          description="Member record detail."
+        >
+          <AdminPageLoader />
+        </AdminShell>
+      }
+    >
+      <OnboardedMemberDetailLoaded admin={admin} id={id} />
+    </Suspense>
+  );
+}
+
+async function OnboardedMemberDetailLoaded({
+  admin,
+  id,
+}: {
+  admin: AdminSessionPayload;
+  id: string;
+}) {
   const member = await getOnboardedMemberByPeopleRecordId(id);
 
   if (!member) {

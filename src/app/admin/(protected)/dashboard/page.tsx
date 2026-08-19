@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/auth";
 import { countOnboardedMembers } from "@/lib/admin/onboarded-members";
@@ -15,6 +17,21 @@ export const metadata: Metadata = {
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
+
+  return (
+    <AdminShell
+      admin={admin}
+      title="Dashboard"
+      description="Overview Of Administrative Operations."
+    >
+      <Suspense fallback={<AdminPageLoader />}>
+        <AdminDashboardFromAirtable />
+      </Suspense>
+    </AdminShell>
+  );
+}
+
+async function AdminDashboardFromAirtable() {
   const [recentlyApproved, registeredMembers, onboardedMembers] =
     await Promise.all([
       listRecentlyApprovedMembers(),
@@ -23,22 +40,16 @@ export default async function AdminDashboardPage() {
     ]);
 
   return (
-    <AdminShell
-      admin={admin}
-      title="Dashboard"
-      description="Overview Of Administrative Operations."
-    >
-      <AdminDashboard
-        registeredMembersCount={
-          registeredMembers.ok ? registeredMembers.count : null
-        }
-        onboardedMembersCount={
-          onboardedMembers.ok ? onboardedMembers.count : null
-        }
-        approvedLast60DaysCount={
-          recentlyApproved.ok ? recentlyApproved.members.length : null
-        }
-      />
-    </AdminShell>
+    <AdminDashboard
+      registeredMembersCount={
+        registeredMembers.ok ? registeredMembers.count : null
+      }
+      onboardedMembersCount={
+        onboardedMembers.ok ? onboardedMembers.count : null
+      }
+      approvedLast60DaysCount={
+        recentlyApproved.ok ? recentlyApproved.members.length : null
+      }
+    />
   );
 }

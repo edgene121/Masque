@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import AdminUsersTable from "@/components/admin/AdminUsersTable";
 import { listApplications } from "@/lib/admin/applications";
@@ -11,7 +13,6 @@ export const metadata: Metadata = {
 
 export default async function AdminUsersPage() {
   const admin = await requireAdmin();
-  const result = await listApplications();
 
   return (
     <AdminShell
@@ -19,10 +20,20 @@ export default async function AdminUsersPage() {
       title="Members"
       description="Manage Masqué Members and Review Account Information."
     >
-      <AdminUsersTable
-        rows={result.ok ? result.records : []}
-        loadError={result.ok ? null : result.error}
-      />
+      <Suspense fallback={<AdminPageLoader />}>
+        <MembersFromAirtable />
+      </Suspense>
     </AdminShell>
+  );
+}
+
+async function MembersFromAirtable() {
+  const result = await listApplications();
+
+  return (
+    <AdminUsersTable
+      rows={result.ok ? result.records : []}
+      loadError={result.ok ? null : result.error}
+    />
   );
 }

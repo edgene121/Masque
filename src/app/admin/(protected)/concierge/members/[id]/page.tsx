@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import ConciergeMemberWorkspace from "@/components/admin/ConciergeMemberWorkspace";
 import { getConciergeMemberByPeopleId } from "@/lib/admin/recently-approved";
 import { requireAdmin } from "@/lib/admin/auth";
+import type { AdminSessionPayload } from "@/types/admin";
 
 interface ConciergeMemberDetailPageProps {
   params: Promise<{ id: string }>;
@@ -30,6 +33,31 @@ export default async function ConciergeMemberDetailPage({
 }: ConciergeMemberDetailPageProps) {
   const admin = await requireAdmin();
   const { id } = await params;
+
+  return (
+    <Suspense
+      fallback={
+        <AdminShell
+          admin={admin}
+          title="Concierge Member Detail"
+          description="Member record detail."
+        >
+          <AdminPageLoader />
+        </AdminShell>
+      }
+    >
+      <ConciergeMemberDetailLoaded admin={admin} id={id} />
+    </Suspense>
+  );
+}
+
+async function ConciergeMemberDetailLoaded({
+  admin,
+  id,
+}: {
+  admin: AdminSessionPayload;
+  id: string;
+}) {
   const member = await getConciergeMemberByPeopleId(id);
 
   if (!member) {

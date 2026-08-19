@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import RegisteredMemberWorkspace from "@/components/admin/RegisteredMemberWorkspace";
 import { requireAdmin } from "@/lib/admin/auth";
 import { getMemberByPeopleRecordId } from "@/lib/admin/recently-approved";
+import type { AdminSessionPayload } from "@/types/admin";
 
 interface RegisteredMemberDetailPageProps {
   params: Promise<{ id: string }>;
@@ -30,6 +33,31 @@ export default async function RegisteredMemberDetailPage({
 }: RegisteredMemberDetailPageProps) {
   const admin = await requireAdmin();
   const { id } = await params;
+
+  return (
+    <Suspense
+      fallback={
+        <AdminShell
+          admin={admin}
+          title="Registered Member Detail"
+          description="Member record detail."
+        >
+          <AdminPageLoader />
+        </AdminShell>
+      }
+    >
+      <RegisteredMemberDetailLoaded admin={admin} id={id} />
+    </Suspense>
+  );
+}
+
+async function RegisteredMemberDetailLoaded({
+  admin,
+  id,
+}: {
+  admin: AdminSessionPayload;
+  id: string;
+}) {
   const member = await getMemberByPeopleRecordId(id);
 
   if (!member) {

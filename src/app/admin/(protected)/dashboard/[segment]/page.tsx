@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import AdminMemberSegmentList from "@/components/admin/AdminMemberSegmentList";
+import AdminPageLoader from "@/components/admin/AdminPageLoader";
 import AdminShell from "@/components/admin/AdminShell";
 import RegisteredMembersList from "@/components/admin/RegisteredMembersList";
 import OnboardedMembersList from "@/components/admin/OnboardedMembersList";
@@ -57,30 +58,14 @@ export default async function DashboardSegmentPage({
       description={config.description}
     >
       {config.segment === "registered" ? (
-        <Suspense
-          fallback={
-            <RegisteredMembersList
-              title={config.title}
-              description={config.description}
-              loading
-            />
-          }
-        >
+        <Suspense fallback={<AdminPageLoader />}>
           <RegisteredMembersFromAirtable
             title={config.title}
             description={config.description}
           />
         </Suspense>
       ) : config.segment === "onboarded" ? (
-        <Suspense
-          fallback={
-            <OnboardedMembersList
-              title={config.title}
-              description={config.description}
-              loading
-            />
-          }
-        >
+        <Suspense fallback={<AdminPageLoader />}>
           <OnboardedMembersFromAirtable
             title={config.title}
             description={config.description}
