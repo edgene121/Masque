@@ -5298,16 +5298,6 @@ a.contact-info-card__detail:hover {
   text-align: center;
 }
 
-.admin-table.admin-table--concierge td.admin-col-attendance,
-.admin-table.admin-table--concierge td.admin-col-bertha,
-.admin-table.admin-table--concierge td.admin-col-onboarding,
-.admin-table.admin-table--concierge td.admin-col-concierge-status,
-.admin-table.admin-table--concierge td.admin-col-action {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .admin-table.admin-table--concierge td.admin-col-outstanding {
   text-align: left;
 }
@@ -5317,6 +5307,13 @@ a.contact-info-card__detail:hover {
   white-space: nowrap;
   padding-left: 4px;
   padding-right: 4px;
+}
+
+.admin-table--concierge .cell-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 .admin-table--concierge .admin-col-onboarding .admin-status-badge,
@@ -5331,11 +5328,11 @@ a.contact-info-card__detail:hover {
   box-sizing: border-box;
 }
 
-.admin-table--concierge .admin-col-outstanding .admin-concierge-tags {
+.admin-table--concierge .outstanding-items-wrap {
   display: flex;
   flex-wrap: wrap;
-  align-content: flex-start;
   gap: 6px;
+  align-items: center;
   width: 100%;
   min-width: 0;
 }

@@ -482,57 +482,67 @@ function ConciergeMemberRow({ row }: { row: ConciergeMember }) {
       </td>
       <td className="admin-col-approval">{row.approvalDate}</td>
       <td className="admin-col-attendance">
-        {attendance ? (
-          <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
-            {attendance}
-          </span>
-        ) : (
-          <UnresolvedValue />
-        )}
+        <div className="cell-center">
+          {attendance ? (
+            <span className={`admin-status-badge ${attendanceBadgeClass(attendance)}`}>
+              {attendance}
+            </span>
+          ) : (
+            <UnresolvedValue />
+          )}
+        </div>
       </td>
       <td className="admin-col-bertha">
-        {bertha ? (
-          <span className={`admin-status-badge ${berthaBadgeClass(bertha)}`}>
-            {bertha}
-          </span>
-        ) : (
-          <UnresolvedValue />
-        )}
+        <div className="cell-center">
+          {bertha ? (
+            <span className={`admin-status-badge ${berthaBadgeClass(bertha)}`}>
+              {bertha}
+            </span>
+          ) : (
+            <UnresolvedValue />
+          )}
+        </div>
       </td>
       <td className="admin-col-onboarding">
-        {onboarding ? (
-          <span className={`admin-status-badge ${onboardingBadgeClass(onboarding)}`}>
-            {onboarding}
-          </span>
-        ) : (
-          <UnresolvedValue />
-        )}
+        <div className="cell-center">
+          {onboarding ? (
+            <span className={`admin-status-badge ${onboardingBadgeClass(onboarding)}`}>
+              {onboarding}
+            </span>
+          ) : (
+            <UnresolvedValue />
+          )}
+        </div>
       </td>
       <td className="admin-col-concierge-status">
-        {conciergeStatusValue ? (
-          <span
-            className={`admin-status-badge ${conciergeStatusBadgeClass(conciergeStatusValue)}`}
-          >
-            {conciergeStatusValue}
-          </span>
-        ) : (
-          <UnresolvedValue />
-        )}
+        <div className="cell-center">
+          {conciergeStatusValue ? (
+            <span
+              className={`admin-status-badge ${conciergeStatusBadgeClass(conciergeStatusValue)}`}
+            >
+              {conciergeStatusValue}
+            </span>
+          ) : (
+            <UnresolvedValue />
+          )}
+        </div>
       </td>
       <td className="admin-col-outstanding">
         <OutstandingItems items={row.outstandingItems} />
       </td>
       <td className="admin-col-action">
-        {isAirtablePeopleRecordId(row.id) ? (
-          <Link
-            href={`/admin/concierge/members/${encodeURIComponent(row.id)}`}
-            className="admin-table-action"
-          >
-            View
-          </Link>
-        ) : (
-          <UnresolvedValue />
-        )}
+        <div className="cell-center">
+          {isAirtablePeopleRecordId(row.id) ? (
+            <Link
+              href={`/admin/concierge/members/${encodeURIComponent(row.id)}`}
+              className="admin-table-action"
+            >
+              View
+            </Link>
+          ) : (
+            <UnresolvedValue />
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -548,7 +558,7 @@ function OutstandingItems({ items }: { items: string[] }) {
   }
 
   return (
-    <div className="admin-concierge-tags">
+    <div className="admin-concierge-tags outstanding-items-wrap">
       {items.map((item) => (
         <span
           key={item}
