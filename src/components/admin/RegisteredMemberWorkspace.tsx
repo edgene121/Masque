@@ -1,30 +1,30 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import type { ConciergeMember } from "@/types/admin-concierge";
-import ConciergeInformationForm from "@/components/admin/ConciergeInformationForm";
 import MemberProfileSections from "@/components/admin/MemberProfileSections";
 import {
-  conciergeStatusBadgeClass,
   displayDash,
-  peopleConciergeStatus,
+  membershipStatusBadgeClass,
 } from "@/lib/admin/concierge-display";
 
-export default function ConciergeMemberWorkspace({
+const REGISTERED_MEMBERS_HREF = "/admin/dashboard/registered";
+
+export default function RegisteredMemberWorkspace({
   member,
 }: {
   member: ConciergeMember;
 }) {
-  const conciergeStatus = peopleConciergeStatus(member);
+  const membershipStatus = member.membershipStatus?.trim() ?? "";
 
   return (
     <div className="admin-concierge-workspace">
       <section className="admin-concierge-workspace__header">
         <Link
-          href="/admin/concierge/recently-approved"
+          href={REGISTERED_MEMBERS_HREF}
           className="admin-btn admin-btn--secondary"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Recently Approved
+          Back to Registered Members
         </Link>
 
         <div className="admin-concierge-workspace__title-row">
@@ -35,26 +35,18 @@ export default function ConciergeMemberWorkspace({
               Member since {displayDash(member.approvalDate)}
             </p>
           </div>
-          {conciergeStatus ? (
+          {membershipStatus ? (
             <span
-              className={`admin-status-badge ${conciergeStatusBadgeClass(conciergeStatus)}`}
+              className={`admin-status-badge ${membershipStatusBadgeClass(membershipStatus)}`}
             >
-              {conciergeStatus}
+              {membershipStatus}
             </span>
           ) : null}
         </div>
       </section>
 
       <div className="admin-concierge-workspace__grid">
-        <MemberProfileSections
-          member={member}
-          sideExtra={
-            <section className="admin-detail-card">
-              <h3 className="admin-detail-card__title">Concierge Information</h3>
-              <ConciergeInformationForm member={member} />
-            </section>
-          }
-        />
+        <MemberProfileSections member={member} />
       </div>
     </div>
   );

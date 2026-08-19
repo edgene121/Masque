@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  displayDash,
+  membershipStatusBadgeClass,
+} from "@/lib/admin/concierge-display";
 import type { RegisteredMember } from "@/types/admin-registered-members";
 
 interface RegisteredMembersListProps {
@@ -14,21 +18,6 @@ interface RegisteredMembersListProps {
 
 const PAGE_SIZE = 10;
 const ALL_STATUS = "";
-
-function displayDash(value: string): string {
-  return value.trim() || "—";
-}
-
-function membershipStatusBadgeClass(status: string): string {
-  const normalized = status.trim().toLowerCase();
-  if (normalized === "approved" || normalized === "approved member") {
-    return "is-approved";
-  }
-  if (normalized === "rejected") return "is-rejected";
-  if (normalized === "hold") return "is-vetting-amber";
-  if (normalized === "prospect") return "is-vetting-blue";
-  return "is-neutral";
-}
 
 function getPageItems(
   current: number,
@@ -207,7 +196,7 @@ export default function RegisteredMembersList({
                   </td>
                   <td>
                     <Link
-                      href={`/admin/concierge/members/${encodeURIComponent(row.id)}`}
+                      href={`/admin/dashboard/registered/${encodeURIComponent(row.id)}`}
                       className="admin-table-action"
                     >
                       View

@@ -136,5 +136,7 @@ export interface ConciergeMember {
   portalInvitationSentDate?: string;
   instagramHandle?: string;
   duplicateFlag?: boolean;
+  /** Exact People "Membership Status" value. Blank/missing is omitted or "". */
+  membershipStatus?: string;
   fieldAvailability?: ConciergeFieldAvailability;
 }

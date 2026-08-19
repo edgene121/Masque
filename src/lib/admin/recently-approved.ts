@@ -141,6 +141,7 @@ function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
   | "portalInvitationSentDate"
   | "instagramHandle"
   | "duplicateFlag"
+  | "membershipStatus"
 > {
   return {
     onboardingState: contact?.onboardingState ?? "",
@@ -160,6 +161,7 @@ function peopleDisplayFields(contact: PeopleContact | undefined): Pick<
     portalInvitationSentDate: contact?.portalInvitationSentDate ?? "",
     instagramHandle: contact?.instagramHandle ?? "",
     duplicateFlag: contact?.duplicateFlag ?? false,
+    membershipStatus: contact?.membershipStatus ?? "",
   };
 }
 
@@ -302,7 +304,7 @@ function peopleContactFromFields(
     findFieldKey(keys, "Phone") ||
     keys.find((key) => key.toLowerCase() === "phone");
   const nameKey =
-    findFieldKey(keys, NAME_FIELD) || findFieldKey(keys, "Full Name");
+    findFieldKey(keys, "Full Name") || findFieldKey(keys, NAME_FIELD);
   const onboardingKey = findFieldKey(keys, ONBOARDING_STATE_FIELD);
   const conciergeKey = findFieldKey(keys, CONCIERGE_STATUS_FIELD);
   const membershipKey = findFieldKey(keys, MEMBERSHIP_STATUS_FIELD);
@@ -1079,36 +1081,68 @@ export const getConciergeMemberByPeopleId = cache(
   ): Promise<ConciergeMember | null> {
     const peopleRecord = await fetchPeopleRecordForRoute(routeId);
     if (!peopleRecord?.id) return null;
+    return buildMemberFromPeopleRecord(peopleRecord, "application-first");
+  },
+);
 
-    const peopleId = peopleRecord.id;
-    const [attendanceResult, berthaResult, application] = await Promise.all([
-      fetchAttendanceByPersonIds([peopleId]),
-      fetchBerthaByPersonIds([peopleId]),
-      fetchLatestApprovedApplicationForPerson(peopleId),
-    ]);
+export const getMemberByPeopleRecordId = cache(
+  async function getMemberByPeopleRecordId(
+    routeId: string,
+  ): Promise<ConciergeMember | null> {
+    const recordId = normalizeRecordIdParam(routeId);
+    if (!isRecordId(recordId)) return null;
 
-    const contact = peopleContactFromFields(peopleRecord.fields);
+    const peopleTable = getPeopleTableName();
+    const peopleResult = await fetchRecordById(peopleTable, recordId);
+    if (!peopleResult.ok || !peopleResult.records[0]?.id) {
+      return null;
+    }
 
-    return applyOutstanding(
-      applyBertha(
-        applyAttendance(
-          {
-            id: peopleRecord.id,
-            applicationId: application?.applicationId,
-            name: displayOrDash(application?.name || contact.name),
-            phone: displayOrDash(contact.phone),
-            email: displayOrDash(contact.email),
-            approvalDate: application?.approvalDate || "",
-            ...unresolvedConciergeFields(),
-            ...peopleDisplayFields(contact),
-          },
-          peopleId,
-          attendanceResult,
-        ),
-        peopleId,
-        berthaResult,
-      ),
-      contact,
+    return buildMemberFromPeopleRecord(
+      peopleResult.records[0],
+      "people-first",
     );
   },
 );
+
+async function buildMemberFromPeopleRecord(
+  peopleRecord: AirtableRecord,
+  nameSource: "application-first" | "people-first",
+): Promise<ConciergeMember> {
+  const peopleId = peopleRecord.id;
+  const [attendanceResult, berthaResult, application] = await Promise.all([
+    fetchAttendanceByPersonIds([peopleId]),
+    fetchBerthaByPersonIds([peopleId]),
+    fetchLatestApprovedApplicationForPerson(peopleId),
+  ]);
+
+  const contact = peopleContactFromFields(peopleRecord.fields);
+  const peopleName = contact.name;
+  const applicationName = application?.name ?? "";
+  const name =
+    nameSource === "people-first"
+      ? peopleName || applicationName
+      : applicationName || peopleName;
+
+  return applyOutstanding(
+    applyBertha(
+      applyAttendance(
+        {
+          id: peopleRecord.id,
+          applicationId: application?.applicationId,
+          name: displayOrDash(name),
+          phone: displayOrDash(contact.phone),
+          email: displayOrDash(contact.email),
+          approvalDate: application?.approvalDate || "",
+          ...unresolvedConciergeFields(),
+          ...peopleDisplayFields(contact),
+        },
+        peopleId,
+        attendanceResult,
+      ),
+      peopleId,
+      berthaResult,
+    ),
+    contact,
+  );
+}

@@ -113,6 +113,17 @@ export function outstandingItemClass(item: string): string {
   return "";
 }
 
+export function membershipStatusBadgeClass(status: string): string {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "approved" || normalized === "approved member") {
+    return "is-approved";
+  }
+  if (normalized === "rejected") return "is-rejected";
+  if (normalized === "hold") return "is-vetting-amber";
+  if (normalized === "prospect") return "is-vetting-blue";
+  return "is-neutral";
+}
+
 export function displayDash(value: string | null | undefined): string {
   const trimmed = value?.trim() ?? "";
   return trimmed || "—";
