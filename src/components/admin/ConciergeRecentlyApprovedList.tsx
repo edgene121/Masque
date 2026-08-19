@@ -349,6 +349,18 @@ export default function ConciergeRecentlyApprovedList({
 
       <div className="admin-table-wrap">
         <table className="admin-table admin-table--concierge">
+          <colgroup>
+            <col className="admin-col-member" />
+            <col className="admin-col-phone" />
+            <col className="admin-col-email" />
+            <col className="admin-col-approval" />
+            <col className="admin-col-attendance" />
+            <col className="admin-col-bertha" />
+            <col className="admin-col-onboarding" />
+            <col className="admin-col-concierge-status" />
+            <col className="admin-col-outstanding" />
+            <col className="admin-col-action" />
+          </colgroup>
           <thead>
             <tr>
               <th className="admin-col-member">Member</th>

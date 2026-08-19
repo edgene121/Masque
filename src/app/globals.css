@@ -5201,66 +5201,115 @@ a.contact-info-card__detail:hover {
 /* ===== Admin Concierge Welcome ===== */
 .admin-table--concierge {
   table-layout: fixed;
-  width: max-content;
-  min-width: 1480px;
+  width: 100%;
+  min-width: 880px;
 }
 
-.admin-table--concierge th,
-.admin-table--concierge td {
-  overflow: hidden;
-  vertical-align: middle;
+.admin-table--concierge col.admin-col-member {
+  width: 12%;
+}
+
+.admin-table--concierge col.admin-col-phone {
+  width: 8%;
+}
+
+.admin-table--concierge col.admin-col-email {
+  width: 13%;
+}
+
+.admin-table--concierge col.admin-col-approval {
+  width: 9%;
+}
+
+.admin-table--concierge col.admin-col-attendance {
+  width: 8%;
+}
+
+.admin-table--concierge col.admin-col-bertha {
+  width: 7%;
+}
+
+.admin-table--concierge col.admin-col-onboarding {
+  width: 9%;
+}
+
+.admin-table--concierge col.admin-col-concierge-status {
+  width: 11%;
+}
+
+.admin-table--concierge col.admin-col-outstanding {
+  width: 18%;
+}
+
+.admin-table--concierge col.admin-col-action {
+  width: 5%;
+}
+
+.admin-table.admin-table--concierge th,
+.admin-table.admin-table--concierge td {
+  vertical-align: top;
   box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px 6px;
 }
 
-.admin-table--concierge .admin-col-member {
-  width: 240px;
-  min-width: 220px;
+.admin-table.admin-table--concierge thead th {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
 }
 
-.admin-table--concierge .admin-col-phone {
-  width: 160px;
-  min-width: 150px;
-}
-
-.admin-table--concierge .admin-col-email {
-  width: 240px;
-  min-width: 200px;
-}
-
-.admin-table--concierge .admin-col-approval {
-  width: 150px;
-  min-width: 140px;
-}
-
-.admin-table--concierge .admin-col-attendance {
-  width: 140px;
-  min-width: 130px;
-}
-
-.admin-table--concierge .admin-col-bertha {
-  width: 120px;
-  min-width: 110px;
-}
-
-.admin-table--concierge .admin-col-onboarding {
-  width: 130px;
-  min-width: 120px;
-}
-
-.admin-table--concierge .admin-col-concierge-status {
-  width: 170px;
-  min-width: 160px;
-}
-
-.admin-table--concierge .admin-col-outstanding {
-  width: 180px;
-  min-width: 160px;
+.admin-table.admin-table--concierge th.admin-col-onboarding,
+.admin-table.admin-table--concierge td.admin-col-onboarding,
+.admin-table.admin-table--concierge th.admin-col-concierge-status,
+.admin-table.admin-table--concierge td.admin-col-concierge-status,
+.admin-table.admin-table--concierge th.admin-col-attendance,
+.admin-table.admin-table--concierge td.admin-col-attendance,
+.admin-table.admin-table--concierge th.admin-col-bertha,
+.admin-table.admin-table--concierge td.admin-col-bertha,
+.admin-table.admin-table--concierge th.admin-col-outstanding,
+.admin-table.admin-table--concierge td.admin-col-outstanding {
   white-space: normal;
 }
 
-.admin-table--concierge .admin-col-action {
-  width: 90px;
-  min-width: 80px;
+.admin-table.admin-table--concierge th.admin-col-action,
+.admin-table.admin-table--concierge td.admin-col-action {
+  white-space: nowrap;
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: center;
+}
+
+.admin-table--concierge .admin-col-onboarding .admin-status-badge,
+.admin-table--concierge .admin-col-concierge-status .admin-status-badge,
+.admin-table--concierge .admin-col-attendance .admin-status-badge,
+.admin-table--concierge .admin-col-bertha .admin-status-badge {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.admin-table--concierge .admin-col-outstanding .admin-concierge-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-table--concierge .admin-col-outstanding .admin-concierge-tag {
+  max-width: 100%;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+}
+
+.admin-table--concierge .admin-col-action .admin-table-action {
+  padding: 6px 8px;
 }
 
 .admin-table--concierge .admin-table-action:hover {
