@@ -4980,6 +4980,22 @@ a.contact-info-card__detail:hover {
   min-width: 1280px;
 }
 
+.admin-table--segment-incomplete th,
+.admin-table--segment-incomplete td {
+  text-align: center;
+}
+
+.admin-table--segment-incomplete th:nth-child(1),
+.admin-table--segment-incomplete td:nth-child(1),
+.admin-table--segment-incomplete th:nth-child(3),
+.admin-table--segment-incomplete td:nth-child(3) {
+  text-align: left;
+}
+
+.admin-table--segment-incomplete td.admin-table-empty {
+  text-align: left;
+}
+
 .admin-table--segment-incomplete th:nth-child(4),
 .admin-table--segment-incomplete td:nth-child(4) {
   width: 190px;
@@ -4997,6 +5013,13 @@ a.contact-info-card__detail:hover {
 .admin-table--segment-incomplete td:nth-child(5) {
   width: 150px;
   min-width: 150px;
+  padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+.admin-table--segment-incomplete th:nth-child(6),
+.admin-table--segment-incomplete td:nth-child(6) {
   padding-left: 20px;
   box-sizing: border-box;
 }
