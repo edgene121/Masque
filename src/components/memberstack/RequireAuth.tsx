@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getMemberstack } from "@/lib/memberstack";
+import { buildLoginRedirect } from "@/lib/login/safe-next-path";
 
 interface RequireAuthProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface RequireAuthProps {
  */
 export default function RequireAuth({ children }: RequireAuthProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -27,14 +29,14 @@ export default function RequireAuth({ children }: RequireAuthProps) {
         if (cancelled) return;
 
         if (!member) {
-          router.replace("/login");
+          router.replace(buildLoginRedirect(pathname));
           return;
         }
 
         setIsAuthorized(true);
       } catch {
         if (!cancelled) {
-          router.replace("/login");
+          router.replace(buildLoginRedirect(pathname));
         }
       }
     }
@@ -44,7 +46,7 @@ export default function RequireAuth({ children }: RequireAuthProps) {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [pathname, router]);
 
   if (!isAuthorized) {
     return (

@@ -1,14 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatErrorForUser } from "@memberstack/dom";
 import { Eye, EyeOff, Info } from "lucide-react";
 import { getMemberstack } from "@/lib/memberstack";
+import { getPostLoginPath } from "@/lib/login/safe-next-path";
 import type { SignInFormProps, SignInFormState } from "@/types/login";
 
 export default function SignInForm({ onForgotPassword }: SignInFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState<SignInFormState>({
     email: "",
     password: "",
@@ -45,7 +47,7 @@ export default function SignInForm({ onForgotPassword }: SignInFormProps) {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(getPostLoginPath(searchParams.get("next")));
     } catch (err) {
       setError(
         formatErrorForUser(err) ||
