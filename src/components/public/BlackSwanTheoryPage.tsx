@@ -22,6 +22,11 @@ const MEMBER_TICKETS_HREF = "/login?next=/events/black-swan-theory";
 const SHARE_TITLE = "Masqué : Atelier — Black Swan Theory";
 const SHARE_TEXT = "Black Swan Theory — September 26, 2026 · Washington, DC";
 
+// Event-specific Ticket Tailor SINGLE-EVENT widget only.
+// Do not use the Ticket Tailor box office embed.
+// TODO: Insert Black Swan Theory event-specific Ticket Tailor embed code here once provided.
+const TICKET_TAILOR_EMBED: string | null = null;
+
 // ---------------------------------------------------------------------------
 // Event copy — replace these strings when final editorial is ready.
 // ---------------------------------------------------------------------------
@@ -43,7 +48,13 @@ const EVENT_COPY = {
     "Masqué is a private membership community. Event access, ticket ownership, verification, and admission eligibility remain subject to Masqué membership requirements.",
 };
 
-export default function BlackSwanTheoryPage() {
+interface BlackSwanTheoryPageProps {
+  showMemberTickets?: boolean;
+}
+
+export default function BlackSwanTheoryPage({
+  showMemberTickets = false,
+}: BlackSwanTheoryPageProps) {
   const [filmCompleted, setFilmCompleted] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const shareResetRef = useRef<number | null>(null);
@@ -201,6 +212,8 @@ export default function BlackSwanTheoryPage() {
           <p className="bst-body">{EVENT_COPY.private}</p>
         </section>
 
+        {showMemberTickets ? <MemberTicketsSection /> : null}
+
         {/* Revealed after the Black Swan Theory film completes. */}
         {filmCompleted ? (
           <section className="bst-after" aria-label="After the film">
@@ -249,5 +262,69 @@ export default function BlackSwanTheoryPage() {
         ) : null}
       </div>
     </main>
+  );
+}
+
+function MemberTicketsSection() {
+  const hasTicketTailorEmbed = Boolean(TICKET_TAILOR_EMBED);
+
+  return (
+    <section className="bst-section bst-tickets" aria-labelledby="bst-tickets-heading">
+      <h2 id="bst-tickets-heading" className="bst-subheading">
+        MEMBER TICKETS
+      </h2>
+      <p className="bst-body">
+        Select your available ticket below. Ticket pricing and availability are
+        managed directly through Ticket Tailor.
+      </p>
+      <p className="bst-tickets__notice">
+        Ticket ownership does not override Masqué membership, verification,
+        consent, or admission requirements.
+      </p>
+
+      {/*
+        TODO: Insert Black Swan Theory event-specific Ticket Tailor embed code here once provided.
+        Ticket Tailor manages ticket types, pricing, inventory, checkout, payment, and ticket issuance.
+      */}
+      {hasTicketTailorEmbed && TICKET_TAILOR_EMBED ? (
+        <TicketTailorEmbed html={TICKET_TAILOR_EMBED} />
+      ) : (
+        <div className="bst-tickets__placeholder">
+          <p className="bst-tickets__soon">TICKET SALES OPENING SOON</p>
+          <p className="bst-tickets__hint">
+            The Black Swan Theory member ticket interface will appear here.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TicketTailorEmbed({ html }: { html: string }) {
+  const mountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = mountRef.current;
+    if (!root) {
+      return;
+    }
+
+    const scripts = Array.from(root.querySelectorAll("script"));
+    for (const oldScript of scripts) {
+      const script = document.createElement("script");
+      for (const attr of oldScript.attributes) {
+        script.setAttribute(attr.name, attr.value);
+      }
+      script.text = oldScript.text;
+      oldScript.replaceWith(script);
+    }
+  }, [html]);
+
+  return (
+    <div
+      ref={mountRef}
+      className="bst-tickets__widget"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   );
 }

@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function BlackSwanTheoryMemberEventPage() {
-  return <BlackSwanTheoryPage />;
+  return <BlackSwanTheoryPage showMemberTickets />;
 }

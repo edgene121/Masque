@@ -7061,6 +7061,54 @@ a.forgot-password-form__submit--link {
   max-width: 40em;
 }
 
+.bst-tickets__notice {
+  margin: 18px 0 0;
+  max-width: 40em;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.7;
+  color: rgba(247, 245, 240, 0.58);
+}
+
+.bst-tickets__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 36px;
+  padding: 72px 32px;
+  border: 1px solid rgba(185, 150, 91, 0.28);
+  background: #070707;
+  text-align: center;
+  pointer-events: none;
+}
+
+.bst-tickets__soon {
+  margin: 0;
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.bst-tickets__hint {
+  margin: 0;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(247, 245, 240, 0.62);
+}
+
+.bst-tickets__widget {
+  width: 100%;
+  margin-top: 36px;
+  overflow: visible;
+}
+
 .bst-after {
   display: flex;
   flex-wrap: wrap;
@@ -7162,6 +7210,14 @@ a.forgot-password-form__submit--link {
 
   .bst-section--intro {
     padding-top: 28px;
+  }
+
+  .bst-tickets__placeholder {
+    padding: 56px 20px;
+  }
+
+  .bst-tickets__widget {
+    margin-top: 28px;
   }
 
   .bst-body {
