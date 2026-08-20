@@ -17,6 +17,27 @@ const DOWNLOAD_URL: string | null = null;
 const hasConfiguredVideoSource =
   VIDEO_PROVIDER !== null && (Boolean(VIDEO_ID) || Boolean(VIDEO_URL));
 
+// ---------------------------------------------------------------------------
+// Event copy — replace these strings when final editorial is ready.
+// ---------------------------------------------------------------------------
+const EVENT_COPY = {
+  eyebrow: "MASQUÉ : ATELIER",
+  heading: "BLACK SWAN THEORY",
+  date: "SEPTEMBER 26, 2026",
+  location: "WASHINGTON, DC",
+  introduction:
+    "Black Swan Theory explores the tension between elegance and unpredictability — a night shaped by transformation, contrast, and the unexpected.",
+  musicHeading: "MUSIC & EXPERIENCE",
+  music:
+    "An immersive evening shaped by sound, movement, atmosphere, and shared experience.",
+  dressHeading: "DRESS",
+  dress:
+    "Black, sculptural, dramatic, refined. Guests are encouraged to interpret the Black Swan through silhouette, texture, contrast, and personal expression.",
+  privateHeading: "PRIVATE BY DESIGN",
+  private:
+    "Masqué is a private membership community. Event access, ticket ownership, verification, and admission eligibility remain subject to Masqué membership requirements.",
+};
+
 export default function BlackSwanTheoryPage() {
   const [filmCompleted, setFilmCompleted] = useState(false);
 
@@ -37,6 +58,22 @@ export default function BlackSwanTheoryPage() {
     setFilmCompleted(false);
 
     // TODO: Restart the configured player from the beginning, then call handlePlay().
+  }
+
+  function handleMemberTickets() {
+    // TODO: Ticket Tailor / member access — not in this step. Do not navigate yet.
+  }
+
+  function handleShareInvitation() {
+    // TODO: Share behavior — not in this step.
+  }
+
+  function handleSaveFilm() {
+    if (!DOWNLOAD_URL) {
+      return;
+    }
+
+    // TODO: Download the film using DOWNLOAD_URL — not in this step.
   }
 
   const playback = {
@@ -91,15 +128,69 @@ export default function BlackSwanTheoryPage() {
         </div>
       </section>
 
-      {/* Revealed after the Black Swan Theory film completes. */}
-      {filmCompleted ? (
-        <section className="bst-after" aria-label="After the film">
-          <p className="bst-after__label">MEMBER TICKETS</p>
-          <p className="bst-after__label">SHARE THE INVITATION</p>
-          {/* SAVE THE FILM will use playback.downloadUrl once a downloadable file exists. */}
-          <p className="bst-after__label">SAVE THE FILM</p>
+      <div className="bst-content">
+        <section className="bst-section bst-section--intro" aria-labelledby="bst-event-heading">
+          <p className="bst-eyebrow">{EVENT_COPY.eyebrow}</p>
+          <h1 id="bst-event-heading" className="bst-heading">
+            {EVENT_COPY.heading}
+          </h1>
+          <p className="bst-meta">
+            <span>{EVENT_COPY.date}</span>
+            <span className="bst-meta__rule" aria-hidden="true" />
+            <span>{EVENT_COPY.location}</span>
+          </p>
+          <p className="bst-body">{EVENT_COPY.introduction}</p>
         </section>
-      ) : null}
+
+        <section className="bst-section" aria-labelledby="bst-music-heading">
+          <h2 id="bst-music-heading" className="bst-subheading">
+            {EVENT_COPY.musicHeading}
+          </h2>
+          <p className="bst-body">{EVENT_COPY.music}</p>
+        </section>
+
+        <section className="bst-section" aria-labelledby="bst-dress-heading">
+          <h2 id="bst-dress-heading" className="bst-subheading">
+            {EVENT_COPY.dressHeading}
+          </h2>
+          <p className="bst-body">{EVENT_COPY.dress}</p>
+        </section>
+
+        <section className="bst-section" aria-labelledby="bst-private-heading">
+          <h2 id="bst-private-heading" className="bst-subheading">
+            {EVENT_COPY.privateHeading}
+          </h2>
+          <p className="bst-body">{EVENT_COPY.private}</p>
+        </section>
+
+        {/* Revealed after the Black Swan Theory film completes. */}
+        {filmCompleted ? (
+          <section className="bst-after" aria-label="After the film">
+            <button
+              type="button"
+              className="bst-cta bst-cta--primary"
+              onClick={handleMemberTickets}
+            >
+              MEMBER TICKETS
+            </button>
+            <button
+              type="button"
+              className="bst-cta bst-cta--secondary"
+              onClick={handleShareInvitation}
+            >
+              SHARE THE INVITATION
+            </button>
+            <button
+              type="button"
+              className="bst-cta bst-cta--secondary"
+              onClick={handleSaveFilm}
+              disabled={!playback.downloadUrl}
+            >
+              SAVE THE FILM
+            </button>
+          </section>
+        ) : null}
+      </div>
     </main>
   );
 }
