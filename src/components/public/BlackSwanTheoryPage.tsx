@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Play } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -16,6 +17,10 @@ const DOWNLOAD_URL: string | null = null;
 
 const hasConfiguredVideoSource =
   VIDEO_PROVIDER !== null && (Boolean(VIDEO_ID) || Boolean(VIDEO_URL));
+
+const MEMBER_TICKETS_HREF = "/login?next=/events/black-swan-theory";
+const SHARE_TITLE = "Masqué : Atelier — Black Swan Theory";
+const SHARE_TEXT = "Black Swan Theory — September 26, 2026 · Washington, DC";
 
 // ---------------------------------------------------------------------------
 // Event copy — replace these strings when final editorial is ready.
@@ -40,6 +45,16 @@ const EVENT_COPY = {
 
 export default function BlackSwanTheoryPage() {
   const [filmCompleted, setFilmCompleted] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const shareResetRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareResetRef.current !== null) {
+        window.clearTimeout(shareResetRef.current);
+      }
+    };
+  }, []);
 
   function handlePlay() {
     if (!hasConfiguredVideoSource) {
@@ -60,20 +75,43 @@ export default function BlackSwanTheoryPage() {
     // TODO: Restart the configured player from the beginning, then call handlePlay().
   }
 
-  function handleMemberTickets() {
-    // TODO: Ticket Tailor / member access — not in this step. Do not navigate yet.
-  }
+  async function copyInviteLink(url: string) {
+    await navigator.clipboard.writeText(url);
+    setShareCopied(true);
 
-  function handleShareInvitation() {
-    // TODO: Share behavior — not in this step.
-  }
-
-  function handleSaveFilm() {
-    if (!DOWNLOAD_URL) {
-      return;
+    if (shareResetRef.current !== null) {
+      window.clearTimeout(shareResetRef.current);
     }
 
-    // TODO: Download the film using DOWNLOAD_URL — not in this step.
+    shareResetRef.current = window.setTimeout(() => {
+      setShareCopied(false);
+      shareResetRef.current = null;
+    }, 2000);
+  }
+
+  async function handleShareInvitation() {
+    const url = window.location.href;
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: SHARE_TITLE,
+          text: SHARE_TEXT,
+          url,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    try {
+      await copyInviteLink(url);
+    } catch {
+      // Clipboard fallback failed; do not use alert().
+    }
   }
 
   const playback = {
@@ -166,28 +204,47 @@ export default function BlackSwanTheoryPage() {
         {/* Revealed after the Black Swan Theory film completes. */}
         {filmCompleted ? (
           <section className="bst-after" aria-label="After the film">
-            <button
-              type="button"
+            <Link
+              href={MEMBER_TICKETS_HREF}
               className="bst-cta bst-cta--primary"
-              onClick={handleMemberTickets}
+              aria-label="Member tickets — continue to sign in"
             >
               MEMBER TICKETS
-            </button>
+            </Link>
             <button
               type="button"
               className="bst-cta bst-cta--secondary"
               onClick={handleShareInvitation}
+              aria-live="polite"
+              aria-label={
+                shareCopied
+                  ? "Invitation link copied"
+                  : "Share the invitation"
+              }
             >
-              SHARE THE INVITATION
+              {shareCopied ? "LINK COPIED" : "SHARE THE INVITATION"}
             </button>
-            <button
-              type="button"
-              className="bst-cta bst-cta--secondary"
-              onClick={handleSaveFilm}
-              disabled={!playback.downloadUrl}
-            >
-              SAVE THE FILM
-            </button>
+            {playback.downloadUrl ? (
+              <a
+                href={playback.downloadUrl}
+                className="bst-cta bst-cta--secondary"
+                download
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Save the film"
+              >
+                SAVE THE FILM
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="bst-cta bst-cta--secondary"
+                disabled
+                aria-label="Save the film — download not available yet"
+              >
+                SAVE THE FILM
+              </button>
+            )}
           </section>
         ) : null}
       </div>

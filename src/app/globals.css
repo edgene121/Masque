@@ -7075,6 +7075,10 @@ a.forgot-password-form__submit--link {
 }
 
 .bst-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   min-width: 220px;
   padding: 14px 28px;
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
@@ -7082,7 +7086,9 @@ a.forgot-password-form__submit--link {
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
+  text-decoration: none;
   cursor: pointer;
+  appearance: none;
   transition:
     background-color 0.3s ease,
     border-color 0.3s ease,
