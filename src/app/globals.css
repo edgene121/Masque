@@ -6823,3 +6823,204 @@ a.forgot-password-form__submit--link {
     display: none;
   }
 }
+
+/* Public Black Swan Theory landing — scoped; do not reuse on portal pages. */
+.bst-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #000000;
+  color: #ffffff;
+  overflow-x: hidden;
+}
+
+.bst-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px 16px 48px;
+  gap: 28px;
+}
+
+.bst-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.bst-brand__masque {
+  margin: 0;
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.bst-brand__atelier {
+  margin: 0;
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: #b9965b;
+}
+
+.bst-brand__title {
+  margin: 2px 0 0;
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.bst-film {
+  width: min(460px, calc(85vh * 9 / 16), calc(100vw - 32px));
+  max-width: 100%;
+}
+
+.bst-film__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 85vh;
+  overflow: hidden;
+  border: 1px solid rgba(185, 150, 91, 0.28);
+  background: #0a0a0a;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.bst-film__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bst-film__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 42%, rgba(68, 53, 31, 0.28), transparent 70%),
+    #070707;
+}
+
+.bst-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  border: 1px solid #b9965b;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  color: #f7f5f0;
+  cursor: pointer;
+  transition:
+    transform 0.35s ease,
+    border-color 0.35s ease,
+    background-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.bst-play:hover {
+  transform: scale(1.06);
+  border-color: #c5a568;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 1px rgba(197, 165, 104, 0.2);
+}
+
+.bst-play:focus-visible {
+  outline: 1px solid #c5a568;
+  outline-offset: 4px;
+}
+
+.bst-play__icon {
+  width: 26px;
+  height: 26px;
+  margin-left: 3px;
+}
+
+.bst-film__name {
+  margin: 0;
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.bst-film__cue {
+  margin: 0;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #b9965b;
+}
+
+.bst-after {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 48px 24px 80px;
+  text-align: center;
+}
+
+.bst-after__label {
+  margin: 0;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #c5a568;
+}
+
+@media (max-width: 768px) {
+  .bst-hero {
+    padding: 24px 12px 36px;
+    gap: 20px;
+  }
+
+  .bst-play {
+    width: 76px;
+    height: 76px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bst-film {
+    width: min(100%, calc(100vw - 24px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .bst-brand__masque {
+    font-size: 13px;
+  }
+
+  .bst-brand__title {
+    font-size: 16px;
+  }
+
+  .bst-film {
+    width: min(500px, calc(85vh * 9 / 16), calc(100vw - 48px));
+  }
+}
