@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import EventsPage from "@/components/events/EventsPage";
 import { listPortalEvents } from "@/lib/portal/airtable-events";
 import {
+  hideLeReveNoirFromUpcoming,
   mergeBlackSwanIntoUpcoming,
   remapBlackSwanHref,
 } from "@/lib/portal/black-swan-events";
@@ -28,7 +29,9 @@ export default async function EventsRoutePage() {
 
   return (
     <EventsPage
-      upcoming={mergeBlackSwanIntoUpcoming(result.upcoming)}
+      upcoming={hideLeReveNoirFromUpcoming(
+        mergeBlackSwanIntoUpcoming(result.upcoming),
+      )}
       past={remapBlackSwanHref(result.past)}
       loadError={null}
     />

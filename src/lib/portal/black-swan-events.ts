@@ -60,3 +60,32 @@ export function remapBlackSwanHref(events: PortalEvent[]): PortalEvent[] {
       : event,
   );
 }
+
+function normalizeEventKey(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+/**
+ * Hide only Le Rêve Noir from the Member Portal Upcoming Events UI.
+ * Does not delete the Airtable record or affect Past Events / Home featured.
+ */
+export function isLeReveNoirPortalEvent(event: PortalEvent): boolean {
+  const slug = event.href.split("/").filter(Boolean).pop() ?? "";
+  const haystack = normalizeEventKey(
+    [event.name, event.brandTitle, event.series, slug].join(" "),
+  );
+
+  return (
+    normalizeEventKey(slug) === "le-reve-noir" ||
+    haystack.includes("le reve noir")
+  );
+}
+
+export function hideLeReveNoirFromUpcoming(
+  upcoming: PortalEvent[],
+): PortalEvent[] {
+  return upcoming.filter((event) => !isLeReveNoirPortalEvent(event));
+}
