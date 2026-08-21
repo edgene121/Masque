@@ -6942,43 +6942,43 @@ a.forgot-password-form__submit--link {
   min-height: 100vh;
   min-height: 100dvh;
   padding: 28px 24px 40px;
-  gap: 20px;
+  gap: 28px;
 }
 
 .bst-brand {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 0;
   text-align: center;
 }
 
 .bst-brand__masque {
   margin: 0;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
-  letter-spacing: 0.42em;
+  letter-spacing: 0.35em;
   text-transform: uppercase;
   color: #ffffff;
 }
 
 .bst-brand__atelier {
-  margin: 0;
+  margin: 8px 0 0;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.38em;
+  letter-spacing: 0.30em;
   text-transform: uppercase;
   color: #b9965b;
 }
 
 .bst-brand__title {
-  margin: 2px 0 0;
+  margin: 14px 0 0;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: #ffffff;
 }
@@ -7685,17 +7685,19 @@ a.forgot-password-form__submit--link {
   .bst-hero {
     min-height: 0;
     padding: 20px 20px 28px;
-    gap: 16px;
+    gap: 28px;
   }
 
-  .bst-brand {
-    gap: 4px;
+  .bst-brand__masque {
+    font-size: 13px;
   }
 
-  .bst-brand__masque,
-  .bst-brand__atelier,
+  .bst-brand__atelier {
+    font-size: 12px;
+  }
+
   .bst-brand__title {
-    letter-spacing: 0.22em;
+    font-size: 18px;
   }
 
   .bst-film {
@@ -7822,7 +7824,7 @@ a.forgot-password-form__submit--link {
 @media (max-width: 430px) {
   .bst-hero {
     padding: 16px 20px 24px;
-    gap: 14px;
+    gap: 28px;
   }
 
   .bst-content {
@@ -7843,14 +7845,6 @@ a.forgot-password-form__submit--link {
 }
 
 @media (min-width: 1024px) {
-  .bst-brand__masque {
-    font-size: 13px;
-  }
-
-  .bst-brand__title {
-    font-size: 16px;
-  }
-
   .bst-film {
     width: min(500px, calc((100dvh - 150px) * 9 / 16), calc(100vw - 48px));
   }
