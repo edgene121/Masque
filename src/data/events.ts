@@ -19,6 +19,8 @@ export interface PortalEvent {
   description: string;
   href: string;
   imageSrc?: string;
+  /** First Airtable Event Artwork (or equivalent image) attachment URL */
+  artworkUrl: string | null;
   /** Airtable Status when present (e.g. Open / Closed) */
   status: string;
   kind: "upcoming" | "past";

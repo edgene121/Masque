@@ -98,6 +98,7 @@ const SERIES_FIELD_NAMES = [
 const BRAND_FIELD_NAMES = ["Brand", "Brand Name"];
 
 const IMAGE_FIELD_NAMES = [
+  "Event Artwork",
   "Featured Image",
   "Poster",
   "Flyer",
@@ -445,6 +446,43 @@ function isProbablyImageUrl(url: string): boolean {
   return /airtableusercontent\.com|dl\.airtable\.com/i.test(url);
 }
 
+function isImageAttachment(value: unknown): boolean {
+  if (!isPlainObject(value)) return false;
+  const type = asTrimmedString(value.type).toLowerCase();
+  if (type.startsWith("image/")) return true;
+  const url = asTrimmedString(value.url);
+  return Boolean(url) && isProbablyImageUrl(url);
+}
+
+function firstAttachmentImageUrl(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (!isImageAttachment(item) && !looksLikeAttachmentValue(item)) continue;
+      if (isPlainObject(item) && asTrimmedString(item.type) && !isImageAttachment(item)) {
+        continue;
+      }
+      const url = extractHttpUrl(item);
+      if (url && (isImageAttachment(item) || isProbablyImageUrl(url))) return url;
+    }
+    return extractHttpUrl(value);
+  }
+  return extractHttpUrl(value);
+}
+
+function resolveArtworkUrl(fields: AirtableEventFields): string | null {
+  try {
+    const dedicated = getFieldByNames(fields, ["Event Artwork"]);
+    if (dedicated != null) {
+      const url = firstAttachmentImageUrl(dedicated);
+      if (url) return url;
+    }
+    return resolveImage(fields) || null;
+  } catch {
+    return null;
+  }
+}
+
 function resolveImage(fields: AirtableEventFields): string {
   for (const name of IMAGE_FIELD_NAMES) {
     const value = getFieldByNames(fields, [name]);
@@ -512,6 +550,8 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
     }
   }
 
+  const artworkUrl = resolveArtworkUrl(fields);
+
   return {
     id: record.id,
     brandTitle,
@@ -521,7 +561,8 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
     date,
     description: resolveDescription(fields),
     href: resolveHref(fields, slug),
-    imageSrc: resolveImage(fields) || undefined,
+    imageSrc: artworkUrl || undefined,
+    artworkUrl,
     status,
     kind: date ? kind : "upcoming",
   };

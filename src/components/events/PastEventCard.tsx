@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import type { PortalEvent } from "@/data/events";
 import { formatPortalEventDate } from "@/data/events";
@@ -26,7 +27,9 @@ export default function PastEventCard({ event }: PastEventCardProps) {
   const { title, subtitle } = resolveTitleParts(event);
   const location = event.location.trim();
   const dateLabel = event.date ? formatPortalEventDate(event.date) : "";
-  const hasImage = Boolean(event.imageSrc?.trim());
+  const artworkUrl = event.artworkUrl?.trim() || "";
+  const [imageFailed, setImageFailed] = useState(false);
+  const hasImage = Boolean(artworkUrl) && !imageFailed;
   const showMeta = Boolean(location || dateLabel);
 
   return (
@@ -37,9 +40,12 @@ export default function PastEventCard({ event }: PastEventCardProps) {
         {hasImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={event.imageSrc}
+            src={artworkUrl}
             alt={title}
+            loading="lazy"
+            decoding="async"
             referrerPolicy="no-referrer"
+            onError={() => setImageFailed(true)}
           />
         ) : null}
       </div>

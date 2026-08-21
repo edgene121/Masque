@@ -28,6 +28,7 @@ function createTemporaryBlackSwanEvent(): PortalEvent {
     date: "2026-09-26",
     description: "",
     href: BLACK_SWAN_EVENT_PATH,
+    artworkUrl: null,
     status: "",
     kind: "upcoming",
   };
