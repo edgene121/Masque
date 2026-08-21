@@ -446,38 +446,25 @@ function isProbablyImageUrl(url: string): boolean {
   return /airtableusercontent\.com|dl\.airtable\.com/i.test(url);
 }
 
-function isImageAttachment(value: unknown): boolean {
-  if (!isPlainObject(value)) return false;
-  const type = asTrimmedString(value.type).toLowerCase();
-  if (type.startsWith("image/")) return true;
-  const url = asTrimmedString(value.url);
-  return Boolean(url) && isProbablyImageUrl(url);
-}
-
-function firstAttachmentImageUrl(value: unknown): string {
-  if (value == null) return "";
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      if (!isImageAttachment(item) && !looksLikeAttachmentValue(item)) continue;
-      if (isPlainObject(item) && asTrimmedString(item.type) && !isImageAttachment(item)) {
-        continue;
-      }
-      const url = extractHttpUrl(item);
-      if (url && (isImageAttachment(item) || isProbablyImageUrl(url))) return url;
-    }
-    return extractHttpUrl(value);
-  }
-  return extractHttpUrl(value);
-}
-
 function resolveArtworkUrl(fields: AirtableEventFields): string | null {
   try {
-    const dedicated = getFieldByNames(fields, ["Event Artwork"]);
-    if (dedicated != null) {
-      const url = firstAttachmentImageUrl(dedicated);
-      if (url) return url;
+    const attachments =
+      fields["Event Artwork"] ?? getFieldByNames(fields, ["Event Artwork"]);
+
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return null;
     }
-    return resolveImage(fields) || null;
+
+    const first = attachments[0];
+    if (
+      isPlainObject(first) &&
+      typeof first.url === "string" &&
+      isHttpUrl(first.url.trim())
+    ) {
+      return first.url.trim();
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -561,7 +548,7 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
     date,
     description: resolveDescription(fields),
     href: resolveHref(fields, slug),
-    imageSrc: artworkUrl || undefined,
+    imageSrc: resolveImage(fields) || undefined,
     artworkUrl,
     status,
     kind: date ? kind : "upcoming",

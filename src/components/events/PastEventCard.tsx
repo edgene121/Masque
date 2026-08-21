@@ -25,6 +25,7 @@ function resolveTitleParts(event: PortalEvent): {
 
 export default function PastEventCard({ event }: PastEventCardProps) {
   const { title, subtitle } = resolveTitleParts(event);
+  const artworkAlt = [title, subtitle].filter(Boolean).join(" ") || "Event";
   const location = event.location.trim();
   const dateLabel = event.date ? formatPortalEventDate(event.date) : "";
   const artworkUrl = event.artworkUrl?.trim() || "";
@@ -41,7 +42,7 @@ export default function PastEventCard({ event }: PastEventCardProps) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={artworkUrl}
-            alt={title}
+            alt={artworkAlt}
             loading="lazy"
             decoding="async"
             referrerPolicy="no-referrer"
