@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { TicketTailorCustomer } from "@/lib/tickets/ticket-tailor-customer";
+import { TICKET_TAILOR_CUSTOM_DOMAIN } from "@/lib/tickets/ticket-tailor-config";
 
 export type TicketTailorEmbedProps = {
   embedHtml?: string | null;
   customer?: TicketTailorCustomer | null;
+  customDomain?: string | null;
 };
 
 type WidgetStatus = "placeholder" | "loading" | "ready" | "error";
@@ -138,6 +140,7 @@ function widgetLooksReady(root: HTMLElement): boolean {
 export default function TicketTailorEmbed({
   embedHtml,
   customer = null,
+  customDomain = TICKET_TAILOR_CUSTOM_DOMAIN,
 }: TicketTailorEmbedProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const html = embedHtml?.trim() ?? "";
@@ -147,19 +150,24 @@ export default function TicketTailorEmbed({
 
   // TODO: Map customer data into the official Ticket Tailor single-event
   // prefill configuration once the real embed HTML/custom-domain setup
-  // is available.
+  // is available. Prefill may depend on that custom-domain configuration.
+  //
+  // TODO: Apply Ticket Tailor custom-domain configuration only
+  // according to the official single-event embed instructions once
+  // the Ticket Tailor box office domain has been configured.
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") {
       return;
     }
 
-    console.info("[Ticket Tailor] customer accepted, prefill not injected", {
+    console.info("[Ticket Tailor] config accepted, not applied to embed", {
       hasCustomer: Boolean(customer),
       hasFirstName: Boolean(customer?.firstName),
       hasLastName: Boolean(customer?.lastName),
       hasEmail: Boolean(customer?.email),
+      hasCustomDomain: Boolean(customDomain),
     });
-  }, [customer]);
+  }, [customer, customDomain]);
 
   useEffect(() => {
     if (!html) {

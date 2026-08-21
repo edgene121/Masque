@@ -55,6 +55,10 @@ function logCustomerPrep(customer: TicketTailorCustomer | null) {
 /**
  * Normalize the logged-in Memberstack member into Ticket Tailor checkout
  * prefill fields. Does not call Ticket Tailor.
+ *
+ * Checkout prefill may depend on the final Ticket Tailor custom-domain
+ * setup. Keep this object available, but do not inject it until the
+ * official single-event embed HTML and domain configuration are known.
  */
 export function toTicketTailorCustomer(
   member: TicketTailorMemberSource,

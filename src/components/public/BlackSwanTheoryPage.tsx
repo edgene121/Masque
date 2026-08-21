@@ -7,6 +7,7 @@ import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
 import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
 import TicketTailorEmbed from "@/components/tickets/TicketTailorEmbed";
 import { useTicketTailorCustomer } from "@/hooks/useTicketTailorCustomer";
+import { TICKET_TAILOR_CUSTOM_DOMAIN } from "@/lib/tickets/ticket-tailor-config";
 
 // ---------------------------------------------------------------------------
 // Video configuration — update this block when the final film source arrives.
@@ -347,6 +348,7 @@ function MemberTicketsSection() {
       <TicketTailorEmbed
         embedHtml={BLACK_SWAN_TICKET_TAILOR_EMBED}
         customer={ticketTailorCustomer}
+        customDomain={TICKET_TAILOR_CUSTOM_DOMAIN}
       />
     </section>
   );
