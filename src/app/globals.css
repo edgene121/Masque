@@ -6942,7 +6942,7 @@ a.forgot-password-form__submit--link {
   min-height: 100vh;
   min-height: 100dvh;
   padding: 28px 24px 40px;
-  gap: 28px;
+  gap: 34px;
 }
 
 .bst-brand {
@@ -6956,29 +6956,32 @@ a.forgot-password-form__submit--link {
 .bst-brand__masque {
   margin: 0;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 16px;
+  font-size: clamp(16px, 3.5vw, 22px);
   font-weight: 600;
-  letter-spacing: 0.35em;
+  letter-spacing: 0.38em;
+  line-height: 1.2;
   text-transform: uppercase;
   color: #ffffff;
 }
 
 .bst-brand__atelier {
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 14px;
+  font-size: clamp(14px, 3vw, 18px);
   font-weight: 500;
-  letter-spacing: 0.30em;
+  letter-spacing: 0.34em;
+  line-height: 1.2;
   text-transform: uppercase;
   color: #b9965b;
 }
 
 .bst-brand__title {
-  margin: 14px 0 0;
+  margin: 18px 0 0;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 22px;
+  font-size: clamp(22px, 5vw, 32px);
   font-weight: 600;
   letter-spacing: 0.22em;
+  line-height: 1.25;
   text-transform: uppercase;
   color: #ffffff;
 }
@@ -7685,19 +7688,7 @@ a.forgot-password-form__submit--link {
   .bst-hero {
     min-height: 0;
     padding: 20px 20px 28px;
-    gap: 28px;
-  }
-
-  .bst-brand__masque {
-    font-size: 13px;
-  }
-
-  .bst-brand__atelier {
-    font-size: 12px;
-  }
-
-  .bst-brand__title {
-    font-size: 18px;
+    gap: 34px;
   }
 
   .bst-film {
@@ -7824,7 +7815,7 @@ a.forgot-password-form__submit--link {
 @media (max-width: 430px) {
   .bst-hero {
     padding: 16px 20px 24px;
-    gap: 28px;
+    gap: 34px;
   }
 
   .bst-content {
