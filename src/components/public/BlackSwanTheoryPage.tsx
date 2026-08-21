@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import BlackSwanPublicContent from "@/components/public/BlackSwanPublicContent";
 import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
 import BlackSwanConcierge from "@/components/public/BlackSwanConcierge";
 import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
@@ -182,9 +183,19 @@ export default function BlackSwanTheoryPage({
     <main className="bst-page">
       <section className="bst-hero" aria-label="Black Swan Theory film">
         <header className="bst-brand">
-          <p className="bst-brand__masque">MASQUÉ</p>
-          <p className="bst-brand__atelier">ATELIER</p>
-          <p className="bst-brand__title">BLACK SWAN THEORY</p>
+          {showMemberTickets ? (
+            <>
+              <p className="bst-brand__masque">MASQUÉ</p>
+              <p className="bst-brand__atelier">ATELIER</p>
+              <p className="bst-brand__title">BLACK SWAN THEORY</p>
+            </>
+          ) : (
+            <>
+              <p className="bst-brand__series">MASQUÉ : ATELIER</p>
+              <p className="bst-brand__title">BLACK SWAN THEORY</p>
+              <p className="bst-brand__when">SEPTEMBER 26 · WASHINGTON, DC</p>
+            </>
+          )}
         </header>
 
         <div className="bst-film">
@@ -208,7 +219,7 @@ export default function BlackSwanTheoryPage({
               // TODO: Render <video className="bst-film__media" src={VIDEO_URL} playsInline onEnded={playback.onEnded} />
               // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
               null
-            ) : (
+            ) : showMemberTickets ? (
               <div className="bst-film__placeholder">
                 <button
                   type="button"
@@ -221,87 +232,71 @@ export default function BlackSwanTheoryPage({
                 <p className="bst-film__name">BLACK SWAN THEORY</p>
                 <p className="bst-film__cue">PLAY FILM</p>
               </div>
+            ) : (
+              <button
+                type="button"
+                className="bst-film__placeholder bst-film__surface"
+                aria-label="Play Black Swan Theory"
+                onClick={playback.onPlay}
+              >
+                <span className="bst-play" aria-hidden="true">
+                  <Play className="bst-play__icon" strokeWidth={1.25} fill="currentColor" />
+                </span>
+                <span className="bst-film__name">BLACK SWAN THEORY</span>
+                <span className="bst-film__cue bst-film__cue--launch">
+                  PLAY BLACK SWAN THEORY
+                </span>
+              </button>
             )}
           </div>
         </div>
       </section>
 
       <div className="bst-content">
-        <section className="bst-section bst-section--intro" aria-labelledby="bst-event-heading">
-          <p className="bst-eyebrow">{EVENT_COPY.eyebrow}</p>
-          <h1 id="bst-event-heading" className="bst-heading">
-            {EVENT_COPY.heading}
-          </h1>
-          <p className="bst-meta">
-            <span>{EVENT_COPY.date}</span>
-            <span className="bst-meta__rule" aria-hidden="true" />
-            <span>{EVENT_COPY.location}</span>
-          </p>
-          <p className="bst-body">{EVENT_COPY.introduction}</p>
-        </section>
-
-        <section className="bst-section" aria-labelledby="bst-music-heading">
-          <h2 id="bst-music-heading" className="bst-subheading">
-            {EVENT_COPY.musicHeading}
-          </h2>
-          <p className="bst-body">{EVENT_COPY.music}</p>
-        </section>
-
-        <section className="bst-section" aria-labelledby="bst-dress-heading">
-          <h2 id="bst-dress-heading" className="bst-subheading">
-            {EVENT_COPY.dressHeading}
-          </h2>
-          <p className="bst-body">{EVENT_COPY.dress}</p>
-        </section>
-
-        <section className="bst-section" aria-labelledby="bst-private-heading">
-          <h2 id="bst-private-heading" className="bst-subheading">
-            {EVENT_COPY.privateHeading}
-          </h2>
-          <p className="bst-body">{EVENT_COPY.private}</p>
-        </section>
-
-        {!showMemberTickets ? (
-          <section
-            className="bst-section bst-public-access"
-            aria-label="Black Swan Theory access"
-          >
-            <div className="bst-invite__actions">
-              <Link
-                href={MEMBER_TICKETS_HREF}
-                className="bst-cta bst-cta--primary"
-                aria-label="Member tickets — continue to sign in"
-                onClick={() =>
-                  trackEvent("black_swan_member_access_clicked", analyticsContext)
-                }
-              >
-                MEMBER TICKETS
-              </Link>
-              <Link
-                href={REQUEST_ACCESS_HREF}
-                className="bst-cta bst-cta--secondary"
-                aria-label="Request Masqué membership access"
-                onClick={() =>
-                  trackEvent(
-                    "black_swan_request_membership_clicked",
-                    analyticsContext,
-                  )
-                }
-              >
-                REQUEST ACCESS
-              </Link>
-            </div>
-          </section>
-        ) : null}
-
         {showMemberTickets ? (
           <>
+            <section className="bst-section bst-section--intro" aria-labelledby="bst-event-heading">
+              <p className="bst-eyebrow">{EVENT_COPY.eyebrow}</p>
+              <h1 id="bst-event-heading" className="bst-heading">
+                {EVENT_COPY.heading}
+              </h1>
+              <p className="bst-meta">
+                <span>{EVENT_COPY.date}</span>
+                <span className="bst-meta__rule" aria-hidden="true" />
+                <span>{EVENT_COPY.location}</span>
+              </p>
+              <p className="bst-body">{EVENT_COPY.introduction}</p>
+            </section>
+
+            <section className="bst-section" aria-labelledby="bst-music-heading">
+              <h2 id="bst-music-heading" className="bst-subheading">
+                {EVENT_COPY.musicHeading}
+              </h2>
+              <p className="bst-body">{EVENT_COPY.music}</p>
+            </section>
+
+            <section className="bst-section" aria-labelledby="bst-dress-heading">
+              <h2 id="bst-dress-heading" className="bst-subheading">
+                {EVENT_COPY.dressHeading}
+              </h2>
+              <p className="bst-body">{EVENT_COPY.dress}</p>
+            </section>
+
+            <section className="bst-section" aria-labelledby="bst-private-heading">
+              <h2 id="bst-private-heading" className="bst-subheading">
+                {EVENT_COPY.privateHeading}
+              </h2>
+              <p className="bst-body">{EVENT_COPY.private}</p>
+            </section>
+
             <BlackSwanConcierge />
             <BlackSwanEventAccess />
             <MemberTicketsSection />
             <BlackSwanShareSave />
           </>
-        ) : null}
+        ) : (
+          <BlackSwanPublicContent analyticsContext={analyticsContext} />
+        )}
 
         {/* Revealed after the Black Swan Theory film completes. */}
         {filmCompleted ? (
@@ -361,17 +356,17 @@ export default function BlackSwanTheoryPage({
               <Link
                 href={MEMBER_TICKETS_HREF}
                 className="bst-cta bst-cta--primary"
-                aria-label="Member tickets — continue to sign in"
+                aria-label="Members — access event"
                 onClick={() =>
                   trackEvent("black_swan_member_access_clicked", analyticsContext)
                 }
               >
-                MEMBER TICKETS
+                MEMBERS — ACCESS EVENT
               </Link>
               <Link
                 href={REQUEST_ACCESS_HREF}
                 className="bst-cta bst-cta--secondary"
-                aria-label="Request Masqué membership access"
+                aria-label="Request membership"
                 onClick={() =>
                   trackEvent(
                     "black_swan_request_membership_clicked",
@@ -379,7 +374,7 @@ export default function BlackSwanTheoryPage({
                   )
                 }
               >
-                REQUEST ACCESS
+                REQUEST MEMBERSHIP
               </Link>
               <button
                 type="button"
