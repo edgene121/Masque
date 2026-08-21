@@ -7123,11 +7123,35 @@ a.forgot-password-form__submit--link {
 
 .bst-tickets__widget {
   box-sizing: border-box;
+  position: relative;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 180px;
   margin-top: 36px;
   overflow: visible;
+}
+
+.bst-tickets__mount {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.bst-tickets__loading {
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  border: 1px solid rgba(185, 150, 91, 0.28);
+  background: #070707;
+  text-align: center;
 }
 
 .bst-tickets__widget iframe,
