@@ -2885,12 +2885,12 @@ body {
 
 .events-past-card__media {
   width: 100%;
-  aspect-ratio: 4 / 5;
   background: #0a0c0b;
   overflow: hidden;
 }
 
 .events-past-card__media--empty {
+  aspect-ratio: 4 / 5;
   background:
     linear-gradient(160deg, rgba(185, 150, 91, 0.08), transparent 55%),
     #0a0c0b;
@@ -2899,9 +2899,7 @@ body {
 .events-past-card__media img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
+  height: auto;
 }
 
 .events-past-card__body {
