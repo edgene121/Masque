@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
 import BlackSwanPublicContent from "@/components/public/BlackSwanPublicContent";
+import BlackSwanMemberEventCopy from "@/components/public/BlackSwanMemberEventCopy";
 import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
 import BlackSwanConcierge from "@/components/public/BlackSwanConcierge";
 import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
@@ -261,33 +262,11 @@ export default function BlackSwanTheoryPage({
                 {EVENT_COPY.heading}
               </h1>
               <p className="bst-meta">
-                <span>{EVENT_COPY.date}</span>
-                <span className="bst-meta__rule" aria-hidden="true" />
-                <span>{EVENT_COPY.location}</span>
+                <span>SEPTEMBER 26 · WASHINGTON, DC</span>
               </p>
-              <p className="bst-body">{EVENT_COPY.introduction}</p>
             </section>
 
-            <section className="bst-section" aria-labelledby="bst-music-heading">
-              <h2 id="bst-music-heading" className="bst-subheading">
-                {EVENT_COPY.musicHeading}
-              </h2>
-              <p className="bst-body">{EVENT_COPY.music}</p>
-            </section>
-
-            <section className="bst-section" aria-labelledby="bst-dress-heading">
-              <h2 id="bst-dress-heading" className="bst-subheading">
-                {EVENT_COPY.dressHeading}
-              </h2>
-              <p className="bst-body">{EVENT_COPY.dress}</p>
-            </section>
-
-            <section className="bst-section" aria-labelledby="bst-private-heading">
-              <h2 id="bst-private-heading" className="bst-subheading">
-                {EVENT_COPY.privateHeading}
-              </h2>
-              <p className="bst-body">{EVENT_COPY.private}</p>
-            </section>
+            <BlackSwanMemberEventCopy />
 
             <BlackSwanConcierge />
             <BlackSwanEventAccess />
