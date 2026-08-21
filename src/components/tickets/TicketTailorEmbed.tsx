@@ -20,8 +20,6 @@ type ParsedEmbed = {
   hasTicketTailorFrame: boolean;
 };
 
-const scriptLoaders = new Map<string, Promise<void>>();
-
 function logTicketTailorDev(message: string, details?: Record<string, string>) {
   if (process.env.NODE_ENV !== "development") {
     return;
@@ -90,16 +88,12 @@ function parseTicketTailorEmbed(embedHtml: string): ParsedEmbed {
 function loadTicketTailorScript(
   src: string,
   dataAttributes: Record<string, string>,
+  parent: HTMLElement,
 ): Promise<void> {
-  const existing = scriptLoaders.get(src);
-  if (existing) {
-    return existing;
-  }
+  const safeSrc = src.replace(/"/g, "");
 
-  const promise = new Promise<void>((resolve, reject) => {
-    const alreadyPresent = document.querySelector(
-      `script[src="${src.replace(/"/g, "")}"]`,
-    );
+  return new Promise((resolve, reject) => {
+    const alreadyPresent = parent.querySelector(`script[src="${safeSrc}"]`);
 
     if (alreadyPresent) {
       resolve();
@@ -118,11 +112,8 @@ function loadTicketTailorScript(
     script.onerror = () =>
       reject(new Error("Ticket Tailor widget script failed to load."));
 
-    document.body.appendChild(script);
+    parent.appendChild(script);
   });
-
-  scriptLoaders.set(src, promise);
-  return promise;
 }
 
 function widgetLooksReady(root: HTMLElement): boolean {
@@ -259,7 +250,14 @@ export default function TicketTailorEmbed({
     }, 15000);
 
     if (parsed.scriptSrc) {
-      void loadTicketTailorScript(parsed.scriptSrc, parsed.dataAttributes)
+      const widgetHost =
+        (root.querySelector(".tt-widget") as HTMLElement | null) ?? root;
+
+      void loadTicketTailorScript(
+        parsed.scriptSrc,
+        parsed.dataAttributes,
+        widgetHost,
+      )
         .then(() => {
           if (cancelled) {
             return;

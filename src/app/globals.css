@@ -7383,6 +7383,13 @@ a.forgot-password-form__submit--link {
   color: #c5a568;
 }
 
+.bst-tickets {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .bst-tickets__notice {
   margin: 18px 0 0;
   max-width: 40em;
@@ -7469,6 +7476,7 @@ a.forgot-password-form__submit--link {
 .bst-tickets__widget iframe,
 .bst-tickets__widget .tt-widget,
 .bst-tickets__widget .tt-widget iframe {
+  box-sizing: border-box;
   display: block;
   width: 100% !important;
   max-width: 100%;
