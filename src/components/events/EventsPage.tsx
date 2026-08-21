@@ -75,8 +75,10 @@ export default function EventsPage({
             role="tabpanel"
             aria-label="Upcoming Events"
           >
-            {featured ? (
-              <UpcomingEventFeature event={featured} />
+            {upcoming.length > 0 ? (
+              upcoming.map((event) => (
+                <UpcomingEventFeature key={event.id} event={event} />
+              ))
             ) : (
               <p className="events-page__empty">No Upcoming Events</p>
             )}

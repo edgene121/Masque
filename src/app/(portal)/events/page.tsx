@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import EventsPage from "@/components/events/EventsPage";
 import { listPortalEvents } from "@/lib/portal/airtable-events";
+import {
+  mergeBlackSwanIntoUpcoming,
+  remapBlackSwanHref,
+} from "@/lib/portal/black-swan-events";
 
 export const metadata: Metadata = {
   title: "Events | Masqué Member Portal",
@@ -23,6 +27,10 @@ export default async function EventsRoutePage() {
   }
 
   return (
-    <EventsPage upcoming={result.upcoming} past={result.past} loadError={null} />
+    <EventsPage
+      upcoming={mergeBlackSwanIntoUpcoming(result.upcoming)}
+      past={remapBlackSwanHref(result.past)}
+      loadError={null}
+    />
   );
 }
