@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
+import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
 
 // ---------------------------------------------------------------------------
 // Video configuration — update this block when the final film source arrives.
@@ -213,7 +214,12 @@ export default function BlackSwanTheoryPage({
           <p className="bst-body">{EVENT_COPY.private}</p>
         </section>
 
-        {showMemberTickets ? <MemberTicketsSection /> : null}
+        {showMemberTickets ? (
+          <>
+            <BlackSwanEventAccess />
+            <MemberTicketsSection />
+          </>
+        ) : null}
 
         {/* Revealed after the Black Swan Theory film completes. */}
         {filmCompleted ? (

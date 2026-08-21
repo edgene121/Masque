@@ -176,6 +176,12 @@ export function getOnboardingStatus(member: Member | null | undefined): string {
   return String(customFields[ONBOARDING_STATUS_FIELD_KEY] ?? "").trim();
 }
 
+export function getComplianceStatus(member: Member | null | undefined): string {
+  if (!member) return "";
+  const customFields = (member.customFields ?? {}) as Record<string, unknown>;
+  return String(customFields[COMPLIANCE_STATUS_FIELD_KEY] ?? "").trim();
+}
+
 export function isProfileComplete(member: Member | null | undefined): boolean {
   return getOnboardingStatus(member).toLowerCase() === "submitted";
 }
