@@ -15,6 +15,12 @@ function displayDash(value: string): string {
   return trimmed || "—";
 }
 
+function formatIdVerified(value: boolean | null): string {
+  if (value === true) return "Verified";
+  if (value === false) return "Not Verified";
+  return "—";
+}
+
 function normalizeStatus(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -33,14 +39,12 @@ function isApprovedMember(value: string): boolean {
   return normalizeStatus(value) === "approved member";
 }
 
-function isIdVerifiedYes(value: string): boolean {
-  const normalized = normalizeStatus(value);
-  return normalized === "yes" || normalized === "true";
-}
-
 export default function BlackSwanEventAccess() {
   const [member, setMember] = useState<Member | null>(null);
-  const [ready, setReady] = useState(false);
+  const [memberReady, setMemberReady] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
+  const [idVerified, setIdVerified] = useState<boolean | null>(null);
+  const [peopleReady, setPeopleReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,16 +52,65 @@ export default function BlackSwanEventAccess() {
     async function load() {
       try {
         const { data } = await getMemberstack().getCurrentMember();
-        if (!cancelled) {
-          setMember(data);
+        if (cancelled) return;
+
+        setMember(data);
+        setMemberReady(true);
+
+        const email = data?.auth?.email?.trim().toLowerCase() ?? "";
+        if (!email) {
+          setMembershipStatus(null);
+          setIdVerified(null);
+          setPeopleReady(true);
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/portal/event-access?email=${encodeURIComponent(email)}`,
+            { cache: "no-store" },
+          );
+          const payload = (await response.json().catch(() => null)) as {
+            membershipStatus?: string | null;
+            idVerified?: boolean | null;
+          } | null;
+
+          if (cancelled) return;
+
+          if (!response.ok || !payload) {
+            setMembershipStatus(null);
+            setIdVerified(null);
+          } else {
+            setMembershipStatus(
+              typeof payload.membershipStatus === "string"
+                ? payload.membershipStatus
+                : payload.membershipStatus ?? null,
+            );
+            setIdVerified(
+              payload.idVerified === true
+                ? true
+                : payload.idVerified === false
+                  ? false
+                  : null,
+            );
+          }
+        } catch {
+          if (!cancelled) {
+            setMembershipStatus(null);
+            setIdVerified(null);
+          }
+        } finally {
+          if (!cancelled) {
+            setPeopleReady(true);
+          }
         }
       } catch {
         if (!cancelled) {
           setMember(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setReady(true);
+          setMembershipStatus(null);
+          setIdVerified(null);
+          setMemberReady(true);
+          setPeopleReady(true);
         }
       }
     }
@@ -69,30 +122,30 @@ export default function BlackSwanEventAccess() {
     };
   }, []);
 
-  const membershipStatus = "";
   const onboardingState = getOnboardingStatus(member);
   const complianceState = getComplianceStatus(member);
-  const idVerified = "";
   const memberAgreement = getAgreementSigned(member);
+  const membershipStatusValue = membershipStatus?.trim() ?? "";
+  const statusReady = memberReady && peopleReady;
 
   const requiredStatusMissing =
-    isMissing(membershipStatus) ||
+    isMissing(membershipStatusValue) ||
     isMissing(onboardingState) ||
     isMissing(complianceState) ||
-    isMissing(idVerified) ||
+    idVerified === null ||
     isMissing(memberAgreement);
 
   const accessActive =
-    ready &&
+    statusReady &&
     Boolean(member) &&
     !requiredStatusMissing &&
-    isApprovedMember(membershipStatus) &&
+    isApprovedMember(membershipStatusValue) &&
     isCompletedState(onboardingState) &&
     isCompletedState(complianceState) &&
-    isIdVerifiedYes(idVerified) &&
+    idVerified === true &&
     isAgreementSigned(member);
 
-  const requirementsPending = ready && !accessActive;
+  const requirementsPending = statusReady && !accessActive;
 
   return (
     <section className="bst-section bst-access" aria-labelledby="bst-access-heading">
@@ -104,23 +157,27 @@ export default function BlackSwanEventAccess() {
         <dl className="bst-access__grid">
           <div className="bst-access__item">
             <dt>MEMBERSHIP STATUS</dt>
-            <dd>—</dd>
+            <dd aria-busy={!peopleReady}>
+              {peopleReady ? displayDash(membershipStatusValue) : ""}
+            </dd>
           </div>
           <div className="bst-access__item">
             <dt>ONBOARDING STATE</dt>
-            <dd>{displayDash(getOnboardingStatus(member))}</dd>
+            <dd>{displayDash(onboardingState)}</dd>
           </div>
           <div className="bst-access__item">
             <dt>COMPLIANCE STATE</dt>
-            <dd>{displayDash(getComplianceStatus(member))}</dd>
+            <dd>{displayDash(complianceState)}</dd>
           </div>
           <div className="bst-access__item">
             <dt>ID VERIFIED</dt>
-            <dd>—</dd>
+            <dd aria-busy={!peopleReady}>
+              {peopleReady ? formatIdVerified(idVerified) : ""}
+            </dd>
           </div>
           <div className="bst-access__item">
             <dt>MEMBER AGREEMENT</dt>
-            <dd>{displayDash(getAgreementSigned(member))}</dd>
+            <dd>{displayDash(memberAgreement)}</dd>
           </div>
         </dl>
 
