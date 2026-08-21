@@ -2766,6 +2766,80 @@ body {
   color: #ffffff;
 }
 
+.events-feature-card--member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 560px;
+  padding: 36px 40px 32px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.events-feature-card--member:hover {
+  background: #080000;
+}
+
+.events-feature-card--member:hover .events-feature-card__cta {
+  background: rgba(255, 45, 106, 0.12);
+  color: #ffffff;
+}
+
+.events-feature-card--member:focus-visible {
+  outline: 2px solid #ff2d6a;
+  outline-offset: 3px;
+}
+
+.events-feature-card__kicker {
+  margin: 0 0 16px;
+  max-width: 100%;
+  font-family: var(--font-body), Inter, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: rgba(245, 240, 232, 0.52);
+}
+
+.events-feature-card--member .events-feature-card__brand {
+  margin-bottom: 12px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.events-feature-card--member .events-feature-card__name {
+  margin-bottom: 16px;
+  font-size: clamp(28px, 5vw, 42px);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.events-feature-card__meta-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 24px;
+  max-width: 100%;
+  font-family: var(--font-body), Inter, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: rgba(245, 240, 232, 0.82);
+}
+
+.events-feature-card--member .events-feature-card__cta {
+  align-self: center;
+  pointer-events: none;
+}
+
 .events-past {
   width: 100%;
   max-width: 1140px;
@@ -2961,6 +3035,15 @@ body {
     align-self: center;
     width: 250px;
   }
+
+  .events-feature-card--member {
+    max-width: 100%;
+    padding: 28px 24px 24px;
+  }
+
+  .events-feature-card--member .events-feature-card__cta {
+    width: min(250px, 100%);
+  }
 }
 
 @media (max-width: 767px) {
@@ -2986,6 +3069,21 @@ body {
   .events-feature-card__cta {
     width: 250px;
     max-width: 100%;
+  }
+
+  .events-feature-card--member {
+    padding: 24px 16px 20px;
+  }
+
+  .events-feature-card--member .events-feature-card__name {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+
+  .events-feature-card--member .events-feature-card__cta {
+    width: 100%;
+    min-height: 52px;
+    height: auto;
+    padding: 14px 16px;
   }
 
   .events-past__grid {

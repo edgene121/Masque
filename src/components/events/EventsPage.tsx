@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import UpcomingEventFeature from "@/components/events/UpcomingEventFeature";
+import BlackSwanUpcomingCard from "@/components/events/BlackSwanUpcomingCard";
 import PastEventCard from "@/components/events/PastEventCard";
 import EventsFooter from "@/components/events/EventsFooter";
 import { navSections } from "@/data/dashboard";
@@ -10,6 +11,7 @@ import {
   formatGatheringTeaser,
   type PortalEvent,
 } from "@/data/events";
+import { isBlackSwanPortalEvent } from "@/lib/portal/black-swan-events";
 import { useMemberstackUser } from "@/lib/memberstack";
 
 type EventsTab = "upcoming" | "past";
@@ -76,9 +78,13 @@ export default function EventsPage({
             aria-label="Upcoming Events"
           >
             {upcoming.length > 0 ? (
-              upcoming.map((event) => (
-                <UpcomingEventFeature key={event.id} event={event} />
-              ))
+              upcoming.map((event) =>
+                isBlackSwanPortalEvent(event) ? (
+                  <BlackSwanUpcomingCard key={event.id} event={event} />
+                ) : (
+                  <UpcomingEventFeature key={event.id} event={event} />
+                ),
+              )
             ) : (
               <p className="events-page__empty">No Upcoming Events</p>
             )}
