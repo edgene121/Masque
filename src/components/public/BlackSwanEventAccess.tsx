@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Member } from "@memberstack/dom";
 import { getMemberstack } from "@/lib/memberstack";
+import { blackSwanAnalyticsProps, trackEventOnce } from "@/lib/analytics";
 import {
   getAgreementSigned,
   getComplianceStatus,
@@ -45,6 +46,14 @@ export default function BlackSwanEventAccess() {
   const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
   const [idVerified, setIdVerified] = useState<boolean | null>(null);
   const [peopleReady, setPeopleReady] = useState(false);
+
+  useEffect(() => {
+    trackEventOnce(
+      "black_swan_event_access_viewed",
+      "/events/black-swan-theory",
+      blackSwanAnalyticsProps("member"),
+    );
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

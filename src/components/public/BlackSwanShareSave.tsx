@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { blackSwanAnalyticsProps, trackEvent } from "@/lib/analytics";
 import {
   getBlackSwanDownloadUrl,
   startBlackSwanFilmDownload,
@@ -79,7 +79,7 @@ export default function BlackSwanShareSave() {
 
     await navigator.clipboard.writeText(url);
     setShareStatus("copied");
-    trackEvent("black_swan_link_copied");
+    trackEvent("black_swan_link_copied", blackSwanAnalyticsProps("member"));
     scheduleShareReset();
   }
 
@@ -92,7 +92,7 @@ export default function BlackSwanShareSave() {
 
     try {
       const url = publicInvitationUrl();
-      trackEvent("black_swan_share_clicked");
+      trackEvent("black_swan_share_clicked", blackSwanAnalyticsProps("member"));
 
       if (typeof navigator.share === "function") {
         try {
@@ -101,7 +101,7 @@ export default function BlackSwanShareSave() {
             text: SHARE_TEXT,
             url,
           });
-          trackEvent("black_swan_share_completed");
+          trackEvent("black_swan_share_completed", blackSwanAnalyticsProps("member"));
           return;
         } catch (error) {
           if (isShareAbort(error)) {
@@ -128,14 +128,14 @@ export default function BlackSwanShareSave() {
     }
 
     saveInFlightRef.current = true;
-    trackEvent("black_swan_save_film_clicked");
+    trackEvent("black_swan_save_film_clicked", blackSwanAnalyticsProps("member"));
 
     try {
       const started = startBlackSwanFilmDownload(filmDownloadUrl);
       if (!started) {
         throw new Error("Download did not start");
       }
-      trackEvent("black_swan_save_film_started");
+      trackEvent("black_swan_save_film_started", blackSwanAnalyticsProps("member"));
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.warn("[Black Swan download] save film failed", error);

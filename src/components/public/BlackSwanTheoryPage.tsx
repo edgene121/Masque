@@ -10,6 +10,11 @@ import TicketTailorEmbed from "@/components/tickets/TicketTailorEmbed";
 import { useTicketTailorCustomer } from "@/hooks/useTicketTailorCustomer";
 import { TICKET_TAILOR_CUSTOM_DOMAIN } from "@/lib/tickets/ticket-tailor-config";
 import { getBlackSwanDownloadUrl } from "@/lib/black-swan-film-download";
+import {
+  blackSwanAnalyticsProps,
+  trackEvent,
+  trackEventOnce,
+} from "@/lib/analytics";
 
 // ---------------------------------------------------------------------------
 // Video configuration — update this block when the final film source arrives.
@@ -60,12 +65,37 @@ interface BlackSwanTheoryPageProps {
   showMemberTickets?: boolean;
 }
 
+function videoAnalyticsProvider(): "cloudflare" | "vimeo" | "unknown" {
+  if (VIDEO_PROVIDER === "cloudflare-stream") return "cloudflare";
+  if (VIDEO_PROVIDER === "vimeo") return "vimeo";
+  return "unknown";
+}
+
 export default function BlackSwanTheoryPage({
   showMemberTickets = false,
 }: BlackSwanTheoryPageProps) {
   const [filmCompleted, setFilmCompleted] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const shareResetRef = useRef<number | null>(null);
+  const analyticsPage = showMemberTickets ? "member" : "public";
+  const analyticsContext = blackSwanAnalyticsProps(analyticsPage, {
+    provider: videoAnalyticsProvider(),
+    ticketWidgetConfigured: Boolean(BLACK_SWAN_TICKET_TAILOR_EMBED),
+  });
+
+  useEffect(() => {
+    const context = blackSwanAnalyticsProps(analyticsPage, {
+      provider: videoAnalyticsProvider(),
+      ticketWidgetConfigured: Boolean(BLACK_SWAN_TICKET_TAILOR_EMBED),
+    });
+    trackEventOnce(
+      showMemberTickets
+        ? "black_swan_member_event_view"
+        : "black_swan_public_page_view",
+      context.route ?? analyticsPage,
+      context,
+    );
+  }, [analyticsPage, showMemberTickets]);
 
   useEffect(() => {
     return () => {
@@ -80,11 +110,16 @@ export default function BlackSwanTheoryPage({
       return;
     }
 
+    trackEvent("black_swan_film_play_clicked", analyticsContext);
+
     // TODO: Start playback on the configured Cloudflare Stream, Vimeo, or MP4 player.
     // Do not navigate. Do not set filmCompleted here.
+    // TODO: When the player reports that playback has actually begun:
+    // trackEvent("black_swan_film_started", analyticsContext);
   }
 
   function handleEnded() {
+    trackEvent("black_swan_film_completed", analyticsContext);
     setFilmCompleted(true);
   }
 
@@ -97,6 +132,7 @@ export default function BlackSwanTheoryPage({
   async function copyInviteLink(url: string) {
     await navigator.clipboard.writeText(url);
     setShareCopied(true);
+    trackEvent("black_swan_link_copied", analyticsContext);
 
     if (shareResetRef.current !== null) {
       window.clearTimeout(shareResetRef.current);
@@ -110,6 +146,7 @@ export default function BlackSwanTheoryPage({
 
   async function handleShareInvitation() {
     const url = new URL(PUBLIC_BLACK_SWAN_URL, window.location.origin).toString();
+    trackEvent("black_swan_share_clicked", analyticsContext);
 
     if (typeof navigator.share === "function") {
       try {
@@ -118,6 +155,7 @@ export default function BlackSwanTheoryPage({
           text: SHARE_TEXT,
           url,
         });
+        trackEvent("black_swan_share_completed", analyticsContext);
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -159,13 +197,16 @@ export default function BlackSwanTheoryPage({
             {VIDEO_PROVIDER === "cloudflare-stream" && VIDEO_ID ? (
               // TODO: Render Cloudflare Stream iframe/player using VIDEO_ID.
               // Call playback.onEnded when the film finishes. Do not add the Stream SDK yet.
+              // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
               null
             ) : VIDEO_PROVIDER === "vimeo" && VIDEO_ID ? (
               // TODO: Render Vimeo iframe/player using VIDEO_ID.
               // Call playback.onEnded when the film finishes. Do not add the Vimeo SDK yet.
+              // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
               null
             ) : VIDEO_PROVIDER === "mp4" && VIDEO_URL ? (
               // TODO: Render <video className="bst-film__media" src={VIDEO_URL} playsInline onEnded={playback.onEnded} />
+              // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
               null
             ) : (
               <div className="bst-film__placeholder">
@@ -230,6 +271,9 @@ export default function BlackSwanTheoryPage({
                 href={MEMBER_TICKETS_HREF}
                 className="bst-cta bst-cta--primary"
                 aria-label="Member tickets — continue to sign in"
+                onClick={() =>
+                  trackEvent("black_swan_member_access_clicked", analyticsContext)
+                }
               >
                 MEMBER TICKETS
               </Link>
@@ -237,6 +281,12 @@ export default function BlackSwanTheoryPage({
                 href={REQUEST_ACCESS_HREF}
                 className="bst-cta bst-cta--secondary"
                 aria-label="Request Masqué membership access"
+                onClick={() =>
+                  trackEvent(
+                    "black_swan_request_membership_clicked",
+                    analyticsContext,
+                  )
+                }
               >
                 REQUEST ACCESS
               </Link>
@@ -312,6 +362,9 @@ export default function BlackSwanTheoryPage({
                 href={MEMBER_TICKETS_HREF}
                 className="bst-cta bst-cta--primary"
                 aria-label="Member tickets — continue to sign in"
+                onClick={() =>
+                  trackEvent("black_swan_member_access_clicked", analyticsContext)
+                }
               >
                 MEMBER TICKETS
               </Link>
@@ -319,6 +372,12 @@ export default function BlackSwanTheoryPage({
                 href={REQUEST_ACCESS_HREF}
                 className="bst-cta bst-cta--secondary"
                 aria-label="Request Masqué membership access"
+                onClick={() =>
+                  trackEvent(
+                    "black_swan_request_membership_clicked",
+                    analyticsContext,
+                  )
+                }
               >
                 REQUEST ACCESS
               </Link>
@@ -366,9 +425,34 @@ export default function BlackSwanTheoryPage({
 
 function MemberTicketsSection() {
   const ticketTailorCustomer = useTicketTailorCustomer();
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const node = sectionRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        trackEventOnce(
+          "black_swan_ticket_section_viewed",
+          "/events/black-swan-theory",
+          blackSwanAnalyticsProps("member", {
+            ticketWidgetConfigured: Boolean(BLACK_SWAN_TICKET_TAILOR_EMBED),
+          }),
+        );
+        observer.disconnect();
+      },
+      { threshold: 0.25 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <section
+      ref={sectionRef}
       id="member-tickets"
       className="bst-section bst-tickets"
       aria-labelledby="bst-tickets-heading"

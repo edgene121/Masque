@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TicketTailorCustomer } from "@/lib/tickets/ticket-tailor-customer";
 import { TICKET_TAILOR_CUSTOM_DOMAIN } from "@/lib/tickets/ticket-tailor-config";
+import { blackSwanAnalyticsProps, trackEventOnce } from "@/lib/analytics";
 
 export type TicketTailorEmbedProps = {
   embedHtml?: string | null;
@@ -187,10 +188,24 @@ export default function TicketTailorEmbed({
     const parsed = parseTicketTailorEmbed(html);
     root.innerHTML = parsed.markup;
     setStatus("loading");
+    trackEventOnce(
+      "black_swan_ticket_widget_loading",
+      "/events/black-swan-theory",
+      blackSwanAnalyticsProps("member", {
+        ticketWidgetConfigured: true,
+      }),
+    );
 
     const markReady = () => {
       if (!cancelled) {
         setStatus("ready");
+        trackEventOnce(
+          "black_swan_ticket_widget_loaded",
+          "/events/black-swan-theory",
+          blackSwanAnalyticsProps("member", {
+            ticketWidgetConfigured: true,
+          }),
+        );
       }
     };
 
@@ -203,6 +218,13 @@ export default function TicketTailorEmbed({
       });
       if (!cancelled) {
         setStatus("error");
+        trackEventOnce(
+          "black_swan_ticket_widget_error",
+          "/events/black-swan-theory",
+          blackSwanAnalyticsProps("member", {
+            ticketWidgetConfigured: true,
+          }),
+        );
       }
     };
 
