@@ -65,6 +65,11 @@ export default function DashboardPage() {
   );
   const [creditSummary, setCreditSummary] = useState(ZERO_CREDIT_SUMMARY);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(
+    null,
+  );
+  const [verificationStatusLoading, setVerificationStatusLoading] =
+    useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -116,6 +121,50 @@ export default function DashboardPage() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!memberReady) return;
+
+    const email = member?.auth?.email?.trim().toLowerCase() ?? "";
+    if (!email) {
+      setVerificationStatus(null);
+      setVerificationStatusLoading(false);
+      return;
+    }
+
+    let mounted = true;
+    setVerificationStatusLoading(true);
+
+    async function loadVerificationStatus() {
+      try {
+        const response = await fetch(
+          `/api/portal/verification-status?email=${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json().catch(() => null)) as {
+          verificationStatus?: string | null;
+        } | null;
+
+        if (!mounted) return;
+
+        const raw = payload?.verificationStatus;
+        setVerificationStatus(
+          typeof raw === "string" && raw.trim() ? raw.trim() : null,
+        );
+      } catch (error) {
+        console.error("[Home] Failed to load verification status:", error);
+        if (!mounted) return;
+        setVerificationStatus(null);
+      } finally {
+        if (mounted) setVerificationStatusLoading(false);
+      }
+    }
+
+    void loadVerificationStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [memberReady, member]);
 
   useEffect(() => {
     if (!memberReady) return;
@@ -243,11 +292,17 @@ export default function DashboardPage() {
       ) : (
         <>
           {profileComplete ? (
-            <MemberStatusCard status={COMPLETED_STATUS} />
+            <MemberStatusCard
+              status={COMPLETED_STATUS}
+              verificationStatus={verificationStatus}
+              verificationStatusLoading={verificationStatusLoading}
+            />
           ) : (
             <MemberStatusCard
               status={INCOMPLETE_STATUS}
               showProfileCompletion
+              verificationStatus={verificationStatus}
+              verificationStatusLoading={verificationStatusLoading}
             />
           )}
 

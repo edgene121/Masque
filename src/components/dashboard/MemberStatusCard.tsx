@@ -1,56 +1,80 @@
-import { Check, Clock, X } from "lucide-react";
-import type {
-  MembershipStatusVariant,
-  MemberStatusData,
-} from "@/types/dashboard";
+import { Check, Clock } from "lucide-react";
+import type { MemberStatusData } from "@/types/dashboard";
 import ProfileCompletionCard from "./ProfileCompletionCard";
 
 interface MemberStatusCardProps {
   status: MemberStatusData;
   /** Show compact profile-completion card under Member Status (incomplete only). */
   showProfileCompletion?: boolean;
+  /** Airtable People "Verification Status". Null when missing. */
+  verificationStatus?: string | null;
+  /** True until the People Verification Status request finishes. */
+  verificationStatusLoading?: boolean;
 }
 
-const VARIANT_META: Record<
-  MembershipStatusVariant,
-  {
-    className: string;
-    Icon: typeof Check;
-  }
-> = {
-  active: { className: "is-active", Icon: Check },
-  pending: { className: "is-pending", Icon: Clock },
-  inactive: { className: "is-inactive", Icon: X },
-};
+function verificationValueClass(
+  status: string | null,
+  loading: boolean,
+): string {
+  if (loading) return "is-loading";
+  const normalized = (status ?? "").trim().toLowerCase();
+  if (normalized === "verified") return "is-active";
+  if (normalized === "not verified") return "is-pending";
+  return "";
+}
+
+function verificationIcon(status: string | null, loading: boolean) {
+  if (loading) return Clock;
+  const normalized = (status ?? "").trim().toLowerCase();
+  if (normalized === "verified") return Check;
+  return Clock;
+}
 
 export default function MemberStatusCard({
   status,
   showProfileCompletion = false,
+  verificationStatus = null,
+  verificationStatusLoading = false,
 }: MemberStatusCardProps) {
-  const meta = VARIANT_META[status.variant];
-  const Icon = meta.Icon;
+  const displayStatus = verificationStatusLoading
+    ? "…"
+    : verificationStatus?.trim() || "—";
+  const valueClass = verificationValueClass(
+    verificationStatus,
+    verificationStatusLoading,
+  );
+  const StatusIcon = verificationIcon(
+    verificationStatus,
+    verificationStatusLoading,
+  );
+
+  const statusBlock = (
+    <div className="member-status-card__status member-status-section">
+      <div className="member-status-inner">
+        <div
+          className={`member-status-card__check ${valueClass || "is-incomplete-home"}`}
+          aria-hidden="true"
+        >
+          <StatusIcon className="h-5 w-5" strokeWidth={2.5} />
+        </div>
+        <div>
+          <p className="member-status-card__label">Profile Status</p>
+          <p
+            className={`member-status-card__value ${valueClass}`}
+            aria-busy={verificationStatusLoading}
+          >
+            {displayStatus}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
   if (showProfileCompletion) {
     return (
       <section className="home-status-panel member-status-card has-profile-completion">
         <div className="home-status-left">
-          <div className="member-status-card__status member-status-section">
-            <div className="member-status-inner">
-              <div
-                className="member-status-card__check is-incomplete-home"
-                aria-hidden="true"
-              >
-                <Check className="h-5 w-5" strokeWidth={2.5} />
-              </div>
-              <div>
-                <p className="member-status-card__label">Member Status</p>
-                <p className="member-status-card__value is-incomplete-home">
-                  Member Status
-                </p>
-              </div>
-            </div>
-          </div>
-
+          {statusBlock}
           <ProfileCompletionCard percent={50} href="/complete-profile" />
         </div>
 
@@ -67,24 +91,7 @@ export default function MemberStatusCard({
 
   return (
     <section className="member-status-card">
-      <div className="member-status-card__left">
-        <div className="member-status-card__status member-status-section">
-          <div className="member-status-inner">
-            <div
-              className={`member-status-card__check ${meta.className}`}
-              aria-hidden="true"
-            >
-              <Icon className="h-5 w-5" strokeWidth={2.5} />
-            </div>
-            <div>
-              <p className="member-status-card__label">Member Status</p>
-              <p className={`member-status-card__value ${meta.className}`}>
-                {status.label}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="member-status-card__left">{statusBlock}</div>
 
       <div className="member-status-card__welcome welcome-content">
         <h1 className="member-status-card__heading">{status.welcomeHeading}</h1>

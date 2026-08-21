@@ -862,6 +862,11 @@ body {
   background: #c24141;
 }
 
+.member-status-card__check.is-loading {
+  background: #d0d0d0;
+  color: #666666;
+}
+
 .member-status-card__label {
   margin: 0;
   font-size: 11px;
@@ -887,6 +892,11 @@ body {
 
 .member-status-card__value.is-inactive {
   color: #c24141;
+}
+
+.member-status-card__value.is-loading {
+  color: #888888;
+  font-weight: 600;
 }
 
 .dashboard-home-loading {
