@@ -23,6 +23,11 @@ export interface PortalEvent {
   artworkUrl: string | null;
   /** Airtable Status when present (e.g. Open / Closed) */
   status: string;
+  /**
+   * Optional Airtable "Portal Display Order" number for curated Past Events.
+   * Lower values appear first. Null when the field is empty or missing.
+   */
+  displayOrder: number | null;
   kind: "upcoming" | "past";
 }
 

@@ -30,6 +30,7 @@ function createTemporaryBlackSwanEvent(): PortalEvent {
     href: BLACK_SWAN_EVENT_PATH,
     artworkUrl: null,
     status: "",
+    displayOrder: null,
     kind: "upcoming",
   };
 }

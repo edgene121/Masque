@@ -136,12 +136,31 @@ const URL_FIELD_NAMES = [
 
 const STATUS_FIELD_NAMES = ["Status", "Event Status", "State"];
 
+const DISPLAY_ORDER_FIELD_NAMES = [
+  "Portal Display Order",
+  "Display Order",
+  "Portal Order",
+];
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isRecordId(value: string): boolean {
   return /^rec[a-zA-Z0-9]{10,}$/.test(value);
+}
+
+function asOptionalNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "boolean") return null;
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  if (Array.isArray(value) && value.length > 0) {
+    return asOptionalNumber(value[0]);
+  }
+  return null;
 }
 
 function asTrimmedString(value: unknown): string {
@@ -388,6 +407,10 @@ function resolveLocation(fields: AirtableEventFields): string {
   );
 }
 
+function resolveDisplayOrder(fields: AirtableEventFields): number | null {
+  return asOptionalNumber(getFieldByNames(fields, DISPLAY_ORDER_FIELD_NAMES));
+}
+
 function resolveDescription(fields: AirtableEventFields): string {
   const named = resolveByNamesOrPattern(
     fields,
@@ -551,6 +574,7 @@ function mapEventRecord(record: AirtableEventRecord): PortalEvent | null {
     imageSrc: resolveImage(fields) || undefined,
     artworkUrl,
     status,
+    displayOrder: resolveDisplayOrder(fields),
     kind: date ? kind : "upcoming",
   };
 }
@@ -679,9 +703,27 @@ function sortByDateDesc(a: PortalEvent, b: PortalEvent): number {
   return (b.date || "").localeCompare(a.date || "");
 }
 
+function hasDisplayOrder(event: PortalEvent): boolean {
+  return event.displayOrder != null && Number.isFinite(event.displayOrder);
+}
+
+function sortPastEvents(a: PortalEvent, b: PortalEvent): number {
+  const aOrdered = hasDisplayOrder(a);
+  const bOrdered = hasDisplayOrder(b);
+
+  if (aOrdered && bOrdered && a.displayOrder !== b.displayOrder) {
+    return (a.displayOrder as number) - (b.displayOrder as number);
+  }
+  if (aOrdered && !bOrdered) return -1;
+  if (!aOrdered && bOrdered) return 1;
+
+  return sortByDateDesc(a, b);
+}
+
 /**
  * Load Member Portal events from Airtable "Events" table.
- * Upcoming: Date >= today (ascending). Past: Date < today (descending).
+ * Upcoming: Date >= today (ascending).
+ * Past: Portal Display Order ascending, then unordered events by Date descending.
  */
 export async function listPortalEvents(): Promise<PortalEventsResult> {
   const fetched = await fetchAllEventRecords();
@@ -708,7 +750,7 @@ export async function listPortalEvents(): Promise<PortalEventsResult> {
 
   const past = mapped
     .filter((event) => event.kind === "past")
-    .sort(sortByDateDesc);
+    .sort(sortPastEvents);
 
   return { ok: true, upcoming, past };
 }
