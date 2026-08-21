@@ -19,6 +19,7 @@ const hasConfiguredVideoSource =
   VIDEO_PROVIDER !== null && (Boolean(VIDEO_ID) || Boolean(VIDEO_URL));
 
 const MEMBER_TICKETS_HREF = "/login?next=/events/black-swan-theory";
+const PUBLIC_BLACK_SWAN_URL = "/black-swan-theory";
 const SHARE_TITLE = "Masqué : Atelier — Black Swan Theory";
 const SHARE_TEXT = "Black Swan Theory — September 26, 2026 · Washington, DC";
 
@@ -101,7 +102,7 @@ export default function BlackSwanTheoryPage({
   }
 
   async function handleShareInvitation() {
-    const url = window.location.href;
+    const url = new URL(PUBLIC_BLACK_SWAN_URL, window.location.origin).toString();
 
     if (typeof navigator.share === "function") {
       try {
@@ -216,49 +217,102 @@ export default function BlackSwanTheoryPage({
 
         {/* Revealed after the Black Swan Theory film completes. */}
         {filmCompleted ? (
-          <section className="bst-after" aria-label="After the film">
-            <Link
-              href={MEMBER_TICKETS_HREF}
-              className="bst-cta bst-cta--primary"
-              aria-label="Member tickets — continue to sign in"
+          showMemberTickets ? (
+            <section
+              className="bst-after bst-after--member"
+              aria-labelledby="bst-after-heading"
             >
-              MEMBER TICKETS
-            </Link>
-            <button
-              type="button"
-              className="bst-cta bst-cta--secondary"
-              onClick={handleShareInvitation}
-              aria-live="polite"
-              aria-label={
-                shareCopied
-                  ? "Invitation link copied"
-                  : "Share the invitation"
-              }
-            >
-              {shareCopied ? "LINK COPIED" : "SHARE THE INVITATION"}
-            </button>
-            {playback.downloadUrl ? (
-              <a
-                href={playback.downloadUrl}
-                className="bst-cta bst-cta--secondary"
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Save the film"
+              <h2 id="bst-after-heading" className="bst-subheading">
+                AFTER THE FILM
+              </h2>
+              <p className="bst-after__copy">Continue the experience.</p>
+              <div className="bst-after__actions">
+                <button
+                  type="button"
+                  className="bst-cta bst-cta--secondary"
+                  onClick={handleShareInvitation}
+                  aria-live="polite"
+                  aria-label={
+                    shareCopied
+                      ? "Invitation link copied"
+                      : "Share the invitation"
+                  }
+                >
+                  {shareCopied ? "LINK COPIED" : "SHARE THE INVITATION"}
+                </button>
+                {playback.downloadUrl ? (
+                  <a
+                    href={playback.downloadUrl}
+                    className="bst-cta bst-cta--secondary"
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Save the film"
+                  >
+                    SAVE THE FILM
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    className="bst-cta bst-cta--secondary"
+                    disabled
+                    aria-label="Save the film — download not available yet"
+                  >
+                    SAVE THE FILM
+                  </button>
+                )}
+              </div>
+              {playback.downloadUrl ? null : (
+                <p className="bst-after__hint">
+                  Download available after film release.
+                </p>
+              )}
+            </section>
+          ) : (
+            <section className="bst-after" aria-label="After the film">
+              <Link
+                href={MEMBER_TICKETS_HREF}
+                className="bst-cta bst-cta--primary"
+                aria-label="Member tickets — continue to sign in"
               >
-                SAVE THE FILM
-              </a>
-            ) : (
+                MEMBER TICKETS
+              </Link>
               <button
                 type="button"
                 className="bst-cta bst-cta--secondary"
-                disabled
-                aria-label="Save the film — download not available yet"
+                onClick={handleShareInvitation}
+                aria-live="polite"
+                aria-label={
+                  shareCopied
+                    ? "Invitation link copied"
+                    : "Share the invitation"
+                }
               >
-                SAVE THE FILM
+                {shareCopied ? "LINK COPIED" : "SHARE THE INVITATION"}
               </button>
-            )}
-          </section>
+              {playback.downloadUrl ? (
+                <a
+                  href={playback.downloadUrl}
+                  className="bst-cta bst-cta--secondary"
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Save the film"
+                >
+                  SAVE THE FILM
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  className="bst-cta bst-cta--secondary"
+                  disabled
+                  aria-label="Save the film — download not available yet"
+                >
+                  SAVE THE FILM
+                </button>
+              )}
+            </section>
+          )
         ) : null}
       </div>
     </main>
