@@ -6,6 +6,7 @@ import { Play } from "lucide-react";
 import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
 import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
 import TicketTailorEmbed from "@/components/tickets/TicketTailorEmbed";
+import { useTicketTailorCustomer } from "@/hooks/useTicketTailorCustomer";
 
 // ---------------------------------------------------------------------------
 // Video configuration — update this block when the final film source arrives.
@@ -327,6 +328,8 @@ export default function BlackSwanTheoryPage({
 }
 
 function MemberTicketsSection() {
+  const ticketTailorCustomer = useTicketTailorCustomer();
+
   return (
     <section className="bst-section bst-tickets" aria-labelledby="bst-tickets-heading">
       <h2 id="bst-tickets-heading" className="bst-subheading">
@@ -341,7 +344,10 @@ function MemberTicketsSection() {
         consent, or admission requirements.
       </p>
 
-      <TicketTailorEmbed embedHtml={BLACK_SWAN_TICKET_TAILOR_EMBED} />
+      <TicketTailorEmbed
+        embedHtml={BLACK_SWAN_TICKET_TAILOR_EMBED}
+        customer={ticketTailorCustomer}
+      />
     </section>
   );
 }

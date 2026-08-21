@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { TicketTailorCustomer } from "@/lib/tickets/ticket-tailor-customer";
 
 export type TicketTailorEmbedProps = {
   embedHtml?: string | null;
+  customer?: TicketTailorCustomer | null;
 };
 
 type WidgetStatus = "placeholder" | "loading" | "ready" | "error";
@@ -135,12 +137,29 @@ function widgetLooksReady(root: HTMLElement): boolean {
 
 export default function TicketTailorEmbed({
   embedHtml,
+  customer = null,
 }: TicketTailorEmbedProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const html = embedHtml?.trim() ?? "";
   const [status, setStatus] = useState<WidgetStatus>(
     html ? "loading" : "placeholder",
   );
+
+  // TODO: Map customer data into the official Ticket Tailor single-event
+  // prefill configuration once the real embed HTML/custom-domain setup
+  // is available.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") {
+      return;
+    }
+
+    console.info("[Ticket Tailor] customer accepted, prefill not injected", {
+      hasCustomer: Boolean(customer),
+      hasFirstName: Boolean(customer?.firstName),
+      hasLastName: Boolean(customer?.lastName),
+      hasEmail: Boolean(customer?.email),
+    });
+  }, [customer]);
 
   useEffect(() => {
     if (!html) {
