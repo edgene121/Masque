@@ -4,6 +4,7 @@ import { getAirtableConfig } from "@/lib/admin/config";
 import type { PortalEvent } from "@/data/events";
 import { toFeaturedEventData } from "@/data/events";
 import type { FeaturedEventData } from "@/types/dashboard";
+import { curatePastEvents } from "@/lib/portal/curate-past-events";
 
 const EVENTS_TABLE =
   process.env.AIRTABLE_EVENTS_TABLE?.trim() || "Events";
@@ -699,31 +700,10 @@ function sortByDateAsc(a: PortalEvent, b: PortalEvent): number {
   return (a.date || "").localeCompare(b.date || "");
 }
 
-function sortByDateDesc(a: PortalEvent, b: PortalEvent): number {
-  return (b.date || "").localeCompare(a.date || "");
-}
-
-function hasDisplayOrder(event: PortalEvent): boolean {
-  return event.displayOrder != null && Number.isFinite(event.displayOrder);
-}
-
-function sortPastEvents(a: PortalEvent, b: PortalEvent): number {
-  const aOrdered = hasDisplayOrder(a);
-  const bOrdered = hasDisplayOrder(b);
-
-  if (aOrdered && bOrdered && a.displayOrder !== b.displayOrder) {
-    return (a.displayOrder as number) - (b.displayOrder as number);
-  }
-  if (aOrdered && !bOrdered) return -1;
-  if (!aOrdered && bOrdered) return 1;
-
-  return sortByDateDesc(a, b);
-}
-
 /**
  * Load Member Portal events from Airtable "Events" table.
  * Upcoming: Date >= today (ascending).
- * Past: Portal Display Order ascending, then unordered events by Date descending.
+ * Past: curated Portal Display Order / reference order (see curatePastEvents).
  */
 export async function listPortalEvents(): Promise<PortalEventsResult> {
   const fetched = await fetchAllEventRecords();
@@ -748,9 +728,18 @@ export async function listPortalEvents(): Promise<PortalEventsResult> {
     .filter((event) => event.kind === "upcoming")
     .sort(sortByDateAsc);
 
-  const past = mapped
-    .filter((event) => event.kind === "past")
-    .sort(sortPastEvents);
+  const past = curatePastEvents(mapped.filter((event) => event.kind === "past"));
+
+  if (process.env.NODE_ENV === "development") {
+    console.info(
+      "FINAL PAST EVENT ORDER",
+      past.map((event) => ({
+        name: [event.brandTitle, event.name].filter(Boolean).join(" "),
+        date: event.date,
+        displayOrder: event.displayOrder,
+      })),
+    );
+  }
 
   return { ok: true, upcoming, past };
 }

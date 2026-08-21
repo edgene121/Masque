@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import UpcomingEventFeature from "@/components/events/UpcomingEventFeature";
 import BlackSwanUpcomingCard from "@/components/events/BlackSwanUpcomingCard";
@@ -12,6 +12,10 @@ import {
   type PortalEvent,
 } from "@/data/events";
 import { isBlackSwanPortalEvent } from "@/lib/portal/black-swan-events";
+import {
+  pastEventOrderLog,
+  sortPastEventsForDisplay,
+} from "@/lib/portal/curate-past-events";
 import { useMemberstackUser } from "@/lib/memberstack";
 
 type EventsTab = "upcoming" | "past";
@@ -35,6 +39,13 @@ export default function EventsPage({
     () => (featured?.date ? formatGatheringTeaser(featured.date) : ""),
     [featured],
   );
+  const pastEvents = useMemo(() => sortPastEventsForDisplay(past), [past]);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("FINAL PAST EVENT ORDER", pastEventOrderLog(pastEvents));
+    }
+  }, [pastEvents]);
 
   return (
     <DashboardLayout user={user} navSections={navSections}>
@@ -99,9 +110,9 @@ export default function EventsPage({
           >
             <h2 className="events-past__heading">Past Events</h2>
 
-            {past.length > 0 ? (
+            {pastEvents.length > 0 ? (
               <div className="events-past__grid">
-                {past.map((event) => (
+                {pastEvents.map((event) => (
                   <PastEventCard key={event.id} event={event} />
                 ))}
               </div>
@@ -111,14 +122,14 @@ export default function EventsPage({
           </section>
         ) : null}
 
-        {!loadError && tab === "upcoming" && past.length > 0 ? (
+        {!loadError && tab === "upcoming" && pastEvents.length > 0 ? (
           <section
             className="events-past events-past--below"
             aria-label="Past Events"
           >
             <h2 className="events-past__heading">Past Events</h2>
             <div className="events-past__grid">
-              {past.map((event) => (
+              {pastEvents.map((event) => (
                 <PastEventCard key={`below-${event.id}`} event={event} />
               ))}
             </div>
