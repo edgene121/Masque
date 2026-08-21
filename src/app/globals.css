@@ -854,6 +854,11 @@ body {
   background: #2f9d4d;
 }
 
+.member-status-card__check.is-incomplete-home {
+  background: #ececec;
+  color: #111111;
+}
+
 .member-status-card__check.is-pending {
   background: #d19a2c;
 }
@@ -880,6 +885,8 @@ body {
   margin: 4px 0 0;
   font-size: 16px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .member-status-card__value.is-active {

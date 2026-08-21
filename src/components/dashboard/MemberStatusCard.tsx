@@ -19,8 +19,8 @@ function verificationValueClass(
   if (loading) return "is-loading";
   const normalized = (status ?? "").trim().toLowerCase();
   if (normalized === "verified") return "is-active";
-  if (normalized === "not verified") return "is-pending";
-  return "";
+  if (normalized === "not verified") return "is-incomplete-home";
+  return "is-incomplete-home";
 }
 
 function verificationIcon(status: string | null, loading: boolean) {
@@ -30,15 +30,24 @@ function verificationIcon(status: string | null, loading: boolean) {
   return Clock;
 }
 
+function membershipStatusLabel(status: string | null, loading: boolean): string {
+  if (loading) return "…";
+  const normalized = (status ?? "").trim().toLowerCase();
+  if (normalized === "verified") return "Membership Active";
+  if (normalized === "not verified") return "Membership Inactive";
+  return "—";
+}
+
 export default function MemberStatusCard({
   status,
   showProfileCompletion = false,
   verificationStatus = null,
   verificationStatusLoading = false,
 }: MemberStatusCardProps) {
-  const displayStatus = verificationStatusLoading
-    ? "…"
-    : verificationStatus?.trim() || "—";
+  const displayStatus = membershipStatusLabel(
+    verificationStatus,
+    verificationStatusLoading,
+  );
   const valueClass = verificationValueClass(
     verificationStatus,
     verificationStatusLoading,
@@ -58,7 +67,7 @@ export default function MemberStatusCard({
           <StatusIcon className="h-5 w-5" strokeWidth={2.5} />
         </div>
         <div>
-          <p className="member-status-card__label">Profile Status</p>
+          <p className="member-status-card__label">Member Status</p>
           <p
             className={`member-status-card__value ${valueClass}`}
             aria-busy={verificationStatusLoading}
