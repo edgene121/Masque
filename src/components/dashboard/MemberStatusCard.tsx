@@ -79,7 +79,12 @@ export default function MemberStatusCard({
     </div>
   );
 
-  if (showProfileCompletion) {
+  const showCompletionCard =
+    showProfileCompletion &&
+    !verificationStatusLoading &&
+    (verificationStatus ?? "").trim().toLowerCase() === "not verified";
+
+  if (showCompletionCard) {
     return (
       <section className="home-status-panel member-status-card has-profile-completion">
         <div className="home-status-left">

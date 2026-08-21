@@ -284,6 +284,9 @@ export default function DashboardPage() {
   }, [memberReady, member]);
 
   const profileComplete = isProfileComplete(member);
+  const verificationNormalized = verificationStatus?.trim().toLowerCase() ?? "";
+  const showProfileCompletion =
+    !verificationStatusLoading && verificationNormalized === "not verified";
 
   return (
     <DashboardLayout user={headerUser} navSections={navSections}>
@@ -291,16 +294,16 @@ export default function DashboardPage() {
         <p className="dashboard-home-loading">Loading…</p>
       ) : (
         <>
-          {profileComplete ? (
+          {showProfileCompletion ? (
             <MemberStatusCard
-              status={COMPLETED_STATUS}
+              status={INCOMPLETE_STATUS}
+              showProfileCompletion
               verificationStatus={verificationStatus}
               verificationStatusLoading={verificationStatusLoading}
             />
           ) : (
             <MemberStatusCard
-              status={INCOMPLETE_STATUS}
-              showProfileCompletion
+              status={COMPLETED_STATUS}
               verificationStatus={verificationStatus}
               verificationStatusLoading={verificationStatusLoading}
             />
