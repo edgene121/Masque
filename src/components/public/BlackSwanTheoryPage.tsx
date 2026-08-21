@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
 import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
+import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
 
 // ---------------------------------------------------------------------------
 // Video configuration — update this block when the final film source arrives.
@@ -218,6 +219,7 @@ export default function BlackSwanTheoryPage({
           <>
             <BlackSwanEventAccess />
             <MemberTicketsSection />
+            <BlackSwanShareSave />
           </>
         ) : null}
 

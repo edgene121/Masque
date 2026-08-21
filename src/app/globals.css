@@ -7218,6 +7218,23 @@ a.forgot-password-form__submit--link {
   color: rgba(247, 245, 240, 0.48);
 }
 
+.bst-invite__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 28px;
+}
+
+.bst-save-film__status {
+  margin: 16px 0 0;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(185, 150, 91, 0.78);
+}
+
 .bst-cta {
   display: inline-flex;
   align-items: center;
@@ -7337,6 +7354,14 @@ a.forgot-password-form__submit--link {
 
   .bst-after__actions {
     flex-direction: column;
+  }
+
+  .bst-invite__actions {
+    width: 100%;
+  }
+
+  .bst-invite__actions .bst-cta {
+    width: 100%;
   }
 
   .bst-cta {
