@@ -7,12 +7,35 @@ import {
   getAgreementSigned,
   getComplianceStatus,
   getOnboardingStatus,
-  isProfileComplete,
+  isAgreementSigned,
 } from "@/lib/profile-memberstack";
 
 function displayDash(value: string): string {
   const trimmed = value.trim();
   return trimmed || "—";
+}
+
+function normalizeStatus(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isMissing(value: string): boolean {
+  return !value.trim() || value.trim() === "—";
+}
+
+/** Existing completed values used elsewhere in the project. */
+function isCompletedState(value: string): boolean {
+  const normalized = normalizeStatus(value);
+  return normalized === "complete" || normalized === "completed";
+}
+
+function isApprovedMember(value: string): boolean {
+  return normalizeStatus(value) === "approved member";
+}
+
+function isIdVerifiedYes(value: string): boolean {
+  const normalized = normalizeStatus(value);
+  return normalized === "yes" || normalized === "true";
 }
 
 export default function BlackSwanEventAccess() {
@@ -46,8 +69,30 @@ export default function BlackSwanEventAccess() {
     };
   }, []);
 
-  const accessActive = Boolean(member && isProfileComplete(member));
-  const requirementsPending = ready && Boolean(member) && !accessActive;
+  const membershipStatus = "";
+  const onboardingState = getOnboardingStatus(member);
+  const complianceState = getComplianceStatus(member);
+  const idVerified = "";
+  const memberAgreement = getAgreementSigned(member);
+
+  const requiredStatusMissing =
+    isMissing(membershipStatus) ||
+    isMissing(onboardingState) ||
+    isMissing(complianceState) ||
+    isMissing(idVerified) ||
+    isMissing(memberAgreement);
+
+  const accessActive =
+    ready &&
+    Boolean(member) &&
+    !requiredStatusMissing &&
+    isApprovedMember(membershipStatus) &&
+    isCompletedState(onboardingState) &&
+    isCompletedState(complianceState) &&
+    isIdVerifiedYes(idVerified) &&
+    isAgreementSigned(member);
+
+  const requirementsPending = ready && !accessActive;
 
   return (
     <section className="bst-section bst-access" aria-labelledby="bst-access-heading">
