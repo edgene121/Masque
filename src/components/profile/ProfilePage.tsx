@@ -22,6 +22,7 @@ import {
   getMemberInitials,
   mapMemberToHeaderUser,
   mapMemberToProfileForm,
+  PLACEHOLDER_HEADER_USER,
 } from "@/lib/profile-memberstack";
 import type { MemberstackUser } from "@/types/dashboard";
 import type { ProfileFormData } from "@/types/profile";
@@ -31,17 +32,11 @@ import ReferralDetailsSection from "./ReferralDetailsSection";
 
 type ProfileSection = "masque-profile" | "legal" | "uploaded-details";
 
-const EMPTY_HEADER_USER: MemberstackUser = {
-  name: "",
-  initials: "",
-  email: "",
-};
-
 export default function ProfilePage() {
   const [form, setForm] = useState<ProfileFormData>(emptyProfileForm);
   const [referralCode, setReferralCode] = useState("");
   const [headerUser, setHeaderUser] =
-    useState<MemberstackUser>(EMPTY_HEADER_USER);
+    useState<MemberstackUser>(PLACEHOLDER_HEADER_USER);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [savingSection, setSavingSection] = useState<ProfileSection | null>(
@@ -53,6 +48,7 @@ export default function ProfilePage() {
 
   const loadMember = useCallback(async () => {
     setIsLoading(true);
+    setHeaderUser(PLACEHOLDER_HEADER_USER);
     setSectionError(null);
     setSectionMessage(null);
 
@@ -64,7 +60,7 @@ export default function ProfilePage() {
         setIsAuthenticated(false);
         setForm(emptyProfileForm);
         setReferralCode("");
-        setHeaderUser(EMPTY_HEADER_USER);
+        setHeaderUser(PLACEHOLDER_HEADER_USER);
         return;
       }
 
@@ -97,7 +93,7 @@ export default function ProfilePage() {
       setIsAuthenticated(false);
       setForm(emptyProfileForm);
       setReferralCode("");
-      setHeaderUser(EMPTY_HEADER_USER);
+      setHeaderUser(PLACEHOLDER_HEADER_USER);
       setSectionError(
         formatErrorForUser(err) || "Unable to load your profile.",
       );

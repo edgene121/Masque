@@ -12,6 +12,7 @@ import {
   mapMemberToHeaderUser,
   mapMemberToProfileForm,
   ONBOARDING_STATUS_FIELD_KEY,
+  PLACEHOLDER_HEADER_USER,
 } from "@/lib/profile-memberstack";
 import { getMemberstack } from "@/lib/memberstack";
 import type { MemberstackUser } from "@/types/dashboard";
@@ -30,12 +31,6 @@ import StepSubmitDetails, {
   STEP4_AGREEMENT_WARNING,
   STEP4_GOV_ID_WARNING,
 } from "./steps/StepSubmitDetails";
-
-const EMPTY_HEADER_USER: MemberstackUser = {
-  name: "",
-  initials: "",
-  email: "",
-};
 
 const ONBOARDING_SUBMITTED_VALUE = "Submitted";
 
@@ -137,7 +132,7 @@ export default function CompleteProfilePage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [form, setForm] = useState<ProfileFormData>(emptyProfileForm);
   const [headerUser, setHeaderUser] =
-    useState<MemberstackUser>(EMPTY_HEADER_USER);
+    useState<MemberstackUser>(PLACEHOLDER_HEADER_USER);
   const [acknowledgments, setAcknowledgments] = useState<AcknowledgmentState>(
     EMPTY_ACKNOWLEDGMENTS,
   );
@@ -176,6 +171,7 @@ export default function CompleteProfilePage() {
 
   const loadMember = useCallback(async () => {
     setIsLoading(true);
+    setHeaderUser(PLACEHOLDER_HEADER_USER);
     setStep1Error(null);
     setStep2Error(null);
     setStep3Error(null);
@@ -187,7 +183,7 @@ export default function CompleteProfilePage() {
 
       if (!member) {
         setForm(emptyProfileForm);
-        setHeaderUser(EMPTY_HEADER_USER);
+        setHeaderUser(PLACEHOLDER_HEADER_USER);
         setHasExistingGovId(false);
         return;
       }
@@ -211,7 +207,7 @@ export default function CompleteProfilePage() {
       }
     } catch (err) {
       setForm(emptyProfileForm);
-      setHeaderUser(EMPTY_HEADER_USER);
+      setHeaderUser(PLACEHOLDER_HEADER_USER);
       setHasExistingGovId(false);
       setStep1Error(formatErrorForUser(err) || "Unable to load your profile.");
     } finally {

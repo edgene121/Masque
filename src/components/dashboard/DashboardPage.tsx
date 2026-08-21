@@ -3,15 +3,13 @@
 import { useEffect, useState } from "react";
 import type { Member } from "@memberstack/dom";
 import { dispatch, foundationCards, navSections } from "@/data/dashboard";
-import { getMemberstack } from "@/lib/memberstack";
+import { getMemberstack, useMemberstackUser } from "@/lib/memberstack";
 import {
   getOnboardingStatus,
   isProfileComplete,
-  mapMemberToHeaderUser,
 } from "@/lib/profile-memberstack";
 import type {
   FeaturedEventData,
-  MemberstackUser,
   MemberStatusData,
 } from "@/types/dashboard";
 import { MOCK_CREDITS_DATA, type CreditsHistoryRow, type CreditsInvitedBy, type CreditsInvitedFriend } from "@/types/credits";
@@ -39,12 +37,6 @@ const INCOMPLETE_STATUS: MemberStatusData = {
   welcomeText: "",
 };
 
-const EMPTY_HEADER_USER: MemberstackUser = {
-  name: "",
-  initials: "",
-  email: "",
-};
-
 const ZERO_CREDIT_SUMMARY = {
   creditsAvailable: 0,
   qualifiedReferrals: 0,
@@ -56,10 +48,9 @@ const ZERO_CREDIT_SUMMARY = {
 };
 
 export default function DashboardPage() {
+  const headerUser = useMemberstackUser();
   const [member, setMember] = useState<Member | null>(null);
   const [memberReady, setMemberReady] = useState(false);
-  const [headerUser, setHeaderUser] =
-    useState<MemberstackUser>(EMPTY_HEADER_USER);
   const [featuredEvent, setFeaturedEvent] = useState<FeaturedEventData | null>(
     null,
   );
@@ -77,7 +68,9 @@ export default function DashboardPage() {
     async function load() {
       try {
         const memberstack = getMemberstack();
-        const { data: currentMember } = await memberstack.getCurrentMember();
+        const { data: currentMember } = await memberstack.getCurrentMember({
+          useCache: false,
+        });
 
         const eventResponse = await fetch("/api/portal/events?scope=featured");
 
@@ -88,11 +81,6 @@ export default function DashboardPage() {
         } | null;
 
         setMember(currentMember);
-        setHeaderUser(
-          currentMember
-            ? mapMemberToHeaderUser(currentMember)
-            : EMPTY_HEADER_USER,
-        );
         setFeaturedEvent(eventPayload?.event ?? null);
         setMemberReady(true);
 
@@ -108,7 +96,6 @@ export default function DashboardPage() {
         console.error("[Home] Failed to load member home state:", error);
         if (!mounted) return;
         setMember(null);
-        setHeaderUser(EMPTY_HEADER_USER);
       } finally {
         if (mounted) {
           setMemberReady(true);

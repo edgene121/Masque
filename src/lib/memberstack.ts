@@ -1,7 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import memberstackDOM from "@memberstack/dom";
+import type { Member } from "@memberstack/dom";
 import type { MemberstackUser } from "@/types/dashboard";
+import {
+  mapMemberToHeaderUser,
+  PLACEHOLDER_HEADER_USER,
+} from "@/lib/profile-memberstack";
 
 /** Singleton Memberstack DOM client type */
 export type MemberstackInstance = ReturnType<typeof memberstackDOM.init>;
@@ -37,20 +43,54 @@ export function getMemberstack(): MemberstackInstance {
   return memberstackInstance;
 }
 
-const FALLBACK_USER: MemberstackUser = {
-  name: "Arcade J Mamangun",
-  initials: "AJ",
-  email: "arcade@example.com",
-};
+function toHeaderUser(member: Member | null | undefined): MemberstackUser {
+  return member ? mapMemberToHeaderUser(member) : PLACEHOLDER_HEADER_USER;
+}
 
 /**
- * TODO: Replace with live Memberstack member data via getMemberstack().
+ * Top-right header user from the current Memberstack session.
+ * Shows a neutral "Member" placeholder until the live member loads.
  */
 export function useMemberstackUser(): MemberstackUser {
-  return FALLBACK_USER;
+  const [user, setUser] = useState<MemberstackUser>(PLACEHOLDER_HEADER_USER);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadCurrentMember() {
+      try {
+        const { data: member } = await getMemberstack().getCurrentMember({
+          useCache: false,
+        });
+        if (mounted) setUser(toHeaderUser(member));
+      } catch {
+        if (mounted) setUser(PLACEHOLDER_HEADER_USER);
+      }
+    }
+
+    void loadCurrentMember();
+
+    const { unsubscribe } = getMemberstack().onAuthChange((member) => {
+      if (!mounted) return;
+      setUser(toHeaderUser(member));
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  return user;
 }
 
 export async function fetchMemberstackUser(): Promise<MemberstackUser> {
-  // TODO: Resolve current member from getMemberstack().getCurrentMember()
-  return FALLBACK_USER;
+  try {
+    const { data: member } = await getMemberstack().getCurrentMember({
+      useCache: false,
+    });
+    return toHeaderUser(member);
+  } catch {
+    return PLACEHOLDER_HEADER_USER;
+  }
 }

@@ -61,6 +61,55 @@ export function getMemberInitials(firstName: string, lastName: string): string {
   return initials || "?";
 }
 
+/** Safe header placeholder while the current Memberstack member is loading. */
+export const PLACEHOLDER_HEADER_USER: MemberstackUser = {
+  name: "Member",
+  initials: "M",
+};
+
+/**
+ * Initials from the resolved display name.
+ * "Edgene Galang" → EG, "Arcade J Mamangun" → AM, "John" → J.
+ * Email-only names use the first character of the email.
+ */
+export function getInitialsFromDisplayName(
+  name: string,
+  email = "",
+): string {
+  const trimmedName = name.trim();
+  const trimmedEmail = email.trim();
+
+  if (!trimmedName || trimmedName.includes("@")) {
+    const source = trimmedName.includes("@") ? trimmedName : trimmedEmail;
+    const letter = source.charAt(0);
+    return letter ? letter.toUpperCase() : "M";
+  }
+
+  const words = trimmedName.split(/\s+/).filter(Boolean);
+  if (words.length === 1) {
+    return words[0].charAt(0).toUpperCase();
+  }
+
+  const first = words[0].charAt(0);
+  const last = words[words.length - 1].charAt(0);
+  return `${first}${last}`.toUpperCase();
+}
+
+/** Header display name from the current Memberstack member. */
+export function resolveMemberDisplayName(member: Member): string {
+  const form = mapMemberToProfileForm(member);
+  const profileName = form.profileName.trim();
+  const displayName = form.displayName.trim();
+  const firstName = form.firstName.trim();
+  const lastName = form.lastName.trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const email = form.email.trim();
+
+  return (
+    profileName || displayName || fullName || firstName || email || "Member"
+  );
+}
+
 export function mapMemberToProfileForm(member: Member): ProfileFormData {
   const customFields = (member.customFields ?? {}) as Record<string, unknown>;
   const firstName = fieldValue(customFields, "first-name");
@@ -87,15 +136,11 @@ export function mapMemberToProfileForm(member: Member): ProfileFormData {
 
 export function mapMemberToHeaderUser(member: Member): MemberstackUser {
   const form = mapMemberToProfileForm(member);
-  const name =
-    form.profileName.trim() ||
-    [form.firstName, form.lastName].filter(Boolean).join(" ").trim() ||
-    form.email;
+  const name = resolveMemberDisplayName(member);
 
   return {
     name,
-    email: form.email,
-    initials: getMemberInitials(form.firstName, form.lastName),
+    initials: getInitialsFromDisplayName(name, form.email),
   };
 }
 
