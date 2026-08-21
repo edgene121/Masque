@@ -2,7 +2,8 @@ export type AnalyticsEventName =
   | "black_swan_share_clicked"
   | "black_swan_share_completed"
   | "black_swan_link_copied"
-  | "black_swan_save_film_clicked";
+  | "black_swan_save_film_clicked"
+  | "black_swan_save_film_started";
 
 type AnalyticsPayload = Record<string, unknown>;
 

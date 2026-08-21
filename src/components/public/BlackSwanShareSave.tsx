@@ -2,79 +2,155 @@
 
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
+import {
+  getBlackSwanDownloadUrl,
+  startBlackSwanFilmDownload,
+} from "@/lib/black-swan-film-download";
 
 const PUBLIC_BLACK_SWAN_PATH = "/black-swan-theory";
 const SHARE_TITLE = "MASQUÉ: ATELIER — Black Swan Theory";
-const SHARE_TEXT =
-  "An invitation to MASQUÉ : ATELIER — Black Swan Theory. September 26, 2026 · Washington, DC.";
+const SHARE_TEXT = "Black Swan Theory — September 26, 2026 · Washington, DC";
+const SHARE_FEEDBACK_MS = 2000;
+const SAVE_FEEDBACK_MS = 2000;
 
-// Insert the downloadable Black Swan Theory MP4 URL here when provided.
-const FILM_DOWNLOAD_URL: string | null = null;
+type ShareStatus = "idle" | "copied" | "failed";
+type SaveStatus = "idle" | "unavailable";
 
 function publicInvitationUrl() {
   return new URL(PUBLIC_BLACK_SWAN_PATH, window.location.origin).toString();
 }
 
+function isShareAbort(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  return "name" in error && error.name === "AbortError";
+}
+
+function logShareDev(message: string, error?: unknown) {
+  if (process.env.NODE_ENV !== "development") {
+    return;
+  }
+
+  if (error === undefined) {
+    console.warn("[Black Swan share]", message);
+    return;
+  }
+
+  console.warn("[Black Swan share]", message, error);
+}
+
 export default function BlackSwanShareSave() {
-  const [shareCopied, setShareCopied] = useState(false);
+  const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const shareResetRef = useRef<number | null>(null);
+  const saveResetRef = useRef<number | null>(null);
+  const shareInFlightRef = useRef(false);
+  const saveInFlightRef = useRef(false);
+  const filmDownloadUrl = getBlackSwanDownloadUrl();
 
   useEffect(() => {
     return () => {
       if (shareResetRef.current !== null) {
         window.clearTimeout(shareResetRef.current);
       }
+      if (saveResetRef.current !== null) {
+        window.clearTimeout(saveResetRef.current);
+      }
     };
   }, []);
 
-  async function copyInviteLink(url: string) {
-    await navigator.clipboard.writeText(url);
-    setShareCopied(true);
-    trackEvent("black_swan_link_copied", { url });
-
+  function scheduleShareReset() {
     if (shareResetRef.current !== null) {
       window.clearTimeout(shareResetRef.current);
     }
 
     shareResetRef.current = window.setTimeout(() => {
-      setShareCopied(false);
+      setShareStatus("idle");
       shareResetRef.current = null;
-    }, 2000);
+    }, SHARE_FEEDBACK_MS);
+  }
+
+  async function copyInviteLink(url: string) {
+    if (!navigator.clipboard?.writeText) {
+      throw new Error("Clipboard API unavailable");
+    }
+
+    await navigator.clipboard.writeText(url);
+    setShareStatus("copied");
+    trackEvent("black_swan_link_copied");
+    scheduleShareReset();
   }
 
   async function handleShareInvitation() {
-    const url = publicInvitationUrl();
-    trackEvent("black_swan_share_clicked", { url });
-
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({
-          title: SHARE_TITLE,
-          text: SHARE_TEXT,
-          url,
-        });
-        trackEvent("black_swan_share_completed", { url });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-      }
+    if (shareInFlightRef.current) {
+      return;
     }
 
+    shareInFlightRef.current = true;
+
     try {
-      await copyInviteLink(url);
-    } catch {
-      // Clipboard fallback failed; do not use alert().
+      const url = publicInvitationUrl();
+      trackEvent("black_swan_share_clicked");
+
+      if (typeof navigator.share === "function") {
+        try {
+          await navigator.share({
+            title: SHARE_TITLE,
+            text: SHARE_TEXT,
+            url,
+          });
+          trackEvent("black_swan_share_completed");
+          return;
+        } catch (error) {
+          if (isShareAbort(error)) {
+            return;
+          }
+        }
+      }
+
+      try {
+        await copyInviteLink(url);
+      } catch (error) {
+        logShareDev("clipboard copy failed", error);
+        setShareStatus("failed");
+        scheduleShareReset();
+      }
+    } finally {
+      shareInFlightRef.current = false;
     }
   }
 
   function handleSaveFilm() {
-    if (!FILM_DOWNLOAD_URL) {
+    if (!filmDownloadUrl || saveInFlightRef.current) {
       return;
     }
 
-    trackEvent("black_swan_save_film_clicked", { url: FILM_DOWNLOAD_URL });
+    saveInFlightRef.current = true;
+    trackEvent("black_swan_save_film_clicked");
+
+    try {
+      const started = startBlackSwanFilmDownload(filmDownloadUrl);
+      if (!started) {
+        throw new Error("Download did not start");
+      }
+      trackEvent("black_swan_save_film_started");
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[Black Swan download] save film failed", error);
+      }
+      setSaveStatus("unavailable");
+      if (saveResetRef.current !== null) {
+        window.clearTimeout(saveResetRef.current);
+      }
+      saveResetRef.current = window.setTimeout(() => {
+        setSaveStatus("idle");
+        saveResetRef.current = null;
+      }, SAVE_FEEDBACK_MS);
+    } finally {
+      saveInFlightRef.current = false;
+    }
   }
 
   return (
@@ -96,10 +172,18 @@ export default function BlackSwanShareSave() {
             onClick={handleShareInvitation}
             aria-live="polite"
             aria-label={
-              shareCopied ? "Invitation link copied" : "Share invitation"
+              shareStatus === "copied"
+                ? "Invitation link copied"
+                : shareStatus === "failed"
+                  ? "Copy failed"
+                  : "Share invitation"
             }
           >
-            {shareCopied ? "LINK COPIED" : "SHARE INVITATION"}
+            {shareStatus === "copied"
+              ? "LINK COPIED"
+              : shareStatus === "failed"
+                ? "COPY FAILED"
+                : "SHARE INVITATION"}
           </button>
         </div>
       </section>
@@ -112,18 +196,22 @@ export default function BlackSwanShareSave() {
           SAVE THE FILM
         </h2>
         <div className="bst-invite__actions">
-          {FILM_DOWNLOAD_URL ? (
-            <a
-              href={FILM_DOWNLOAD_URL}
+          {filmDownloadUrl ? (
+            <button
+              type="button"
               className="bst-cta bst-cta--secondary"
-              download
-              target="_blank"
-              rel="noopener noreferrer"
               onClick={handleSaveFilm}
-              aria-label="Save the film"
+              aria-live="polite"
+              aria-label={
+                saveStatus === "unavailable"
+                  ? "Download unavailable"
+                  : "Save the film"
+              }
             >
-              SAVE THE FILM
-            </a>
+              {saveStatus === "unavailable"
+                ? "DOWNLOAD UNAVAILABLE"
+                : "SAVE THE FILM"}
+            </button>
           ) : (
             <button
               type="button"
@@ -135,7 +223,7 @@ export default function BlackSwanShareSave() {
             </button>
           )}
         </div>
-        {FILM_DOWNLOAD_URL ? null : (
+        {filmDownloadUrl ? null : (
           <p className="bst-save-film__status">AVAILABLE AFTER FILM RELEASE</p>
         )}
       </section>

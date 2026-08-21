@@ -8,6 +8,7 @@ import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
 import TicketTailorEmbed from "@/components/tickets/TicketTailorEmbed";
 import { useTicketTailorCustomer } from "@/hooks/useTicketTailorCustomer";
 import { TICKET_TAILOR_CUSTOM_DOMAIN } from "@/lib/tickets/ticket-tailor-config";
+import { getBlackSwanDownloadUrl } from "@/lib/black-swan-film-download";
 
 // ---------------------------------------------------------------------------
 // Video configuration — update this block when the final film source arrives.
@@ -18,7 +19,8 @@ type VideoProvider = "cloudflare-stream" | "vimeo" | "mp4" | null;
 const VIDEO_PROVIDER: VideoProvider = null;
 const VIDEO_ID: string | null = null;
 const VIDEO_URL: string | null = null;
-const DOWNLOAD_URL: string | null = null;
+// Reuse BLACK_SWAN_DOWNLOAD_URL — do not add a second download URL here.
+const DOWNLOAD_URL = getBlackSwanDownloadUrl();
 
 const hasConfiguredVideoSource =
   VIDEO_PROVIDER !== null && (Boolean(VIDEO_ID) || Boolean(VIDEO_URL));
