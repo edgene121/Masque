@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
 import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
+import BlackSwanConcierge from "@/components/public/BlackSwanConcierge";
 import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
 import TicketTailorEmbed from "@/components/tickets/TicketTailorEmbed";
 import { useTicketTailorCustomer } from "@/hooks/useTicketTailorCustomer";
@@ -220,6 +221,7 @@ export default function BlackSwanTheoryPage({
 
         {showMemberTickets ? (
           <>
+            <BlackSwanConcierge />
             <BlackSwanEventAccess />
             <MemberTicketsSection />
             <BlackSwanShareSave />
