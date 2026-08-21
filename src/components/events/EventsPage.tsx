@@ -13,8 +13,8 @@ import {
 } from "@/data/events";
 import { isBlackSwanPortalEvent } from "@/lib/portal/black-swan-events";
 import {
+  curatePastEvents,
   pastEventOrderLog,
-  sortPastEventsForDisplay,
 } from "@/lib/portal/curate-past-events";
 import { useMemberstackUser } from "@/lib/memberstack";
 
@@ -39,7 +39,7 @@ export default function EventsPage({
     () => (featured?.date ? formatGatheringTeaser(featured.date) : ""),
     [featured],
   );
-  const pastEvents = useMemo(() => sortPastEventsForDisplay(past), [past]);
+  const pastEvents = useMemo(() => curatePastEvents(past), [past]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
