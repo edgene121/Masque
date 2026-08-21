@@ -2864,19 +2864,20 @@ body {
 }
 
 .events-past__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 32px;
-  justify-items: stretch;
+  column-count: 3;
+  column-gap: 32px;
 }
 
 .events-past-card {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   width: 100%;
   max-width: 350px;
-  height: 100%;
-  margin: 0 auto;
+  margin: 0 auto 28px;
+  vertical-align: top;
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
   background: #050706;
   border: 1px solid rgba(185, 150, 91, 0.5);
   border-radius: 9px;
@@ -2991,8 +2992,8 @@ body {
 
 @media (max-width: 1024px) {
   .events-past__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 28px;
+    column-count: 2;
+    column-gap: 28px;
   }
 
   .events-past-card {
@@ -3089,9 +3090,8 @@ body {
   }
 
   .events-past__grid {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    justify-items: center;
+    column-count: 1;
+    column-gap: 28px;
   }
 
   .events-past-card {
