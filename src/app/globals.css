@@ -7391,6 +7391,10 @@ a.forgot-password-form__submit--link {
   margin-top: 28px;
 }
 
+.bst-public-access .bst-invite__actions {
+  gap: 14px;
+}
+
 .bst-save-film__status {
   margin: 16px 0 0;
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;

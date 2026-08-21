@@ -12,7 +12,7 @@ interface BlackSwanUpcomingCardProps {
 export default function BlackSwanUpcomingCard({
   event,
 }: BlackSwanUpcomingCardProps) {
-  const href = event.href.trim() || BLACK_SWAN_EVENT_PATH;
+  const href = BLACK_SWAN_EVENT_PATH;
   const series = event.series.trim() || event.brandTitle.trim();
   const title = event.name.trim();
   const location = event.location.trim();

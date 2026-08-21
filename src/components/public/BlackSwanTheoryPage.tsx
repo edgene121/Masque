@@ -27,6 +27,7 @@ const hasConfiguredVideoSource =
   VIDEO_PROVIDER !== null && (Boolean(VIDEO_ID) || Boolean(VIDEO_URL));
 
 const MEMBER_TICKETS_HREF = "/login?next=/events/black-swan-theory";
+const REQUEST_ACCESS_HREF = "/request-access";
 const PUBLIC_BLACK_SWAN_URL = "/black-swan-theory";
 const SHARE_TITLE = "Masqué : Atelier — Black Swan Theory";
 const SHARE_TEXT = "Black Swan Theory — September 26, 2026 · Washington, DC";
@@ -219,6 +220,30 @@ export default function BlackSwanTheoryPage({
           <p className="bst-body">{EVENT_COPY.private}</p>
         </section>
 
+        {!showMemberTickets ? (
+          <section
+            className="bst-section bst-public-access"
+            aria-label="Black Swan Theory access"
+          >
+            <div className="bst-invite__actions">
+              <Link
+                href={MEMBER_TICKETS_HREF}
+                className="bst-cta bst-cta--primary"
+                aria-label="Member tickets — continue to sign in"
+              >
+                MEMBER TICKETS
+              </Link>
+              <Link
+                href={REQUEST_ACCESS_HREF}
+                className="bst-cta bst-cta--secondary"
+                aria-label="Request Masqué membership access"
+              >
+                REQUEST ACCESS
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
         {showMemberTickets ? (
           <>
             <BlackSwanConcierge />
@@ -290,6 +315,13 @@ export default function BlackSwanTheoryPage({
               >
                 MEMBER TICKETS
               </Link>
+              <Link
+                href={REQUEST_ACCESS_HREF}
+                className="bst-cta bst-cta--secondary"
+                aria-label="Request Masqué membership access"
+              >
+                REQUEST ACCESS
+              </Link>
               <button
                 type="button"
                 className="bst-cta bst-cta--secondary"
@@ -336,7 +368,11 @@ function MemberTicketsSection() {
   const ticketTailorCustomer = useTicketTailorCustomer();
 
   return (
-    <section className="bst-section bst-tickets" aria-labelledby="bst-tickets-heading">
+    <section
+      id="member-tickets"
+      className="bst-section bst-tickets"
+      aria-labelledby="bst-tickets-heading"
+    >
       <h2 id="bst-tickets-heading" className="bst-subheading">
         MEMBER TICKETS
       </h2>
