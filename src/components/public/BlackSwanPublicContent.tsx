@@ -7,7 +7,7 @@ import {
 } from "@/lib/analytics";
 
 const MEMBER_ACCESS_HREF = "/login?next=/events/black-swan-theory";
-const REQUEST_ACCESS_HREF = "/request-access";
+const REQUEST_ACCESS_HREF = "https://masque.co/apply";
 
 interface BlackSwanPublicContentProps {
   analyticsContext: BlackSwanAnalyticsProps;

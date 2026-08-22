@@ -22,7 +22,7 @@ const LOCAL_FILM_SRC = "/videos/black-swan-theory.mp4";
 const DOWNLOAD_URL = getBlackSwanDownloadUrl();
 
 const MEMBER_TICKETS_HREF = "/login?next=/events/black-swan-theory";
-const REQUEST_ACCESS_HREF = "/request-access";
+const REQUEST_ACCESS_HREF = "https://masque.co/apply";
 const PUBLIC_BLACK_SWAN_URL = "/black-swan-theory";
 const SHARE_TITLE = "Masqué : Atelier — Black Swan Theory";
 const SHARE_TEXT = "Black Swan Theory — September 26, 2026 · Washington, DC";
