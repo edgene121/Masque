@@ -7037,10 +7037,13 @@ a.forgot-password-form__submit--link {
 }
 
 .bst-film__media {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  background: #000000;
 }
 
 .bst-film__placeholder {
@@ -7051,6 +7054,7 @@ a.forgot-password-form__submit--link {
   gap: 22px;
   width: 100%;
   height: 100%;
+  cursor: pointer;
   background:
     radial-gradient(ellipse 70% 50% at 50% 42%, rgba(68, 53, 31, 0.28), transparent 70%),
     #070707;

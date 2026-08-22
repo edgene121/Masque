@@ -16,20 +16,10 @@ import {
   trackEventOnce,
 } from "@/lib/analytics";
 
-// ---------------------------------------------------------------------------
-// Video configuration — update this block when the final film source arrives.
-// Do not add Cloudflare Stream or Vimeo SDKs until a real source exists.
-// ---------------------------------------------------------------------------
-type VideoProvider = "cloudflare-stream" | "vimeo" | "mp4" | null;
-
-const VIDEO_PROVIDER: VideoProvider = null;
-const VIDEO_ID: string | null = null;
-const VIDEO_URL: string | null = null;
+// Local film file: copy the MP4 to public/videos/black-swan-theory.mp4
+const LOCAL_FILM_SRC = "/videos/black-swan-theory.mp4";
 // Reuse BLACK_SWAN_DOWNLOAD_URL — do not add a second download URL here.
 const DOWNLOAD_URL = getBlackSwanDownloadUrl();
-
-const hasConfiguredVideoSource =
-  VIDEO_PROVIDER !== null && (Boolean(VIDEO_ID) || Boolean(VIDEO_URL));
 
 const MEMBER_TICKETS_HREF = "/login?next=/events/black-swan-theory";
 const REQUEST_ACCESS_HREF = "/request-access";
@@ -69,8 +59,6 @@ interface BlackSwanTheoryPageProps {
 }
 
 function videoAnalyticsProvider(): "cloudflare" | "vimeo" | "unknown" {
-  if (VIDEO_PROVIDER === "cloudflare-stream") return "cloudflare";
-  if (VIDEO_PROVIDER === "vimeo") return "vimeo";
   return "unknown";
 }
 
@@ -78,7 +66,9 @@ export default function BlackSwanTheoryPage({
   showMemberTickets = false,
 }: BlackSwanTheoryPageProps) {
   const [filmCompleted, setFilmCompleted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const shareResetRef = useRef<number | null>(null);
   const analyticsPage = showMemberTickets ? "member" : "public";
   const analyticsContext = blackSwanAnalyticsProps(analyticsPage, {
@@ -108,17 +98,27 @@ export default function BlackSwanTheoryPage({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isPlaying) return;
+    const video = videoRef.current;
+    if (!video) return;
+    void video.play().catch(() => {
+      // If autoplay is blocked, native controls remain visible.
+    });
+  }, [isPlaying]);
+
   function handlePlay() {
-    if (!hasConfiguredVideoSource) {
-      return;
-    }
-
     trackEvent("black_swan_film_play_clicked", analyticsContext);
+    setFilmCompleted(false);
+    setIsPlaying(true);
+  }
 
-    // TODO: Start playback on the configured Cloudflare Stream, Vimeo, or MP4 player.
-    // Do not navigate. Do not set filmCompleted here.
-    // TODO: When the player reports that playback has actually begun:
-    // trackEvent("black_swan_film_started", analyticsContext);
+  function handleFilmStarted() {
+    trackEventOnce(
+      "black_swan_film_started",
+      `${analyticsPage}-film-started`,
+      analyticsContext,
+    );
   }
 
   function handleEnded() {
@@ -128,8 +128,15 @@ export default function BlackSwanTheoryPage({
 
   function handleReplay() {
     setFilmCompleted(false);
+    setIsPlaying(true);
 
-    // TODO: Restart the configured player from the beginning, then call handlePlay().
+    const video = videoRef.current;
+    if (video) {
+      video.currentTime = 0;
+      void video.play().catch(() => {
+        // Native controls remain available if replay autoplay is blocked.
+      });
+    }
   }
 
   async function copyInviteLink(url: string) {
@@ -202,35 +209,37 @@ export default function BlackSwanTheoryPage({
 
         <div className="bst-film">
           <div className="bst-film__frame">
-            {/*
-              TODO: Replace placeholder with Cloudflare Stream or Vimeo player
-              once the final video source is provided.
-              Direct MP4 fallback: <video className="bst-film__media" src={VIDEO_URL} playsInline onEnded={playback.onEnded} />
-            */}
-            {VIDEO_PROVIDER === "cloudflare-stream" && VIDEO_ID ? (
-              // TODO: Render Cloudflare Stream iframe/player using VIDEO_ID.
-              // Call playback.onEnded when the film finishes. Do not add the Stream SDK yet.
-              // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
-              null
-            ) : VIDEO_PROVIDER === "vimeo" && VIDEO_ID ? (
-              // TODO: Render Vimeo iframe/player using VIDEO_ID.
-              // Call playback.onEnded when the film finishes. Do not add the Vimeo SDK yet.
-              // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
-              null
-            ) : VIDEO_PROVIDER === "mp4" && VIDEO_URL ? (
-              // TODO: Render <video className="bst-film__media" src={VIDEO_URL} playsInline onEnded={playback.onEnded} />
-              // When playback actually begins: trackEvent("black_swan_film_started", analyticsContext).
-              null
+            {isPlaying ? (
+              <video
+                ref={videoRef}
+                className="bst-film__media"
+                src={LOCAL_FILM_SRC}
+                playsInline
+                controls
+                preload="metadata"
+                autoPlay
+                onPlaying={handleFilmStarted}
+                onEnded={playback.onEnded}
+              >
+                <a href={LOCAL_FILM_SRC}>Download Black Swan Theory</a>
+              </video>
             ) : showMemberTickets ? (
-              <div className="bst-film__placeholder">
-                <button
-                  type="button"
-                  className="bst-play"
-                  aria-label="Play film"
-                  onClick={playback.onPlay}
-                >
+              <div
+                className="bst-film__placeholder"
+                onClick={playback.onPlay}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    playback.onPlay();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Play film"
+              >
+                <span className="bst-play" aria-hidden="true">
                   <Play className="bst-play__icon" strokeWidth={1.25} fill="currentColor" />
-                </button>
+                </span>
                 <p className="bst-film__name">BLACK SWAN THEORY</p>
                 <p className="bst-film__cue">PLAY FILM</p>
               </div>
