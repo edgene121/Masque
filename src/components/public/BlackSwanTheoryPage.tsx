@@ -9,8 +9,6 @@ import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
 import BlackSwanConcierge from "@/components/public/BlackSwanConcierge";
 import BlackSwanShareSave from "@/components/public/BlackSwanShareSave";
 import TicketTailorEmbed from "@/components/tickets/TicketTailorEmbed";
-import { useTicketTailorCustomer } from "@/hooks/useTicketTailorCustomer";
-import { TICKET_TAILOR_CUSTOM_DOMAIN } from "@/lib/tickets/ticket-tailor-config";
 import { getBlackSwanDownloadUrl } from "@/lib/black-swan-film-download";
 import {
   blackSwanAnalyticsProps,
@@ -401,7 +399,6 @@ export default function BlackSwanTheoryPage({
 }
 
 function MemberTicketsSection() {
-  const ticketTailorCustomer = useTicketTailorCustomer();
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -435,22 +432,15 @@ function MemberTicketsSection() {
       aria-labelledby="bst-tickets-heading"
     >
       <h2 id="bst-tickets-heading" className="bst-subheading">
-        MEMBER TICKETS
+        Purchase Tickets
       </h2>
-      <p className="bst-body">
-        Select your available ticket below. Ticket pricing and availability are
-        managed directly through Ticket Tailor.
-      </p>
+
+      <TicketTailorEmbed embedHtml={BLACK_SWAN_TICKET_TAILOR_EMBED} />
+
       <p className="bst-tickets__notice">
         Ticket ownership does not override Masqué membership, verification,
         consent, or admission requirements.
       </p>
-
-      <TicketTailorEmbed
-        embedHtml={BLACK_SWAN_TICKET_TAILOR_EMBED}
-        customer={ticketTailorCustomer}
-        customDomain={TICKET_TAILOR_CUSTOM_DOMAIN}
-      />
     </section>
   );
 }

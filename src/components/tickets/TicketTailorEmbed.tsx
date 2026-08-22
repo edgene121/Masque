@@ -17,6 +17,7 @@ type ParsedEmbed = {
   markup: string;
   scriptSrc: string | null;
   dataAttributes: Record<string, string>;
+  fallbackHref: string;
   hasTicketTailorFrame: boolean;
 };
 
@@ -77,10 +78,18 @@ function parseTicketTailorEmbed(embedHtml: string): ParsedEmbed {
     },
   );
 
+  const fallbackHref =
+    doc.querySelector(".tt-widget-fallback a[href]")?.getAttribute("href")?.trim() ||
+    dataAttributes["data-url"]?.trim() ||
+    "";
+
   return {
     markup: doc.body.innerHTML.trim(),
     scriptSrc,
     dataAttributes,
+    fallbackHref: fallbackHref && isAllowedTicketTailorUrl(fallbackHref)
+      ? fallbackHref
+      : "",
     hasTicketTailorFrame,
   };
 }
@@ -139,6 +148,7 @@ export default function TicketTailorEmbed({
   const [status, setStatus] = useState<WidgetStatus>(
     html ? "loading" : "placeholder",
   );
+  const [fallbackHref, setFallbackHref] = useState("");
 
   // TODO: Map customer data into the official Ticket Tailor single-event
   // prefill configuration once the real embed HTML/custom-domain setup
@@ -178,6 +188,7 @@ export default function TicketTailorEmbed({
 
     const parsed = parseTicketTailorEmbed(html);
     root.innerHTML = parsed.markup;
+    setFallbackHref(parsed.fallbackHref);
     setStatus("loading");
     trackEventOnce(
       "black_swan_ticket_widget_loading",
@@ -278,6 +289,7 @@ export default function TicketTailorEmbed({
       if (timeoutId !== null) {
         window.clearTimeout(timeoutId);
       }
+      root.innerHTML = "";
     };
   }, [html]);
 
@@ -292,15 +304,6 @@ export default function TicketTailorEmbed({
     );
   }
 
-  if (status === "error") {
-    return (
-      <div className="bst-tickets__placeholder" role="alert">
-        <p className="bst-tickets__soon">TICKET INTERFACE UNAVAILABLE</p>
-        <p className="bst-tickets__hint">Please try again in a moment.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="bst-tickets__widget" aria-busy={status === "loading"}>
       {status === "loading" ? (
@@ -308,7 +311,29 @@ export default function TicketTailorEmbed({
           <p className="bst-tickets__soon">LOADING TICKETS...</p>
         </div>
       ) : null}
-      <div ref={mountRef} className="bst-tickets__mount" />
+      {status === "error" ? (
+        <div className="bst-tickets__error" role="alert">
+          <p className="bst-tickets__soon">TICKET INTERFACE UNAVAILABLE</p>
+          {fallbackHref ? (
+            <p className="bst-tickets__hint">
+              <a
+                href={fallbackHref}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Click here to buy tickets
+              </a>
+            </p>
+          ) : (
+            <p className="bst-tickets__hint">Please try again in a moment.</p>
+          )}
+        </div>
+      ) : null}
+      <div
+        ref={mountRef}
+        className="bst-tickets__mount"
+        hidden={status === "error"}
+      />
     </div>
   );
 }
