@@ -23,24 +23,34 @@ export default function BlackSwanUpcomingCard({
       href={href}
       className="events-feature-card events-feature-card--member"
     >
-      <p className="events-feature-card__kicker">Upcoming Member Event</p>
+      <div className="events-feature-card__media">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/black-swan-theory-event.jpg"
+          alt="BLACK SWAN THEORY"
+        />
+      </div>
 
-      {series ? <p className="events-feature-card__brand">{series}</p> : null}
+      <div className="events-feature-card__body">
+        <p className="events-feature-card__kicker">Upcoming Member Event</p>
 
-      {title ? (
-        <h2 className="events-feature-card__name featured-event-title">
-          {title}
-        </h2>
-      ) : null}
+        {series ? <p className="events-feature-card__brand">{series}</p> : null}
 
-      {location || dateLabel ? (
-        <p className="events-feature-card__meta-stack">
-          {location ? <span>{location}</span> : null}
-          {dateLabel ? <span>{dateLabel}</span> : null}
-        </p>
-      ) : null}
+        {title ? (
+          <h2 className="events-feature-card__name featured-event-title">
+            {title}
+          </h2>
+        ) : null}
 
-      <span className="events-feature-card__cta">Access Event</span>
+        {location || dateLabel ? (
+          <p className="events-feature-card__meta-stack">
+            {location ? <span>{location}</span> : null}
+            {dateLabel ? <span>{dateLabel}</span> : null}
+          </p>
+        ) : null}
+
+        <span className="events-feature-card__cta">Access Event</span>
+      </div>
     </Link>
   );
 }
