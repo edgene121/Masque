@@ -2939,11 +2939,14 @@ body {
 }
 
 .events-past-card__media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 340px;
+  height: 360px;
   flex-shrink: 0;
-  background: #0a0c0b;
   overflow: hidden;
+  background: #050505;
 }
 
 .events-past-card__media--empty {
@@ -2956,7 +2959,8 @@ body {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-height: 360px;
+  object-fit: contain;
   object-position: center;
 }
 
@@ -3173,10 +3177,6 @@ body {
     grid-template-columns: 1fr;
     gap: 20px;
     max-width: 320px;
-  }
-
-  .events-past-card__media {
-    height: 340px;
   }
 
   .events-past-card__cta {
