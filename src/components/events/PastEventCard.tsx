@@ -259,6 +259,11 @@ export default function PastEventCard({ event }: PastEventCardProps) {
     <article className="events-past-card">
       <div
         className={`events-past-card__media${hasImage ? "" : " events-past-card__media--empty"}`}
+        style={
+          hasImage
+            ? { backgroundImage: `url(${JSON.stringify(artworkUrl)})` }
+            : undefined
+        }
       >
         {hasImage ? (
           // eslint-disable-next-line @next/next/no-img-element
