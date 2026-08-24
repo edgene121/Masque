@@ -2954,25 +2954,29 @@ body {
 }
 
 .events-past-card__media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: auto;
+  height: 340px;
+  flex-shrink: 0;
   overflow: hidden;
-  background: transparent;
+  background: #000;
 }
 
 .events-past-card__media--empty {
-  min-height: 220px;
+  min-height: 0;
   background:
     linear-gradient(160deg, rgba(185, 150, 91, 0.08), transparent 55%),
-    #0a0c0b;
+    #000;
 }
 
 .events-past-card__media img {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: none;
-  object-fit: initial;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
   margin: 0;
   padding: 0;
 }
