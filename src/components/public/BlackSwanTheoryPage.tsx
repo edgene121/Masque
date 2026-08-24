@@ -197,7 +197,13 @@ export default function BlackSwanTheoryPage({
             <>
               <p className="bst-brand__series">{EVENT_COPY.eyebrow}</p>
               <h1 className="bst-brand__title">{EVENT_COPY.heading}</h1>
-              <p className="bst-brand__when">SEPTEMBER 26 · WASHINGTON, DC</p>
+              <p className="bst-brand__when">
+                <span>{EVENT_COPY.location}</span>
+                <span className="bst-brand__when-sep" aria-hidden="true">
+                  |
+                </span>
+                <span>{EVENT_COPY.date}</span>
+              </p>
             </>
           ) : (
             <>

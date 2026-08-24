@@ -7,42 +7,61 @@
 
 .bst-page--member .bst-hero {
   min-height: 0;
-  padding: 48px 24px 28px;
-  gap: 40px;
+  padding: 72px 24px 64px;
+  gap: 0;
+}
+
+.bst-page--member .bst-brand {
+  width: 100%;
+  max-width: 1100px;
 }
 
 .bst-page--member .bst-brand__series {
+  margin: 0 0 24px;
   font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 5px;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 7px;
   line-height: 1.3;
-  color: #b9965b;
+  color: #f7f5f0;
 }
 
 .bst-page--member .bst-brand__title {
-  margin-top: 18px;
-  font-size: clamp(30px, 5.4vw, 58px);
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  line-height: 1.15;
-  color: #ffffff;
+  margin: 0;
+  font-size: clamp(42px, 5vw, 76px);
+  font-weight: 400;
+  letter-spacing: 12px;
+  line-height: 1.1;
+  color: #c8a45a;
+  white-space: nowrap;
 }
 
 .bst-page--member .bst-brand__when {
-  margin-top: 16px;
-  font-size: 11px;
-  font-weight: 500;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 12px;
+  margin: 26px 0 0;
+  font-size: 15px;
+  font-weight: 600;
   letter-spacing: 3px;
-  color: rgba(247, 245, 240, 0.82);
+  color: #f7f5f0;
+}
+
+.bst-page--member .bst-brand__when-sep {
+  font-weight: 400;
+  opacity: 0.85;
 }
 
 .bst-page--member .bst-film {
-  width: min(450px, 100%);
+  width: min(490px, 100%);
+  margin-top: 76px;
 }
 
 .bst-page--member .bst-film__frame {
   border: 1px solid #b9965b;
+  border-radius: 0;
   box-shadow: none;
 }
 
@@ -233,7 +252,7 @@
   }
 
   .bst-page--member .bst-film {
-    width: min(440px, 100%);
+    width: min(470px, 100%);
   }
 
   .bst-page--member .bst-access__grid {
@@ -247,26 +266,31 @@
 
 @media (max-width: 768px) {
   .bst-page--member .bst-hero {
-    padding: 32px 20px 20px;
-    gap: 32px;
+    padding: 48px 20px 40px;
   }
 
   .bst-page--member .bst-brand__series {
-    letter-spacing: 4px;
+    font-size: 16px;
+    letter-spacing: 5px;
+    margin-bottom: 20px;
   }
 
   .bst-page--member .bst-brand__title {
-    font-size: clamp(30px, 9vw, 36px);
-    letter-spacing: 0.12em;
+    font-size: clamp(46px, 7vw, 56px);
+    letter-spacing: 8px;
+    white-space: normal;
   }
 
   .bst-page--member .bst-brand__when {
+    font-size: 14px;
     letter-spacing: 2px;
+    margin-top: 22px;
   }
 
   .bst-page--member .bst-film {
     width: 100%;
-    max-width: 420px;
+    max-width: 470px;
+    margin-top: 56px;
   }
 
   .bst-page--member .bst-content {
@@ -304,7 +328,31 @@
 
 @media (max-width: 430px) {
   .bst-page--member .bst-hero {
-    padding: 24px 20px 16px;
+    padding: 36px 20px 32px;
+  }
+
+  .bst-page--member .bst-brand__series {
+    font-size: 13px;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+  }
+
+  .bst-page--member .bst-brand__title {
+    font-size: clamp(30px, 8.4vw, 38px);
+    letter-spacing: 4px;
+    white-space: normal;
+  }
+
+  .bst-page--member .bst-brand__when {
+    font-size: 12px;
+    letter-spacing: 2px;
+    row-gap: 6px;
+  }
+
+  .bst-page--member .bst-film {
+    width: 100%;
+    max-width: 470px;
+    margin-top: 48px;
   }
 
   .bst-page--member .bst-content {
