@@ -2954,7 +2954,6 @@ body {
 }
 
 .events-past-card__media {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2962,55 +2961,21 @@ body {
   height: 360px;
   flex-shrink: 0;
   overflow: hidden;
-  padding: 0;
-  margin: 0;
-  background-color: #000;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.events-past-card__media::before {
-  content: "";
-  position: absolute;
-  inset: -20px;
-  background: inherit;
-  background-position: center;
-  background-size: cover;
-  filter: blur(16px);
-  transform: scale(1.08);
-  opacity: 0.45;
-}
-
-.events-past-card__media::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: #000;
 }
 
 .events-past-card__media--empty {
-  min-height: 0;
   background:
     linear-gradient(160deg, rgba(185, 150, 91, 0.08), transparent 55%),
     #0a0c0b;
 }
 
-.events-past-card__media--empty::before,
-.events-past-card__media--empty::after {
-  content: none;
-}
-
 .events-past-card__media img {
-  position: relative;
-  z-index: 2;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: center;
-  margin: 0;
-  padding: 0;
 }
 
 .events-past-card__body {
