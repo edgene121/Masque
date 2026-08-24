@@ -15,6 +15,7 @@ import {
   trackEvent,
   trackEventOnce,
 } from "@/lib/analytics";
+import "./black-swan-member.css";
 
 // Local film file: copy the MP4 to public/videos/black-swan-theory.mp4
 const LOCAL_FILM_SRC = "/videos/black-swan-theory.mp4";
@@ -189,14 +190,14 @@ export default function BlackSwanTheoryPage({
   };
 
   return (
-    <main className="bst-page">
+    <main className={`bst-page${showMemberTickets ? " bst-page--member" : ""}`}>
       <section className="bst-hero" aria-label="Black Swan Theory film">
         <header className="bst-brand">
           {showMemberTickets ? (
             <>
-              <p className="bst-brand__masque">MASQUÉ</p>
-              <p className="bst-brand__atelier">ATELIER</p>
-              <p className="bst-brand__title">BLACK SWAN THEORY</p>
+              <p className="bst-brand__series">{EVENT_COPY.eyebrow}</p>
+              <h1 className="bst-brand__title">{EVENT_COPY.heading}</h1>
+              <p className="bst-brand__when">SEPTEMBER 26 · WASHINGTON, DC</p>
             </>
           ) : (
             <>
@@ -266,16 +267,6 @@ export default function BlackSwanTheoryPage({
       <div className="bst-content">
         {showMemberTickets ? (
           <>
-            <section className="bst-section bst-section--intro" aria-labelledby="bst-event-heading">
-              <p className="bst-eyebrow">{EVENT_COPY.eyebrow}</p>
-              <h1 id="bst-event-heading" className="bst-heading">
-                {EVENT_COPY.heading}
-              </h1>
-              <p className="bst-meta">
-                <span>SEPTEMBER 26 · WASHINGTON, DC</span>
-              </p>
-            </section>
-
             <BlackSwanMemberEventCopy />
 
             <BlackSwanConcierge />

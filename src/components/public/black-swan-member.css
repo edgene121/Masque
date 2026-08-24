@@ -1,0 +1,313 @@
+/* Member Portal Black Swan Theory page only. Do not apply to the public page. */
+
+.bst-page--member {
+  background: #000000;
+  color: #ffffff;
+}
+
+.bst-page--member .bst-hero {
+  min-height: 0;
+  padding: 48px 24px 28px;
+  gap: 40px;
+}
+
+.bst-page--member .bst-brand__series {
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 5px;
+  line-height: 1.3;
+  color: #b9965b;
+}
+
+.bst-page--member .bst-brand__title {
+  margin-top: 18px;
+  font-size: clamp(30px, 5.4vw, 58px);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.bst-page--member .bst-brand__when {
+  margin-top: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  color: rgba(247, 245, 240, 0.82);
+}
+
+.bst-page--member .bst-film {
+  width: min(450px, 100%);
+}
+
+.bst-page--member .bst-film__frame {
+  border: 1px solid #b9965b;
+  box-shadow: none;
+}
+
+.bst-page--member .bst-content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 8px 40px 120px;
+}
+
+.bst-page--member .bst-section {
+  max-width: 100%;
+  padding: 72px 0;
+  border-top: 1px solid rgba(185, 150, 91, 0.45);
+  text-align: center;
+}
+
+.bst-page--member .bst-section:first-child {
+  border-top: 0;
+  padding-top: 48px;
+}
+
+.bst-page--member .bst-subheading {
+  margin: 0 auto 28px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-align: center;
+  color: #c5a568;
+}
+
+.bst-page--member .bst-prose {
+  gap: 22px;
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.bst-page--member .bst-section .bst-body {
+  margin: 0 auto;
+  max-width: 860px;
+  font-size: 16px;
+  line-height: 1.85;
+  text-align: center;
+  color: rgba(247, 245, 240, 0.86);
+}
+
+.bst-page--member .bst-emphasis {
+  max-width: 860px;
+  margin: 8px auto 0;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  text-align: center;
+  color: #ffffff;
+}
+
+.bst-page--member .bst-emphasis--point,
+.bst-page--member .bst-emphasis--condition {
+  color: #c5a568;
+}
+
+.bst-page--member [aria-labelledby="bst-dress-heading"] .bst-prose {
+  gap: 28px;
+}
+
+.bst-page--member .bst-mens-dress {
+  max-width: 860px;
+  margin: 64px auto 0;
+  padding: 64px 0 0;
+  border-top: 1px solid rgba(185, 150, 91, 0.45);
+  text-align: center;
+}
+
+.bst-page--member .bst-mens-dress__heading {
+  margin: 0 auto 24px;
+  font-family: var(--font-display), "Cormorant Garamond", Georgia, serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  color: #c5a568;
+}
+
+.bst-page--member .bst-mens-dress .bst-body + .bst-body {
+  margin-top: 22px;
+}
+
+.bst-page--member .bst-denied {
+  color: #c5a568;
+  border-bottom: 1px solid #c5a568;
+}
+
+.bst-page--member .bst-concierge .bst-body,
+.bst-page--member .bst-invite .bst-body,
+.bst-page--member .bst-tickets__notice,
+.bst-page--member .bst-access__notice {
+  max-width: 720px;
+}
+
+.bst-page--member .bst-invite__actions {
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.bst-page--member .bst-cta {
+  min-width: 240px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 28px;
+  border-radius: 0;
+  letter-spacing: 2px;
+}
+
+.bst-page--member .bst-cta--primary {
+  border: 1px solid #b9965b;
+  background: #b9965b;
+  color: #090806;
+}
+
+.bst-page--member .bst-cta--secondary {
+  border: 1px solid #b9965b;
+  background: transparent;
+  color: #ffffff;
+}
+
+.bst-page--member .bst-cta:disabled {
+  border-color: rgba(185, 150, 91, 0.45);
+  color: rgba(247, 245, 240, 0.55);
+  background: transparent;
+  opacity: 0.55;
+}
+
+.bst-page--member .bst-access__panel {
+  max-width: 100%;
+  margin: 8px auto 0;
+  padding: 48px 40px 36px;
+  border: 1px solid #b9965b;
+  background: #070707;
+  text-align: left;
+}
+
+.bst-page--member .bst-access__grid {
+  gap: 32px 28px;
+}
+
+.bst-page--member .bst-access__item dt {
+  letter-spacing: 0.22em;
+  color: #c5a568;
+}
+
+.bst-page--member .bst-access__item dd {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.bst-page--member .bst-access__banner {
+  text-align: left;
+}
+
+.bst-page--member .bst-access__notice {
+  margin-top: 24px;
+  text-align: left;
+}
+
+.bst-page--member .bst-tickets__widget {
+  margin-top: 40px;
+  margin-bottom: 8px;
+}
+
+.bst-page--member .bst-tickets__notice {
+  margin: 28px auto 0;
+}
+
+.bst-page--member .bst-save-film__status {
+  text-align: center;
+  color: rgba(185, 150, 91, 0.82);
+}
+
+.bst-page--member .bst-after--member {
+  padding-top: 72px;
+}
+
+@media (max-width: 1024px) {
+  .bst-page--member .bst-content {
+    padding: 8px 36px 96px;
+  }
+
+  .bst-page--member .bst-film {
+    width: min(440px, 100%);
+  }
+
+  .bst-page--member .bst-access__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bst-page--member .bst-section {
+    padding: 60px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .bst-page--member .bst-hero {
+    padding: 32px 20px 20px;
+    gap: 32px;
+  }
+
+  .bst-page--member .bst-brand__series {
+    letter-spacing: 4px;
+  }
+
+  .bst-page--member .bst-brand__title {
+    font-size: clamp(30px, 9vw, 36px);
+    letter-spacing: 0.12em;
+  }
+
+  .bst-page--member .bst-brand__when {
+    letter-spacing: 2px;
+  }
+
+  .bst-page--member .bst-film {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .bst-page--member .bst-content {
+    padding: 0 20px 80px;
+  }
+
+  .bst-page--member .bst-section {
+    padding: 52px 0;
+  }
+
+  .bst-page--member .bst-subheading {
+    font-size: 13px;
+    letter-spacing: 0.22em;
+  }
+
+  .bst-page--member .bst-access__panel {
+    padding: 28px 20px 24px;
+  }
+
+  .bst-page--member .bst-access__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bst-page--member .bst-cta,
+  .bst-page--member .bst-invite__actions .bst-cta {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .bst-page--member .bst-mens-dress {
+    margin-top: 48px;
+    padding-top: 48px;
+  }
+}
+
+@media (max-width: 430px) {
+  .bst-page--member .bst-hero {
+    padding: 24px 20px 16px;
+  }
+
+  .bst-page--member .bst-content {
+    padding: 0 20px 72px;
+  }
+}
