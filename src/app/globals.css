@@ -2916,19 +2916,22 @@ body {
 .events-past__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: 20px;
   align-items: stretch;
-  justify-items: stretch;
+  justify-items: center;
   width: 100%;
+  max-width: 1250px;
+  margin: 0 auto;
 }
 
 .events-past-card {
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 400px;
   min-width: 0;
   height: 100%;
-  margin: 0;
+  margin: 0 auto;
   background: #050706;
   border: 1px solid rgba(185, 150, 91, 0.5);
   border-radius: 9px;
@@ -2937,7 +2940,7 @@ body {
 
 .events-past-card__media {
   width: 100%;
-  aspect-ratio: 4 / 5;
+  height: 420px;
   flex-shrink: 0;
   background: #0a0c0b;
   overflow: hidden;
@@ -2963,7 +2966,7 @@ body {
   flex: 1;
   align-items: center;
   text-align: center;
-  padding: 20px 18px 20px;
+  padding: 14px 14px 16px;
 }
 
 .events-past-card__copy {
@@ -2988,7 +2991,7 @@ body {
 }
 
 .events-past-card__subtitle {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   font-family: var(--font-body), Inter, sans-serif;
   font-size: 16px;
   font-weight: 600;
@@ -3004,7 +3007,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0 10px;
-  margin: 16px 0 0;
+  margin: 10px 0 0;
   font-family: var(--font-body), Inter, sans-serif;
   font-size: 15px;
   line-height: 1.35;
@@ -3024,10 +3027,10 @@ body {
   justify-content: center;
   box-sizing: border-box;
   width: 100%;
-  margin: 16px 0 0;
-  padding: 0 20px;
-  height: 48px;
-  min-height: 48px;
+  margin: 12px 0 0;
+  padding: 0 16px;
+  height: 40px;
+  min-height: 40px;
   border: 1px solid rgba(185, 150, 91, 0.75);
   border-radius: 6px;
   color: #ffffff;
@@ -3048,7 +3051,8 @@ body {
 @media (max-width: 1024px) {
   .events-past__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
+    gap: 20px;
+    max-width: 840px;
   }
 
   .events-feature-card {
@@ -3167,7 +3171,12 @@ body {
 
   .events-past__grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
+    max-width: 400px;
+  }
+
+  .events-past-card__media {
+    height: 380px;
   }
 
   .events-past-card__cta {
