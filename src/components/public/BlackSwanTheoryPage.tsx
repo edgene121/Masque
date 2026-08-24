@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Play } from "lucide-react";
+import { Calendar, MapPin, Play } from "lucide-react";
 import BlackSwanPublicContent from "@/components/public/BlackSwanPublicContent";
 import BlackSwanMemberEventCopy from "@/components/public/BlackSwanMemberEventCopy";
 import BlackSwanEventAccess from "@/components/public/BlackSwanEventAccess";
@@ -195,14 +195,29 @@ export default function BlackSwanTheoryPage({
         <header className="bst-brand">
           {showMemberTickets ? (
             <>
+              <p className="bst-brand__badge">EVENTS</p>
               <p className="bst-brand__series">{EVENT_COPY.eyebrow}</p>
               <h1 className="bst-brand__title">{EVENT_COPY.heading}</h1>
               <p className="bst-brand__when">
-                <span>{EVENT_COPY.location}</span>
+                <span className="bst-brand__when-group">
+                  <MapPin
+                    className="bst-brand__when-icon"
+                    aria-hidden="true"
+                    strokeWidth={1.75}
+                  />
+                  <span>{EVENT_COPY.location}</span>
+                </span>
                 <span className="bst-brand__when-sep" aria-hidden="true">
                   |
                 </span>
-                <span>{EVENT_COPY.date}</span>
+                <span className="bst-brand__when-group">
+                  <Calendar
+                    className="bst-brand__when-icon"
+                    aria-hidden="true"
+                    strokeWidth={1.75}
+                  />
+                  <span>{EVENT_COPY.date}</span>
+                </span>
               </p>
             </>
           ) : (
