@@ -2873,7 +2873,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0 0 24px;
   max-width: 100%;
   font-family: var(--font-body), Inter, sans-serif;
@@ -2882,7 +2882,21 @@ body {
   letter-spacing: 0.12em;
   line-height: 1.4;
   text-transform: uppercase;
-  color: rgba(245, 240, 232, 0.82);
+  color: #ffffff;
+}
+
+.events-feature-card__meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.events-feature-card__meta-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: currentColor;
 }
 
 .events-feature-card--member .events-feature-card__cta {

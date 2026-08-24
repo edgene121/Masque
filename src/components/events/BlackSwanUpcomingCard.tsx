@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CalendarDays, MapPin } from "lucide-react";
 import type { PortalEvent } from "@/data/events";
 import { formatPortalEventDate } from "@/data/events";
 import { BLACK_SWAN_EVENT_PATH } from "@/lib/portal/black-swan-events";
@@ -32,7 +33,7 @@ export default function BlackSwanUpcomingCard({
       </div>
 
       <div className="events-feature-card__body">
-        <p className="events-feature-card__kicker">Upcoming Member Event</p>
+        <p className="events-feature-card__kicker">MASQUÉ : ATELIER</p>
 
         {series ? <p className="events-feature-card__brand">{series}</p> : null}
 
@@ -43,10 +44,26 @@ export default function BlackSwanUpcomingCard({
         ) : null}
 
         {location || dateLabel ? (
-          <p className="events-feature-card__meta-stack">
-            {location ? <span>{location}</span> : null}
-            {dateLabel ? <span>{dateLabel}</span> : null}
-          </p>
+          <div className="events-feature-card__meta-stack">
+            {location ? (
+              <div className="events-feature-card__meta-row">
+                <MapPin
+                  className="events-feature-card__meta-icon"
+                  aria-hidden="true"
+                />
+                <span>{location}</span>
+              </div>
+            ) : null}
+            {dateLabel ? (
+              <div className="events-feature-card__meta-row">
+                <CalendarDays
+                  className="events-feature-card__meta-icon"
+                  aria-hidden="true"
+                />
+                <span>{dateLabel}</span>
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         <span className="events-feature-card__cta">Access Event</span>
